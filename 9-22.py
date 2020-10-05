@@ -146,7 +146,7 @@ def main():
     weights = np.array([[0,    -1,  0,  -2], #1->1  2->1, 3->1, 4->1
                         [-1,    0,  0,  -2], #1->2, 2->2, 3->2, 4->2
                         [.3,   0,  2,  0],  #1->3, 2->3, 3->3, 4->3
-                        [0,    1.96/.8, 0, 2]]) #1->4, 2->4, 3->4, 4->4
+                        [0,    2.45, 0, 2.006]]) #1->4, 2->4, 3->4, 4->4
 
     
     v = np.array([[0, 0, 0, 0]]).T              #activation values for each neuron
@@ -157,10 +157,11 @@ def main():
     
     l = np.array([[4, 4, 4, 4]]).T                  #steepness of activation fxn
     bias = np.array([[1, 1, 1, .9027808]]).T     #bias is responsible for increasing the amount of input a neuron needs/doesnt need to activate 
-    bias = bias * 1.4
+    bias = bias * 1.405
     x = np.linspace(-10, 20, 100) 
     z = 1/(1 + np.exp(-x)) 
     plot_switch = True 
+    plot_switch_off_again = True
     for i in range (steps):
         #establish stimulus to units 1 and 2 
         stimulus = np.random.normal(mean, scale, 1)
@@ -194,7 +195,8 @@ def main():
             plot_switch = False 
             plt.show()  
             
-        if ( (v[3] > 0.9) & (plot_switch == True)):
+        if ( (v[3] > 0.8) & (plot_switch == True)):
+            print("v[3] was greater than 0.8")
             print(v)
             plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v[1]))
             x1 = [0, 3]
@@ -205,7 +207,22 @@ def main():
             plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
             plt.grid('on')
             plot_switch = False 
-            plt.show()  
+            plt.show() 
+            
+        if ( (v[3] < 0.4) & (plot_switch_off_again == True) & (i > 2000)):
+            print("v: \n", v)
+            print("v[3]:", v[3], "steps: ", i)
+            print("Plot switch off again triggered")
+            plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v[1]))
+            x1 = [0, 3]
+            y1 = [0, 1/weights[3,3] * 3]
+            plt.plot(x1,y1, label = "strength of switch")
+            plt.ylim([0,1])
+            plt.plot()
+            plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
+            plt.grid('on')
+            plot_switch_off_again = False 
+            plt.show() 
             
         if (i == steps-1):
             print(weights)

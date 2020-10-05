@@ -141,22 +141,22 @@ def main():
     
     #relu_idx= [1,1] #we want 2 and 3 to ramp up linearly, so units 2 and 3 are relu (index 1 and 2)
     
-    steps = 7000
+    steps = 10000
     
     weights = np.array([[0,    -1,  0,  -2], #1->1  2->1, 3->1, 4->1
                         [-1,    0,  0,  -2], #1->2, 2->2, 3->2, 4->2
                         [.3,   0,  2,  0],  #1->3, 2->3, 3->3, 4->3
-                        [0,    1.922/.8, 0, 2]]) #1->4, 2->4, 3->4, 4->4
+                        [0,    1.96/.8, 0, 2]]) #1->4, 2->4, 3->4, 4->4
 
     
     v = np.array([[0, 0, 0, 0]]).T              #activation values for each neuron
     v_hist = np.array([[0, 0, 0, 0]]).T       # a list of columns of activation values at each time stamp
-    
+
     input_vals = np.array([]).T
     input_vals_delta = np.array([]).T
     
     l = np.array([[4, 4, 4, 4]]).T                  #steepness of activation fxn
-    bias = np.array([[1, 1, 1, .9]]).T     #bias is responsible for increasing the amount of input a neuron needs/doesnt need to activate 
+    bias = np.array([[1, 1, 1, .9027808]]).T     #bias is responsible for increasing the amount of input a neuron needs/doesnt need to activate 
     bias = bias * 1.4
     x = np.linspace(-10, 20, 100) 
     z = 1/(1 + np.exp(-x)) 

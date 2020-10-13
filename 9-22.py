@@ -12,7 +12,6 @@ I+delta -> O -> Switch<-
 
 @author: robertklock
 """
-    # input is I + delta  
 import noise
 import numpy as np
 import matplotlib.pyplot as plt
@@ -127,41 +126,48 @@ def graph_sigmoid(l, I, b):
 
 def main():
     
-    noise = 0
+    noise = 0.009
     #time delta - do we need it for this? 
     dt = 0.005
     mean, scale, delta = 1.4, .05, .3
     
     init_val = np.random.normal(mean, scale)
     input_layer = np.array([[init_val], [init_val + delta]])
-    #print("input layer: ", input_layer)
+    #print("input layer: ", input_layer7
     #normal random inputs Note: Im not sure what an appropriate value is for delta
     
     sig_idx= [0,1,2,3] #which nodes activation should be sigmoidal
     
     #relu_idx= [1,1] #we want 2 and 3 to ramp up linearly, so units 2 and 3 are relu (index 1 and 2)
     
-    steps = 10000
+    steps = 5000
     
-    weights = np.array([[0,    -1,  0,  -2], #1->1  2->1, 3->1, 4->1
-                        [-1,    0,  0,  -2], #1->2, 2->2, 3->2, 4->2
-                        [.3,   0,  2,  0],  #1->3, 2->3, 3->3, 4->3
-                        [0,    2.45, 0, 2.006]]) #1->4, 2->4, 3->4, 4->4
+    weights = np.array([[0,    -1,  0,   -2], #1->1  2->1, 3->1, 4->1
+                        [-1,    0,  0,   -2], #1->2, 2->2, 3->2, 4->2
+                        [.3,    0,  2.2,     0],  #1->3, 2->3, 3->3, 4->3
+                        [0,     1.23,  0,   2.087]]) #1->4, 2->4, 3->4, 4->4
 
+    # To get 4 on and stay on, 2->4 > 1.22. Increasing that will adjust how quickly v4 ramps up 
+    # To get 4 on and off, 2->4 should be 
     
-    v = np.array([[0, 0, 0, 0]]).T              #activation values for each neuron
+    #Get the model to accumulate inputs to pick which one is bigger
+    #with high accuracy and as fast as possible 
+    
+    v = np.array([[0, 0, 0, 0]]).T              # values for each neuron
     v_hist = np.array([[0, 0, 0, 0]]).T       # a list of columns of activation values at each time stamp
 
     input_vals = np.array([]).T
     input_vals_delta = np.array([]).T
     
     l = np.array([[4, 4, 4, 4]]).T                  #steepness of activation fxn
-    bias = np.array([[1, 1, 1, .9027808]]).T     #bias is responsible for increasing the amount of input a neuron needs/doesnt need to activate 
-    bias = bias * 1.405
+    bias = np.array([[1, 1, 1, 1]]).T 
+    #bias is responsible for increasing the amount of input a neuron needs/doesnt need to activate 
+    bias = bias * 1.23
     x = np.linspace(-10, 20, 100) 
     z = 1/(1 + np.exp(-x)) 
     plot_switch = True 
-    plot_switch_off_again = True
+    plot_switch_off_again = False
+    
     for i in range (steps):
         #establish stimulus to units 1 and 2 
         stimulus = np.random.normal(mean, scale, 1)
@@ -171,43 +177,48 @@ def main():
         #input_layer[1,0] = external_input_delta
         #note: the at operator does matrix multiplication, instead of element-by-element mult
        
-        self_input = weights @ v    #weighted sum of activations, inputs to each unit
-        self_input[0] = stimulus + self_input[0] #previously self_input[0] + stiulus
-        self_input[1] = stimulus_delta + self_input[1] #previously self_input[1] + stimulus
-        self_input = sigmoid(l, self_input, bias, sig_idx)
+        activations = weights @ v    #weighted sum of activations, inputs to each unit
+        activations[0] = stimulus + activations[0] #previously self_input[0] + stiulus
+        activations[1] = stimulus_delta + activations[1] #previously self_input[1] + stimulus
+        
+        activations = sigmoid(l, activations, bias, sig_idx)
     
         #self_input[[0,1]] = relu(l,self_input[relu_idx],bias, relu_idx)   
         #slope = -v + output + np.random.normal(0,0,v.shape) #slope is dv/dt,  then we add noise using np.random
         x_axis_vals = np.arange(-2, 3, .1)
-        dv = (-v + self_input) * dt + noise * np.sqrt(dt) * np.random.normal(0,1, (4,1)) # add noise using np.random
+        dv = (-v + activations) * dt + noise * np.sqrt(dt) * np.random.normal(0,1, (4,1)) # add noise using np.random
         v = v + dv
+        
+        if (i == 1):
+            print("Starting activations: \n", v)
+            plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v[1]))
+            x1 = [0, 4]
+            y1 = [0, 1/weights[3,3] * 4]
+            plt.plot(x1,y1, label = "strength of switch")
+            plt.ylim([0,1])
+            plt.plot()
+            plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
+            plt.grid('on')
+            plot_switch = False 
+            plot_switch_off_again = True
+            plt.title("activation of 4 against sigmoid - start")
+            plt.show()  
         
         if ( (v[3] > 0.8) & (plot_switch == True)):
             print(v)
             plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v[1]))
-            x1 = [0, 3]
-            y1 = [0, 1/weights[3,3] * 3]
+            x1 = [0, 4]
+            y1 = [0, 1/weights[3,3] * 4]
             plt.plot(x1,y1, label = "strength of switch")
             plt.ylim([0,1])
             plt.plot()
             plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
             plt.grid('on')
             plot_switch = False 
+            plot_switch_off_again = True
+            plt.title("activation of 4 against sigmoid - unit 4 activation > 0.8")
             plt.show()  
             
-        if ( (v[3] > 0.8) & (plot_switch == True)):
-            print("v[3] was greater than 0.8")
-            print(v)
-            plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v[1]))
-            x1 = [0, 3]
-            y1 = [0, 1/weights[3,3] * 3]
-            plt.plot(x1,y1, label = "strength of switch")
-            plt.ylim([0,1])
-            plt.plot()
-            plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
-            plt.grid('on')
-            plot_switch = False 
-            plt.show() 
             
         if ( (v[3] < 0.4) & (plot_switch_off_again == True) & (i > 2000)):
             print("v: \n", v)
@@ -221,12 +232,12 @@ def main():
             plt.plot()
             plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
             plt.grid('on')
+            plt.title("activation of 4 against sigmoid - unit 4 < 0.4 but was > 0.8")
             plot_switch_off_again = False 
             plt.show() 
             
         if (i == steps-1):
-            print(weights)
-            print(self_input)
+            
             #plt.plot(x,z, label = "sigmoid", )
             
             #plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v[1]))
@@ -240,7 +251,10 @@ def main():
             #plt.plot(x[idx], self_input[idx], 'ro')
             #plt.plot( (1/ self_input[3]))
             plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
+            plt.title("activation of 4 against sigmoid at n-1 step")
             plt.grid('on')
+            print(weights)
+            print(activations)
             plt.show()   
         
         input_vals = np.append(input_vals, stimulus, axis=0)
@@ -258,6 +272,7 @@ def main():
     plt.legend(["v1","v2","v3","v4"], loc=0)
     plt.ylabel("activation")
     plt.xlabel("time (arbitrary units)")
+    plt.grid('on')
     plt.show()
  
     
@@ -284,7 +299,7 @@ def main():
     
     # Making a new figure here would help me to understand what's 
     # going on. --PS
-    plt.figure()
+    #plt.figure()
     
     
 main()

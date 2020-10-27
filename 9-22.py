@@ -16,6 +16,38 @@ import noise
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import signal
+from random import seed
+from random import randrange
+from csv import reader
+
+#Load sonar data
+def load_data(filename):
+    dataset = list()
+    with open(filename, 'r') as file:
+        csv_reader = reader(file)
+        for row in csv_reader:
+            if not row:
+                continue
+            dataset.append(row)
+    return dataset
+
+# Convert string column to float
+def str_column_to_float(dataset, column):
+	for row in dataset:
+		row[column] = float(row[column].strip())
+
+# Convert string column to integer
+def str_column_to_int(dataset, column):
+	class_values = [row[column] for row in dataset]
+	unique = set(class_values)
+	lookup = dict()
+	for i, value in enumerate(unique):
+		lookup[value] = i
+	for row in dataset:
+		row[column] = lookup[row[column]]
+	return lookup
+
+
 #Perlin Noise function, not imporant
 #adapted from Adrian's Soapbox via https://adrianb.io/2014/08/09/perlinnoise.html
 def pNoise(): 

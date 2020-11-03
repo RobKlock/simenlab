@@ -112,34 +112,34 @@ def predict(row, weights):
 
 #weights = [-0.1, 0.20653640140000007, -0.23418117710000003]
 
-def gradient_descent(data, learning_rate, num_epoch):
-    #initialize each weight to zero
-    weights = [0.0 for i in range(len(data[0]))]
+def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = False):
+    #outputs a set of trained weights
+    #initialize each weight to zero, bias is first index
+    weights = [0.0 for i in range(len(training_data[0]))]
     error_arr = []
     for epoch in range(num_epoch):
         sum_error = 0.0
-        for row in data:
+        for row in training_data:
             #make a prediction with the given weights
             prediction = predict(row, weights)
             #calculate error
             #adjust here to make anti-perceptron (1 - row[-1])
-            error = (1 - row[-1]) - prediction
-            #error = row[-1] - prediction
+            #error = (1 - row[-1]) - prediction
+            error = row[-1] - prediction if not antiperceptron else (1 - row[-1]) - prediction
             #sum and square error
             sum_error += error**2
             #update bias
             weights[0] = weights[0] + learning_rate * error
             for i in range(len(row)-1):
-                #update weights according to weight_i = weight_i + (learning_rate*error*output)
+                #update weights according to weight_i = weight_i + (learning_rate*error*input)
                 weights[i + 1] = weights[i + 1] + learning_rate * error * row[i]
         error_arr.append(sum_error)
-        #print('>epoch=%d, lrate=%.3f, error=%.3f' % (epoch, learning_rate, sum_error))
-    print("weights:", weights)
-    
+        print('>epoch=%d, lrate=%.3f, error=%.3f' % (epoch, learning_rate, sum_error))
+    #print("weights:", weights)
     #plt.figure()
-    plt.plot(weights)
-    plt.show()
-    
+    #plt.plot(weights, 'bo')
+    #plt.scatter(x = range(61), y = weights)
+    #plt.show()
     #plt.figure()
     #plt.plot(error_arr)
     #plt.show()
@@ -153,23 +153,35 @@ def perceptron(train, test, learning_rate, num_epoch):
         predictions.append(prediction)
     return(predictions)
     
-seed(1)
+#seed(1)
 filename='sonar(1).all-data'
 dataset=load_data(filename)
 
+#This preps the data (makes R M numeric, for example)
 for i in range(len(dataset[0])-1):
     str_column_to_float(dataset, i)
 str_column_to_int(dataset, len(dataset[0])-1)
 
+dataset2 = [[2.7810836,2.550537003,0],
+	[1.465489372,2.362125076,0],
+	[3.396561688,4.400293529,0],
+	[1.38807019,1.850220317,0],
+	[3.06407232,3.005305973,0],
+	[7.627531214,2.759262235,1],
+	[5.332441248,2.088626775,1],
+	[6.922596716,1.77106367,1],
+	[8.675418651,-0.242068655,1],
+	[7.673756466,3.508563011,1]]
+weights = gradient_descent(dataset2, 0.01, 20)
 
 n_folds = 2
 l_rate = 0.01
 n_epoch = 200
 
-plt.figure()
-scores = evaluate_algorithm(dataset, perceptron, n_folds, l_rate, n_epoch)
-print('Scores: %s' % scores)
-print('mean accuracy: %.3f%%' % (sum(scores)/float(len(scores))))
+#plt.figure()
+#scores = evaluate_algorithm(dataset, perceptron, n_folds, l_rate, n_epoch)
+#print('Scores: %s' % scores)
+#print('mean accuracy: %.3f%%' % (sum(scores)/float(len(scores))))
 
 #for row in dataset:
 #	prediction = predict(row, weights)

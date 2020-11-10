@@ -31,9 +31,9 @@ def load_data(filename):
 def str_column_to_float(dataset, column):
     for row in dataset:
         if(row[column] == 'R'):
-            row[column] = 0
-        if(row[column] == 'M'):
             row[column] = 1
+        if(row[column] == 'M'):
+            row[column] = 0
         else:
             row[column] = float(row[column])
 

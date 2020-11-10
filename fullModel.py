@@ -62,8 +62,8 @@ ap_train_data = noisy_data[ap_random_indices, :61]
 p_weights = p.gradient_descent(p_train_data, 0.1, 50)
 ap_weights = p.gradient_descent(ap_train_data, 0.1, 50, antiperceptron = True)
 
-c_weights = np.array([[0, .5, 0, .5],   #1->1 2->1 3->1 4->1
-                      [.5, 0, .5, 0],   #1->2 2->2 3->2 4->2
+c_weights = np.array([[0, -3, 0, -3],   #1->1 2->1 3->1 4->1
+                      [-3, 0, -3, 0],   #1->2 2->2 3->2 4->2
                       [2.23, 0, 2.5, -3],  #1->3 2->3 3->3 4->3
                       [0, 2.23, -3, 2.5]]) #1->4 2->4 3->4 4->4
 
@@ -78,7 +78,7 @@ def main():
     noise = 0.05 #noise inherent in the brain
    
     dt = 0.4 #dt should roughly be proportional to the amount of data we process
-    #in 9-22, it was 0.005 for 5000 steps, so 
+    #in 9-22, it was 0.005 for 5000 steps, so 25/x
     tau = 1
     p_activations = np.array([])
     ap_activations = np.array([])
@@ -87,18 +87,19 @@ def main():
     
   
     #rand_index = np.random.randint(0,208,1)[0]
-    rand_index = 162
+    rand_index = 34
     print(rand_index)
     #for each row processed...
     for j in range (0, ROW_LENGTH - 1):
         
         #p_activations = np.insert(p_activations, p.process(dataset[0][i], i, p_weights))
         #ap_activations = np.insert(ap_activations, p.process(dataset[0][i], i, ap_weights))
-        p_activation = p.process(dataset[rand_index][j], j, p_weights)
+        #p_activation = p.process(dataset[rand_index][j], j, p_weights)
+        p_activation = (1 / (1 + math.exp(-(p.process(dataset[rand_index][j], j, p_weights)))))
         #print("P activation", p_activation)
-        ap_activation = p.process(dataset[rand_index][j], j, ap_weights)
+        #ap_activation = p.process(dataset[rand_index][j], j, ap_weights)
+        ap_activation = (1 / (1 + math.exp(-(p.process(dataset[rand_index][j], j, ap_weights)))))
         #print("P, AP:", p_activation, ap_activation)
-        
         p_activations = np.append(p_activations, p_activation)
         ap_activations = np.append(ap_activations, ap_activation)
                                   
@@ -118,6 +119,11 @@ def main():
     ax = violinplot.add_axes([0,0,1,1])
     bp = ax.violinplot(vio_plot_data)
     plt.grid('on')
+    plt.show()
+    
+    plt.figure()
+    plt.plot(p_activations)
+    plt.plot(ap_activations)
     plt.show()
     
     plt.figure()

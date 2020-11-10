@@ -158,7 +158,7 @@ def relu(l,x,b, relu_idx):
     temp = np.max(temp,axis = 1).reshape(-1,1)
     temp = np.concatenate((np.ones((temp.shape[0],1)),temp),axis = 1)
     temp = np.min(temp, axis =1 ).reshape(-1,1)
-    return temp
+    return tempx
     
 def graph_sigmoid(l, I, b):
     f=1/(1+np.exp(-l * (I-b)))

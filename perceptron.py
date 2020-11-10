@@ -11,7 +11,9 @@ OUTPUT : M or R, for "mine" or "rock", expressed as 1 or 0
 from random import seed
 from random import randrange
 from csv import reader
+import copy
 import math
+import numpy as np
 import matplotlib.pyplot as plt
 
 #Load sonar data
@@ -47,18 +49,24 @@ def str_column_to_int(dataset, column):
 	return lookup
 
 # Split a dataset into k folds
+    #construct and evaluate k models, then estimate the overall performance as the mean of all models' errors
+    #each model is evaluated on its classification accuracy
+#Returns an array with split up data
 def cross_validation_split(dataset, n_folds):
-	dataset_split = list()
-	dataset_copy = list(dataset)
-	fold_size = int(len(dataset) / n_folds)
-	for i in range(n_folds):
-		fold = list()
+    dataset_split = list()
+    dataset_copy = list(dataset)
+    #print("datasetcopy:", dataset_copy)
+    #fold size is how many elements are in each fold
+    fold_size = int(len(dataset) / n_folds)
+    #print("foldsize:", fold_size)
+    for i in range(n_folds):
+        fold = list()
         #for each fold, add random data from the dataset
-		while len(fold) < fold_size:
-			index = randrange(len(dataset_copy))
-			fold.append(dataset_copy.pop(index))
-		dataset_split.append(fold)
-	return dataset_split
+        while len(fold) < fold_size:
+            index = randrange(len(dataset_copy))
+            fold.append(dataset_copy.pop(index))
+        dataset_split.append(fold)
+    return dataset_split
  
 # Calculate accuracy percentage
 def accuracy_metric(actual, predicted):
@@ -70,53 +78,47 @@ def accuracy_metric(actual, predicted):
  
 # Evaluate an algorithm using a cross validation split
 def evaluate_algorithm(dataset, algorithm, n_folds, *args):
-	folds = cross_validation_split(dataset, n_folds)
-	scores = list()
-	for fold in folds:
-		train_set = list(folds)
-		train_set.remove(fold)
-		train_set = sum(train_set, [])
-		test_set = list()
-		for row in fold:
-			row_copy = list(row)
-			test_set.append(row_copy)
-			row_copy[-1] = None
-		predicted = algorithm(train_set, test_set, *args)
-		actual = [row[-1] for row in fold]
-		accuracy = accuracy_metric(actual, predicted)
-		scores.append(accuracy)
-	return scores
-
-def activation(weight_i, x_i, bias):
-    
-    return (weight_i * x_i) + bias
-
- #step transfer function
-def transfer(act):
-    #return 1/(1+math.exp(-act))
-    if (act > 0):
-        return 1
-    else:
-        return -1
-
-def weight_iteration(w, learning_rate, expected, predicted, input_val):
-    
-    return w + learning_rate * (expected - predicted) * input_val
+    #*args is learning rate and number of epochs
+    #Get the subsections of trained data
+    folds = cross_validation_split(dataset, n_folds)
+    scores = list()
+    for fold in folds:
+        train_set = list(folds)
+        train_set.remove(fold)
+        train_set = sum(train_set, [])
+        #print("trainset", train_set)
+        test_set = list()
+        for row in fold:
+            row_copy = list(row)
+            test_set.append(row_copy)
+            row_copy[-1] = None
+        #call the perceptron to train and test itself
+        predicted = algorithm(train_set, test_set, *args)
+        
+        #print("predicted", predicted)
+        #actual values are penultimate entry in each fold row
+        actual = [row[-1] for row in fold]
+        accuracy = accuracy_metric(actual, predicted)
+        scores.append(accuracy)
+    return scores
 
 def predict(row, weights):
     activation = weights[0]
     for i in range(len(row)-1):
         activation += weights[i + 1] * row[i]
+    return  (1 / (1 + math.exp(-activation)))
+
+def process(datum, index, weights):
+    activation = weights[0]
+    activation += weights[index + 1] * datum
     
-    return  1.0 if activation >= 0.0 else 0.0
+    return activation
 
-#weights = [-0.1, 0.20653640140000007, -0.23418117710000003]
-
-def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = False):
+def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = False, plot = False):
     #outputs a set of trained weights
     #initialize each weight to zero, bias is first index
-    weights = [0.0 for i in range(len(training_data[0]))]
-    error_arr = []
+    weights = np.zeros(len(training_data[0]))
+    error_arr = np.array([])
     for epoch in range(num_epoch):
         sum_error = 0.0
         for row in training_data:
@@ -133,56 +135,103 @@ def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = F
             for i in range(len(row)-1):
                 #update weights according to weight_i = weight_i + (learning_rate*error*input)
                 weights[i + 1] = weights[i + 1] + learning_rate * error * row[i]
-        error_arr.append(sum_error)
+        np.append(error_arr, sum_error)
+    if plot:
         print('>epoch=%d, lrate=%.3f, error=%.3f' % (epoch, learning_rate, sum_error))
-    #print("weights:", weights)
-    #plt.figure()
-    #plt.plot(weights, 'bo')
-    #plt.scatter(x = range(61), y = weights)
-    #plt.show()
-    #plt.figure()
-    #plt.plot(error_arr)
-    #plt.show()
+        print("weights:", weights)
+        plt.figure()
+        plt.plot(weights, 'bo')
     return weights
 
+#Perceptron Function
+    #Take in a training set, test set, learning rate, and epoch number
+    #Learns weights based on a training set, then returns predictions for the test set
 def perceptron(train, test, learning_rate, num_epoch):
-    predictions = list()
+    predictions = np.array()
     weights = gradient_descent(train, learning_rate, num_epoch)
+    #plt.figure(2)
+    #plt.plot(weights, label = "perceptron weights")
     for row in test:
         prediction = predict(row, weights)
         predictions.append(prediction)
     return(predictions)
+
+def antiperceptron(train, test, learning_rate, num_epoch):
+    predictions = np.array()
+    weights = gradient_descent(train, learning_rate, num_epoch, antiperceptron = True)
+    #plt.figure(2)
+    #plt.plot(weights, label = "antiperceptron weights")
+    for row in test:
+        prediction = predict(row, weights)
+        predictions.append(prediction)
+    return(predictions)
+
+#Add Gaussian noisy data to sonar data
+#Default makes some of the mine data negative 
+def noisyData(dataset, mu = 0, sigma = 0.05):
+    #dataset_noisy = dataset[:]
+    #print(dataset_noisy)
     
-#seed(1)
-filename='sonar(1).all-data'
-dataset=load_data(filename)
+    dataset_noisy = copy.deepcopy(dataset)
+    #print("inside function, dataset id: ", id(dataset))
+    #print("inside function, dataset id: ", id(dataset_noisy))
+    for row in range(len(dataset_noisy)):
+        #print("row:", dataset_noisy[row])
+        for datum in range (len(dataset_noisy[row]) - 1):
+            d = dataset_noisy[row][datum]
+            n = d + np.random.normal(mu, sigma, 1)
+            dataset_noisy[row][datum] = n[0]
+    
+    return dataset_noisy
 
+def main():
+
+    filename='sonar(1).all-data'
+    dataset=load_data(filename)
 #This preps the data (makes R M numeric, for example)
-for i in range(len(dataset[0])-1):
-    str_column_to_float(dataset, i)
-str_column_to_int(dataset, len(dataset[0])-1)
+    for i in range(len(dataset[0])-1):
+        str_column_to_float(dataset, i)
+        str_column_to_int(dataset, len(dataset[0])-1)
 
-dataset2 = [[2.7810836,2.550537003,0],
-	[1.465489372,2.362125076,0],
-	[3.396561688,4.400293529,0],
-	[1.38807019,1.850220317,0],
-	[3.06407232,3.005305973,0],
-	[7.627531214,2.759262235,1],
-	[5.332441248,2.088626775,1],
-	[6.922596716,1.77106367,1],
-	[8.675418651,-0.242068655,1],
-	[7.673756466,3.508563011,1]]
-weights = gradient_descent(dataset2, 0.01, 20)
 
-n_folds = 2
-l_rate = 0.01
-n_epoch = 200
+    n_folds = 6
+    l_rate = 0.01
+    n_epoch = 1
 
-#plt.figure()
-#scores = evaluate_algorithm(dataset, perceptron, n_folds, l_rate, n_epoch)
-#print('Scores: %s' % scores)
-#print('mean accuracy: %.3f%%' % (sum(scores)/float(len(scores))))
+    
+#dataset3 = [[1,2,3,0],[4,5,6,1]]
+#print("dataset3 id:", id(dataset3))
+#noisyData3 = list(noisyData(dataset))
+#print("noisydata3 id", id(noisyData3))
+
+
+"""
+#train them at the same time
+scores = evaluate_algorithm(dataset, perceptron, n_folds, l_rate, n_epoch)
+antiscores = evaluate_algorithm(dataset, antiperceptron, n_folds, l_rate, n_epoch)
+plt.figure(1)
+plt.plot(scores, 'bo')
+plt.plot(antiscores, 'ro')
+plt.show()
+print('Scores: %s' % scores)
+print('mean accuracy: %.3f%%' % (sum(scores)/float(len(scores))))
+"""
 
 #for row in dataset:
 #	prediction = predict(row, weights)
 #	print("Expected=%d, Predicted=%d" % (row[-1], prediction))
+
+###
+#def activation(weight_i, x_i, bias):
+#    return (weight_i * x_i) + bias
+#
+# #step transfer function
+#def transfer(act):
+#    #return 1/(1+math.exp(-act))
+#    if (act > 0):
+#        return 1
+#    else:
+#        return -1
+
+#def weight_iteration(w, learning_rate, expected, predicted, input_val):
+#    return w + learning_rate * (expected - predicted) * input_val

@@ -62,40 +62,44 @@ ap_train_data = noisy_data[ap_random_indices, :61]
 p_weights = p.gradient_descent(p_train_data, 0.1, 50)
 ap_weights = p.gradient_descent(ap_train_data, 0.1, 50, antiperceptron = True)
 
-c_weights = np.array([[0, -2, 0, -2],
-                      [-2, 0, -2, 0],
-                      [1.23, 0, 2.087, 0],
-                      [0, 1.23, 0, 2.087]])
+c_weights = np.array([[0, .5, 0, -3],   #1->1 2->1 3->1 4->1
+                      [.5, 0, -3, 0],   #1->2 2->2 3->2 4->2
+                      [2.23, 0, 2.5, 0],  #1->3 2->3 3->3 4->3
+                      [0, 2.23, 0, 2.5]]) #1->4 2->4 3->4 4->4
 
   
-l = np.array([[4,4,4,4]]).T
+l = np.array([[2,2,2,2]]).T
 bias = np.array([[1,1,1,1]]).T
 
-bias = bias * 1.23
+bias = bias * 1
     
 
 def main():
     noise = 0.05 #noise inherent in the brain
    
-    dt = 0.005
+    dt = 0.4 #dt should roughly be proportional to the amount of data we process
+    #in 9-22, it was 0.005 for 5000 steps, so 
     tau = 1
     p_activations = np.array([])
     ap_activations = np.array([])
     v = np.array([[0,0,0,0]]).T
     v_hist = np.array([[0, 0, 0, 0,]]).T   
     
-    #for i in range (0, 5):
-    rand_index = np.random.randint(0, 208, 1)
-    
+  
+    #rand_index = np.random.randint(0,208,1)[0]
+    rand_index = 162
+    print(rand_index)
+    #for each row processed...
     for j in range (0, ROW_LENGTH - 1):
+        
         #p_activations = np.insert(p_activations, p.process(dataset[0][i], i, p_weights))
         #ap_activations = np.insert(ap_activations, p.process(dataset[0][i], i, ap_weights))
-        p_activation = p.process(dataset[0][1], 1, p_weights)
-        print("P activation", p_activation)
+        p_activation = p.process(dataset[rand_index][j], j, p_weights)
+        #print("P activation", p_activation)
         ap_activation = p.process(dataset[rand_index][j], j, ap_weights)
+        #print("P, AP:", p_activation, ap_activation)
         
         p_activations = np.append(p_activations, p_activation)
-        print("P ACTIVATIONS", p_activations)
         ap_activations = np.append(ap_activations, ap_activation)
                                   
         activations = c_weights @ v
@@ -108,7 +112,7 @@ def main():
         dv = tau * ((-v + activations) * dt + noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) # add noise using np.random
         v = v + dv
         
-    print("Trial %1d : %1d" % (j, dataset[rand_index][60]))
+#    print("Trial %1d : %1d" % (j, dataset[rand_index][60]))
 
     plt.figure()
     plt.plot(v_hist[0,:], dashes = [2,2]) 

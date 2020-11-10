@@ -62,16 +62,16 @@ ap_train_data = noisy_data[ap_random_indices, :61]
 p_weights = p.gradient_descent(p_train_data, 0.1, 50)
 ap_weights = p.gradient_descent(ap_train_data, 0.1, 50, antiperceptron = True)
 
-c_weights = np.array([[0, .5, 0, -3],   #1->1 2->1 3->1 4->1
-                      [.5, 0, -3, 0],   #1->2 2->2 3->2 4->2
-                      [2.23, 0, 2.5, 0],  #1->3 2->3 3->3 4->3
-                      [0, 2.23, 0, 2.5]]) #1->4 2->4 3->4 4->4
+c_weights = np.array([[0, .5, 0, .5],   #1->1 2->1 3->1 4->1
+                      [.5, 0, .5, 0],   #1->2 2->2 3->2 4->2
+                      [2.23, 0, 2.5, -3],  #1->3 2->3 3->3 4->3
+                      [0, 2.23, -3, 2.5]]) #1->4 2->4 3->4 4->4
 
   
-l = np.array([[2,2,2,2]]).T
+l = np.array([[3,3,3,3]]).T
 bias = np.array([[1,1,1,1]]).T
 
-bias = bias * 1
+bias = bias * 1.5
     
 
 def main():
@@ -113,7 +113,13 @@ def main():
         v = v + dv
         
 #    print("Trial %1d : %1d" % (j, dataset[rand_index][60]))
-
+    vio_plot_data = [p_activations, ap_activations]
+    violinplot = plt.figure()
+    ax = violinplot.add_axes([0,0,1,1])
+    bp = ax.violinplot(vio_plot_data)
+    plt.grid('on')
+    plt.show()
+    
     plt.figure()
     plt.plot(v_hist[0,:], dashes = [2,2]) 
     plt.plot(v_hist[1,:], dashes = [1,1])

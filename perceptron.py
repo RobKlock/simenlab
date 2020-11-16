@@ -147,7 +147,7 @@ def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = F
     #Take in a training set, test set, learning rate, and epoch number
     #Learns weights based on a training set, then returns predictions for the test set
 def perceptron(train, test, learning_rate, num_epoch):
-    predictions = np.array()
+    predictions = list()
     weights = gradient_descent(train, learning_rate, num_epoch)
     #plt.figure(2)
     #plt.plot(weights, label = "perceptron weights")
@@ -157,7 +157,7 @@ def perceptron(train, test, learning_rate, num_epoch):
     return(predictions)
 
 def antiperceptron(train, test, learning_rate, num_epoch):
-    predictions = np.array()
+    predictions = list()
     weights = gradient_descent(train, learning_rate, num_epoch, antiperceptron = True)
     #plt.figure(2)
     #plt.plot(weights, label = "antiperceptron weights")
@@ -165,6 +165,11 @@ def antiperceptron(train, test, learning_rate, num_epoch):
         prediction = predict(row, weights)
         predictions.append(prediction)
     return(predictions)
+
+"""
+class antiperceptron:
+    def __init__(self, weights, learning_rate):
+  """     
 
 #Add Gaussian noisy data to sonar data
 #Default makes some of the mine data negative 
@@ -185,18 +190,22 @@ def noisyData(dataset, mu = 0, sigma = 0.05):
     return dataset_noisy
 
 def main():
-
-    filename='sonar(1).all-data'
+    filename='sonar1.all-data'
     dataset=load_data(filename)
-#This preps the data (makes R M numeric, for example)
+    #This preps the data (makes R M numeric, for example)
     for i in range(len(dataset[0])-1):
         str_column_to_float(dataset, i)
         str_column_to_int(dataset, len(dataset[0])-1)
-
-
+    
+    
     n_folds = 6
     l_rate = 0.01
-    n_epoch = 1
+    n_epoch = 50
+    scores = evaluate_algorithm(dataset, perceptron, n_folds, l_rate, n_epoch)
+    #antiscores = evaluate_algorithm(dataset, antiperceptron, n_folds, l_rate, n_epoch)
+    print('Scores: %s' % scores)
+    #print('Anti Scores: %s' % antiscores)
+    print('mean accuracy: %.3f%%' % (sum(scores)/float(len(scores))))
 
     
 #dataset3 = [[1,2,3,0],[4,5,6,1]]

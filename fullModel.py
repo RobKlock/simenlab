@@ -61,9 +61,9 @@ ap_train_data = dataset[ap_random_indices, :110]
 
 #test_data = np.delete(noisy_data, random_indices, 0)
 p_weights = p.gradient_descent(p_train_data, 0.1, 200)
-ap_weights = p.gradient_descent(ap_train_data, 0.1, 200, antiperceptron = True)
+ap_weights = p.gradient_descent(p_train_data, 0.1, 200, antiperceptron = True)
 
-scores = p.evaluate_algorithm(dataset, p.perceptron, 3, .01, 500)
+#scores = p.evaluate_algorithm(dataset, p.perceptron, 3, .01, 500)
 
 c_weights = np.array([[0, -.5, 0, -.5],   #1->1 2->1 3->1 4->1
                       [-.5, 0, -.5, 0],   #1->2 2->2 3->2 4->2
@@ -75,13 +75,19 @@ weights = np.array([[0,    -2,      0,     -2],  #1->1  2->1, 3->1, 4->1
                     [1.23,  0,      2.087,  0],  #1->3, 2->3, 3->3, 4->3
                     [0,     1.23,   0,      2.087]])   #1->4, 2->4, 3->4, 4->4
                 
-
   
 l = np.array([[4,4,4,4]]).T
 bias = np.array([[1,1,1,1]]).T
 
 bias = bias * 1.3
-    
+
+v4 = list()
+
+row = dataset[162,:]
+
+#Make sure the data isnt negative
+noise = np.random.rand(1, 60)
+noise = np.append(noise, row[60])
 
 def main():
     #Prove accuracy by comparing to perceptron and running over all examples 
@@ -90,13 +96,21 @@ def main():
     #for row in dataset:
     #row = dataset[162]
     v = np.array([[0,0,0,0]]).T
-    v_hist = np.array([[0, 0, 0, 0,]]).T  
+    #v_hist = np.array([[0, 0, 0, 0,]]).T  
     tau = 1
     dt = 0.05
-    
-    while (v[3][0] <= 1) and (v[2][0] <= 1) :
+    steps = 0 
+    v_hist = np.array([[0, 0, 0, 0]]).T    
+    #Repeat until the decision network makes a classification - output switch units, 
+            # *need to decide when a decision is made 
+            #Now, a decision is reached when the activation of unit 3 or 4 is >= 1.1
+    while (v[3][0] <= 1.1) and (v[2][0] <= 1.1) and (steps < 10) :
+        steps += 1 
         row = dataset[162]
-        noise = np.random.rand(1, 61)
+        #Make sure the data isnt negative
+        noise = np.random.rand(1, 60)
+        noise = np.append(noise, 0)
+        #print(noise)
         
         #Add noise to the row
         noisyRow = np.add(noise, row)
@@ -107,14 +121,23 @@ def main():
         
         #feed those values into the decision network
         activations = weights @ v 
+        print(activations)
         activations[0][0] = p_prediction + activations[0][0]
         activations[1][0] = ap_prediction + activations[1][0]
         
         activations = sigmoid(l, activations, bias)    
         v_hist = np.concatenate((v_hist,v), axis=1)
-        
+        #if (steps > 5):
+        #    print(signal.savgol_filter(v_hist[3,:], 5, 4))
+        #if (steps == 5):
+        #    print(p_prediction)
+        #    print(ap_prediction)
+        #    print(v_hist)
         dv = tau * ((-v + activations) * dt + noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) # add noise using np.random
         v = v + dv
+        
+        if (v[3][0] > 1) or (v[2][0] > 1):
+            break
         
     
     plt.figure()
@@ -129,15 +152,19 @@ def main():
     plt.grid('on')
     plt.show()
     
-    plt.figure()
-    smoothed_v4 = signal.savgol_filter(v_hist[3,:], 901, 4)
-    smoothed_v3 = signal.savgol_filter(v_hist[2,:], 901, 4)
-    plt.plot(smoothed_v4)
-    plt.plot(smoothed_v3)
-    plt.legend(["smooth v4", "smooth v3"], loc = 0)
-    plt.grid('on')
-    plt.show()
+    #plt.figure()
+    #smoothed_v4 = signal.savgol_filter(v_hist[3,:], 901, 4)
+    #smoothed_v3 = signal.savgol_filter(v_hist[2,:], 901, 4)
+    #plt.plot(smoothed_v4)
+    #plt.plot(smoothed_v3)
+    #plt.legend(["smooth v4", "smooth v3"], loc = 0)
+    #plt.grid('on')
+    #plt.show()
     
+    print(steps)
+    print(steps * 60)
+
+
                 
         #Repeat until the decision network makes a classification - output switch units, 
             # *need to decide when a decision is made 
@@ -159,7 +186,7 @@ def main():
         
     #Train the perceptron based on those decision netowrks' classifications
     #compare to perceptron using equal number of steps 
-    """
+"""
     for i in range(0, len(dataset)):
         print(p.predict(dataset[i], p_weights))
         print(p.predict(dataset[i], ap_weights))
@@ -233,6 +260,6 @@ def main():
     plt.show()
     """
     
-#main()
+
         
         

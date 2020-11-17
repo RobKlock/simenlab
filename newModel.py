@@ -58,10 +58,10 @@ data = load_data('sonar1.all-data')
 train_data = data[np.random.choice(data.shape[0], 104, replace = False), :]
 
 #Train perceptron, store weights
-p_weights = p.gradient_descent(train_data, 0.1, 600)
+p_weights = p.gradient_descent(train_data, 0.1, 100)
 
 #Train antiperceptron, store weights 
-ap_weights = p.gradient_descent(train_data, 0.1, 600, antiperceptron = True)
+ap_weights = p.gradient_descent(train_data, 0.1, 100, antiperceptron = True)
 
 weights = np.array([[0,    -2,      0,     -2],  #1->1  2->1, 3->1, 4->1
                     [-2,    0,      -2,     0],  #1->2, 2->2, 3->2, 4->2
@@ -119,28 +119,56 @@ def trial(w, p, ap, row_idx, plot = False):
         plt.plot(v_hist[3,:])
         plt.legend(["v1","v2","v3","v4"], loc=0)
         plt.ylabel("activation")
-        plt.xlabel("runs")
+        plt.xlabel("time")
         plt.grid('on')
         plt.show()
-    
+    #plot v2 - v1 
+    #will probably always reach the same level when the network makes a decision
     #Unit 3 predicts 1s (metal), unit 4 predicts 0s (rocks)
     if(v[3] >= 1):
-        return 0
+        return [0, steps]
     if(v[2] >= 1):
-        return 1
+        return [1, steps]
+  
+def evaluate_circuit(n = 208, eval_perceptron = True):
+        
+    test_idxs = np.random.choice(data.shape[0], n, replace = False)
+    correct_circuit = 0
+    accuracy_circuit = 0.0
     
-
-test_idxs = np.random.choice(data.shape[0], 208, replace = False)
-accuracy = 0.0
-correct = 0
-for i in test_idxs:
-    #print(trial(weights, p_weights, ap_weights, i, plot = False))
-    #print(data[i][-1])
-    #print()
-    if (trial(weights, p_weights, ap_weights, i, plot = False) == data[i][-1]):
-        correct += 1
-
-print( (correct / 200) * 100)
+    correct_perceptron = 0
+    accuracy_perceptron = 0.0
+    
+    for i in test_idxs:
+        #print(trial(weights, p_weights, ap_weights, i, plot = False))
+        #print(data[i][-1])
+        #print()
+        trial_result = trial(weights, p_weights, ap_weights, i, plot = False)
+        if trial_result[0] == data[i][-1]:
+            correct_circuit += 1
+        
+        if(eval_perceptron):
+            #This uses multiple noisy training rows over n epochs, should we instead train the perceptron on a single noisy row n times?
+            perceptron_training_data = data[test_idxs, :-1]
+            perceptron_noisy_data = perceptron_training_data + np.random.rand(n, 60) 
+            classes = data[[test_idxs], [-1]]
+            classes = classes.reshape(n, 1)           
+            perceptron_noisy_data = np.append(perceptron_noisy_data, classes, axis = 1)
+            
+            perceptron = p.gradient_descent(perceptron_noisy_data, 0.1, trial_result[1])
+            
+            if p.predict(data[i], perceptron):
+                correct_perceptron += 1
+    #Train perceptron on noisy data for as many epochs as it took the circuit to decide
+    #determine perceptrons accuracy 
+    
+    #print(perceptron)
+    accuracy_circuit = (correct_circuit / n) * 100
+    accuracy_perceptron = (correct_perceptron / n) * 100
+    print("circuit accuracy: ", accuracy_circuit)
+    print("perceptron accuracy:", accuracy_perceptron)
+    
+    
 
 #to do: make sure perceptron/v1/return val are all lined up for a given classification
 #compare against a perceptron trained w the same amount of trials on noisy data

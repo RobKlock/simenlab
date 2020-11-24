@@ -33,7 +33,7 @@ def str_column_to_float(dataset, column):
         if(row[column] == 'R'):
             row[column] = 1
         if(row[column] == 'M'):
-            row[column] = 0
+            row[column] = -1
         else:
             row[column] = float(row[column])
 
@@ -110,7 +110,24 @@ def predict(row, weights):
     #    return 1
     #else: 
     #    return 0
-    return  (1 / (1 + math.exp(-activation)))
+    if (activation > 0):
+        return 1
+    if (activation < 0):
+        return -1
+    else:
+        return 0 
+    #return  (1 / (1 + math.exp(-activation)))
+
+def weightedSum(row, weights):
+    activation = weights[0]
+    for i in range(len(row)-1):
+        activation += weights[i + 1] * row[i]
+        
+def ap_predict(row,weights):
+    activation = weights[0]
+    for i in range(len(row)-1):
+        activation += weights[i + 1] * row[i]
+    return (1 / (1 + math.exp(activation)))
 
 def process(datum, index, weights):
     activation = weights[0]
@@ -131,10 +148,10 @@ def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = F
             #calculate error
             #adjust here to make anti-perceptron (1 - row[-1])
             #error = (1 - row[-1]) - prediction
-            if not antiperceptron:
-                error = row[-1] - prediction
-            else:
-                error = (1 - row[-1] - prediction)
+            #if not antiperceptron:
+            error = row[-1] - prediction
+            #else:
+            #    error = (1 - row[-1] - prediction)
            
             #error = row[-1] - prediction if not antiperceptron else (1 - row[-1]) - prediction
             #sum and square error

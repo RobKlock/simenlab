@@ -79,10 +79,10 @@ def perceptron_accuracy(weights):
 #Train antiperceptron, store weights 
 ap_weights = p.gradient_descent(train_data, 0.8, 700, antiperceptron = True)
 
-weights = np.array([[0,    -2,      0,     -2],        #1->1  2->1, 3->1, 4->1
-                    [-2,    0,      -2,     0],        #1->2, 2->2, 3->2, 4->2
-                    [1.23,  0,      2.087,  0],        #1->3, 2->3, 3->3, 4->3
-                    [0,     1.23,   0,      2.087]])   #1->4, 2->4, 3->4, 4->4
+weights = np.array([[0,    -1,      0,     -1],        #1->1  2->1, 3->1, 4->1
+                    [-1,    0,      -1,     0],        #1->2, 2->2, 3->2, 4->2
+                    [1.23,  0,      2,  0],            #1->3, 2->3, 3->3, 4->3
+                    [0,     1.23,   0,      2]])       #1->4, 2->4, 3->4, 4->4
 #To help tune up, run a version with just linear v1 and v2 
 #Then, plot the difference, gather some info to guide the weights for the nonlinear model
     
@@ -94,8 +94,8 @@ def trial(w, p, ap, row_idx, plot = False):
     weights = w
     p_weights = p
     ap_weights = ap
-    internal_noise = 0
-    sensor_noise = 0
+    internal_noise = 0.1
+    sensor_noise = 0.01
     decision_threshold = 0.85
     v_hist = np.array([[0, 0, 0, 0]]).T    
     v = np.array([[0, 0, 0, 0]]).T              # values for each neuron

@@ -55,19 +55,26 @@ data = load_data('sonar1.all-data')
 
 #Get training samples 
 train_data = data[np.random.choice(data.shape[0], 154, replace = False), :]
+train_data2 = data[np.random.choice(data.shape[0], 154, replace = False), :]
 
 #Train perceptron, store weights
-p_weights = p.gradient_descent(train_data, 0.8, 700)
+p_weights = p.gradient_descent(train_data, 0.15, 600)
 
-def perceptron_accuracy(weights):
+def perceptron_accuracy(weights, ap=False):
     accuracy = 0
     right = 0
     for i in range (0,208):
         v = p.predict(data[i], weights)
-        if v > .9:
-            v = 1
-        if v < .1:
-            v = 0
+        if not ap:
+            if v >= .5:
+                v = 1
+            if v < .5:
+                v = 0
+        else:
+            if v < .5:
+                v = 1
+            if v >= .5:
+                v = 0
             
         if v == data[i][-1]:
             right += 1
@@ -77,7 +84,7 @@ def perceptron_accuracy(weights):
         
 
 #Train antiperceptron, store weights 
-ap_weights = p.gradient_descent(train_data, 0.8, 700, antiperceptron = True)
+ap_weights = p.gradient_descent(train_data2, 0.15, 600, antiperceptron = True)
 
 weights = np.array([[0,    -1,      0,     -1],        #1->1  2->1, 3->1, 4->1
                     [-1,    0,      -1,     0],        #1->2, 2->2, 3->2, 4->2
@@ -87,6 +94,14 @@ weights = np.array([[0,    -1,      0,     -1],        #1->1  2->1, 3->1, 4->1
 #Then, plot the difference, gather some info to guide the weights for the nonlinear model
     
 #For a row n in the dataset
+def perceptronval():
+    for i in range(0,10):
+        print("hi")
+        pp = p.gradient_descent(train_data, (0.2 - (0.07 * i)), 700)
+        print(perceptron_accuracy(pp))
+        print(pp)
+    
+    
 def trial(w, p, ap, row_idx, plot = False):
     steps = 0 
     tau = 1

@@ -76,7 +76,31 @@ train_data = data[np.random.choice(data.shape[0], 150, replace = True), :]
 #train_data2 = data[np.random.choice(data.shape[0], 154, replace = False), :]
 
 #Train perceptron, store weights
-p_weights = p.gradient_descent(train_data, 0.01, 600)
+#p_weights = p.gradient_descent(train_data, 0.01, 600)
+#ap_weights = p.gradient_descent(train_data, 0.01, 600, antiperceptron = True)
+ap_weights = [-0.55629858,  0.89203385,  0.34666907, -0.44980223,  1.04757964,  0.53757167,
+ -0.40469565, -0.8770542,  -1.3698451,   0.21673824,  0.16285401,  0.63985225,
+  1.15393013, -0.80287275, -0.02125667,  0.63025255, -0.36644349,  0.11719943,
+  0.10822826, -0.146744,    0.15896858, -0.10971499, -0.04627238,  0.08041704,
+  0.27218873,  0.00867797, -0.13303348,  0.40030014, -0.3146386,  -0.05086975,
+  0.65502934, -1.0231504,   0.43352633, -0.11903075,  0.01172933,  0.57977145,
+ -0.79967504, -0.04192846, -0.05788221,  0.49054684, -0.57015977, -0.05814346,
+  0.11253256, -0.26984774,  0.54954347,  0.32377145,  0.74961652,  0.39953977,
+  0.5553721,  0.79020755,  0.30655165,  0.95602438,  0.10446539,  0.99808969,
+  0.62234621,  0.21749132,  0.345626,    0.37328169,  0.48229927,  0.34150254,
+  1.04644338]
+
+p_weights = [-0.63897646,  1.09027996,  0.34646709,  0.1475366,   1.01410323,  0.89952895,
+ -0.26712263, -1.21081811, -1.37623193,  0.09015325,  0.51102436,  0.34460315,
+  1.53888821, -0.8678522,  -0.02108026,  0.54521655, -0.34774585, -0.09213376,
+  0.17390629, -0.01536699,  0.04724411, -0.17511715,  0.05874916,  0.09373373,
+  0.40385953,  0.06484327, -0.24359018,  0.26701159, -0.16490651, -0.16433179,
+  0.86997347, -1.19003227,  0.41320448,  0.03572006, -0.18799232,  0.70799011,
+ -1.11672811,  0.1705176,   0.08703748,  0.3178289,  -0.22117712, -0.27985384,
+  0.01723773, -0.23000926,  0.25787121,  0.73192611,  0.35189154,  0.76189306,
+  0.82800486,  0.5832401,   0.22255531,  0.30426262,  0.87100904,  1.00269823,
+  1.30043951,  0.42935945,  0.32885754,  0.58875139,  0.93616921,  0.71843587,
+  1.04689243]
 
 def perceptron_accuracy(weights, ap=False):
     accuracy = 0
@@ -103,7 +127,7 @@ def perceptron_accuracy(weights, ap=False):
         
 
 #Train antiperceptron, store weights 
-ap_weights = p.gradient_descent(train_data, 0.01, 600, antiperceptron = True)
+
 
 weights = np.array([[0,    -1,      0,     -1],        #1->1  2->1, 3->1, 4->1
                     [-1,    0,      -1,     0],        #1->2, 2->2, 3->2, 4->2
@@ -128,9 +152,9 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False
     weights = w
     p_weights = p
     ap_weights = ap
-    internal_noise = 0.0
-    sensor_noise = 0.01
-    decision_threshold = 0.85
+    internal_noise = 0.2
+    sensor_noise = 0.04
+    decision_threshold = 1
     v_hist = np.array([[0, 0, 0, 0]]).T    
     v = np.array([[0, 0, 0, 0]]).T              # values for each neuron
     p_hist = np.array([0])
@@ -139,7 +163,7 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False
     l = np.array([[4, 4, 4, 4]]).T                  #steepness of activation fxn
     bias = np.array([[1, 1, 1, 1]]).T 
     #bias is responsible for increasing the amount of input a neuron needs/doesnt need to activate 
-    bias = bias * 1.23
+    bias = bias * 1.5
     sig_idx= [0,1,2,3]
     #Repeatedly have perceptron and AP classify row, feed into circuit
     #until the circuit makes a classification (v3 or v4 is > 1)
@@ -163,7 +187,7 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False
         activations = weights @ v    #weighted sum of activations, inputs to each unit
         activations[0] = p_classification + activations[0] #previously self_input[0] + stiulus
         activations[1] = ap_classification + activations[1] #previously self_input[1] + stimulus
-        activations = sigmoid(l, activations, bias, sig_idx)
+        #activations = sigmoid(l, activations, bias, sig_idx)
         dv = tau * ((-v + activations) * dt + internal_noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) # add noise using np.random
         v = v + dv
         
@@ -184,6 +208,7 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False
         plt.ylabel("activation")
         plt.xlabel("time")
         plt.grid('on')
+        plt.title("Units 1-4 Activations")
         plt.show()
         
         #Historical classifcation of the noisy data by p and ap
@@ -192,6 +217,7 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False
         plt.plot(p_hist)
         plt.plot(ap_hist)
         plt.legend(["p classification", "ap classification"], loc=0)
+        plt.title("Perceptron and Antiperceptron Activations")
         plt.show()
                 
         plt.figure()
@@ -199,6 +225,7 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False
         plt.ylabel("v1 v2 difference")
         plt.xlabel("time")
         plt.grid('on')
+        plt.title("V1 V2 Difference (Drift Diffusion)")
         plt.show()
     
     #plot v2 - v1 
@@ -206,11 +233,11 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False
     #Unit 3 predicts 1s (metal), unit 4 predicts 0s (rocks)
     
     if(v[3] >= decision_threshold):
-        return [0, steps]
+        return [-1, steps]
     if(v[2] >= decision_threshold):
         return [1, steps]
-    else:
-        return [-1 , 1000]
+    #else:
+    #    return [-1 , 1000]
     #Plot out a bunch of examples and superimpose them
     #The circuit should be classifying things perfectly 
 def evaluate_circuit(n = 208, eval_perceptron = True):

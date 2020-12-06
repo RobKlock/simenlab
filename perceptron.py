@@ -107,15 +107,16 @@ def predict(row, weights):
     for i in range(len(row)-1):
         activation += weights[i + 1] * row[i]
     #if (1/(1 + math.exp(-activation))) >= .5:
-    #    return 1
-    #else: 
-    #    return 0
-    if (activation > 0):
+    if activation > 0:
         return 1
-    if (activation < 0):
+    else: 
         return -1
-    else:
-        return 0 
+    #if (activation > 0):
+    #    return 1
+    #if (activation < 0):
+    #    return 0
+    #else:
+    #    return 0 
     #return  (1 / (1 + math.exp(-activation)))
 
 def weightedSum(row, weights):
@@ -138,10 +139,11 @@ def process(datum, index, weights):
 def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = False, plot = False):
     #outputs a set of trained weights
     #initialize each weight to zero, bias is first index
-    weights = np.zeros(len(training_data[0]))
+    weights = np.random.rand(len(training_data[0]))
     error_arr = np.array([])
     for epoch in range(num_epoch):
         sum_error = 0.0
+        #learning_rate = ((num_epoch/100) - epoch) * learning_rate
         for row in training_data:
             #make a prediction with the given weights
             prediction = predict(row, weights)
@@ -156,6 +158,8 @@ def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = F
             #error = row[-1] - prediction if not antiperceptron else (1 - row[-1]) - prediction
             #sum and square error
             sum_error += error**2
+            
+            
             #update bias
             weights[0] = weights[0] + learning_rate * error
             for i in range(len(row)-1):

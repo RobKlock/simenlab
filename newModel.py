@@ -37,12 +37,19 @@ def load_data(filename):
     data = np.array(dataset)
     return data
 
-def predict(row, weights):
+def predict(row, weights, piecewise = False, unbounded = False, sigmoid = False):
     activation = weights[0]
     for i in range(len(row)-1):
         activation += weights[i + 1] * row[i]
-    #return activation
-    return  (1 / (1 + math.exp(-activation)))
+    if piecewise:
+        if activation > 0:
+            return 1
+        else:
+            return -1
+    if unbounded:
+        return activation
+    if sigmoid:
+        return  (1 / (1 + math.exp(-activation)))
 
 def ap_predict(row,weights):
     activation = weights[0]
@@ -59,18 +66,23 @@ def sigmoid(l, total_input, b, sig_idx):
 #M = 1, R = 0
 data = load_data('sonar1.all-data')
 
+
 #Get training samples 
-train_data = data[np.random.choice(data.shape[0], 154, replace = False), :]
+train_data = data[np.random.choice(data.shape[0], 150, replace = True), :]
+#rng = np.random.default_rng()
+
+#train_data = rng.shuffle(data)
+
 #train_data2 = data[np.random.choice(data.shape[0], 154, replace = False), :]
 
 #Train perceptron, store weights
-p_weights = p.gradient_descent(train_data, 0.07, 600)
+p_weights = p.gradient_descent(train_data, 0.01, 600)
 
 def perceptron_accuracy(weights, ap=False):
     accuracy = 0
     right = 0
     for i in range (0,208):
-        v = p.predict(data[i], weights)
+        v = predict(data[i], weights, piecewise = True, )
         """
         if not ap:
             if v >= .5:
@@ -91,7 +103,7 @@ def perceptron_accuracy(weights, ap=False):
         
 
 #Train antiperceptron, store weights 
-ap_weights = p.gradient_descent(train_data, 0.07, 600, antiperceptron = True)
+ap_weights = p.gradient_descent(train_data, 0.01, 600, antiperceptron = True)
 
 weights = np.array([[0,    -1,      0,     -1],        #1->1  2->1, 3->1, 4->1
                     [-1,    0,      -1,     0],        #1->2, 2->2, 3->2, 4->2
@@ -104,19 +116,19 @@ weights = np.array([[0,    -1,      0,     -1],        #1->1  2->1, 3->1, 4->1
 def perceptronval():
     for i in range(0,10):
     
-        pp = p.gradient_descent(train_data, (0.2 - (0.07 * i)), 700)
+        pp = p.gradient_descent(train_data, (0.2 - (0.15 * i)), 700)
         print(perceptron_accuracy(pp))
         print(pp)
     
     
-def trial(w, p, ap, row_idx, plot = False):
+def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False):
     steps = 0 
     tau = 1
     dt = 0.05
     weights = w
     p_weights = p
     ap_weights = ap
-    internal_noise = 0.1
+    internal_noise = 0.0
     sensor_noise = 0.01
     decision_threshold = 0.85
     v_hist = np.array([[0, 0, 0, 0]]).T    
@@ -139,12 +151,12 @@ def trial(w, p, ap, row_idx, plot = False):
         noisyRow = np.add(nn, row)
         #noisyData = np.vstack((noisyData, noisyRow))
         #P is HIGH for 1s
-        p_classification = predict(noisyRow, p_weights) * perceptron_activation_scalar
+        p_classification = predict(noisyRow, p_weights, piecewise = True) * perceptron_activation_scalar
         #Histogram of response times 
         
         #AP is HIGH for 0s
         #ap_classification = 1 - ap_predict(noisyRow, p_weights) * perceptron_activation_scalar
-        ap_classification = predict(noisyRow, ap_weights) * perceptron_activation_scalar
+        ap_classification = predict(noisyRow, ap_weights, piecewise = True) * perceptron_activation_scalar
         steps += 1 
         
         
@@ -174,9 +186,12 @@ def trial(w, p, ap, row_idx, plot = False):
         plt.grid('on')
         plt.show()
         
+        #Historical classifcation of the noisy data by p and ap
         plt.figure()
+    
         plt.plot(p_hist)
         plt.plot(ap_hist)
+        plt.legend(["p classification", "ap classification"], loc=0)
         plt.show()
                 
         plt.figure()

@@ -37,15 +37,23 @@ def load_data(filename):
     data = np.array(dataset)
     return data
 
-def predict(row, weights, piecewise = False, unbounded = False, sigmoid = False):
+def predict(row, weights, piecewise = False, unbounded = False, sigmoid = False, ap = False):
     activation = weights[0]
     for i in range(len(row)-1):
         activation += weights[i + 1] * row[i]
     if piecewise:
-        if activation > 0:
-            return 1
+        if ap:
+            #return activation
+            if activation < -0.5:
+                return 1
+            else:
+                return 0
         else:
-            return -1
+            #return activation
+            if activation > 0.5:
+                return 1
+            else:   
+                return 0
     if unbounded:
         return activation
     if sigmoid:
@@ -78,29 +86,42 @@ train_data = data[np.random.choice(data.shape[0], 150, replace = True), :]
 #Train perceptron, store weights
 #p_weights = p.gradient_descent(train_data, 0.01, 600)
 #ap_weights = p.gradient_descent(train_data, 0.01, 600, antiperceptron = True)
-ap_weights = [-0.55629858,  0.89203385,  0.34666907, -0.44980223,  1.04757964,  0.53757167,
- -0.40469565, -0.8770542,  -1.3698451,   0.21673824,  0.16285401,  0.63985225,
-  1.15393013, -0.80287275, -0.02125667,  0.63025255, -0.36644349,  0.11719943,
-  0.10822826, -0.146744,    0.15896858, -0.10971499, -0.04627238,  0.08041704,
-  0.27218873,  0.00867797, -0.13303348,  0.40030014, -0.3146386,  -0.05086975,
-  0.65502934, -1.0231504,   0.43352633, -0.11903075,  0.01172933,  0.57977145,
- -0.79967504, -0.04192846, -0.05788221,  0.49054684, -0.57015977, -0.05814346,
-  0.11253256, -0.26984774,  0.54954347,  0.32377145,  0.74961652,  0.39953977,
-  0.5553721,  0.79020755,  0.30655165,  0.95602438,  0.10446539,  0.99808969,
-  0.62234621,  0.21749132,  0.345626,    0.37328169,  0.48229927,  0.34150254,
-  1.04644338]
+#ap_weights = [-0.55629858,  0.89203385,  0.34666907, -0.44980223,  1.04757964,  0.53757167,
+# -0.40469565, -0.8770542,  -1.3698451,   0.21673824,  0.16285401,  0.63985225,
+#  1.15393013, -0.80287275, -0.02125667,  0.63025255, -0.36644349,  0.11719943,
+#  0.10822826, -0.146744,    0.15896858, -0.10971499, -0.04627238,  0.08041704,
+#  0.27218873,  0.00867797, -0.13303348,  0.40030014, -0.3146386,  -0.05086975,
+#  0.65502934, -1.0231504,   0.43352633, -0.11903075,  0.01172933,  0.57977145,
+# -0.79967504, -0.04192846, -0.05788221,  0.49054684, -0.57015977, -0.05814346,
+#  0.11253256, -0.26984774,  0.54954347,  0.32377145,  0.74961652,  0.39953977,
+#  0.5553721,  0.79020755,  0.30655165,  0.95602438,  0.10446539,  0.99808969,
+#  0.62234621,  0.21749132,  0.345626,    0.37328169,  0.48229927,  0.34150254,
+#  1.04644338]
+ap_weights = [ -0.33,       -0.019774,   -.027099,   -0.044141,   -0.08618,    -0.033431,
+ 0.0061105,  -0.0346125,  -0.0544955,  -0.0236925,  -0.0355805,  -0.1077745,
+  -0.109684,   -0.0421365, 0.002039,  0.0857735, 0.048519,  0.00991,
+  -0.027473,   -0.002009,  0.012095,   -0.053062,   -0.024014,   -0.08682,
+  -0.036538,  0.0733745, 0.0986845,  -0.0095075,  -0.078641,  0.0389175,
+  -0.0130335,  -0.0022795,  -0.117009,   -0.0269505, 0.0625085, 0.036384,
+ 0.0407765, 0.062081,   -0.118647,   -0.075233,  0.017397,   -0.0302475,
+  -0.0456765,  -0.042965,   -0.072804,   -0.043611, 0.0191205,  -0.03065,
+  -0.053188,   -0.0262975,  -0.0054895,  -0.01852,    -0.014349,   -0.015545,
+  -0.00592,    -0.002709,   -0.006073,   -0.009757,   -0.007356,   -0.011061,
+  -0.007584 ]
 
-p_weights = [-0.63897646,  1.09027996,  0.34646709,  0.1475366,   1.01410323,  0.89952895,
- -0.26712263, -1.21081811, -1.37623193,  0.09015325,  0.51102436,  0.34460315,
-  1.53888821, -0.8678522,  -0.02108026,  0.54521655, -0.34774585, -0.09213376,
-  0.17390629, -0.01536699,  0.04724411, -0.17511715,  0.05874916,  0.09373373,
-  0.40385953,  0.06484327, -0.24359018,  0.26701159, -0.16490651, -0.16433179,
-  0.86997347, -1.19003227,  0.41320448,  0.03572006, -0.18799232,  0.70799011,
- -1.11672811,  0.1705176,   0.08703748,  0.3178289,  -0.22117712, -0.27985384,
-  0.01723773, -0.23000926,  0.25787121,  0.73192611,  0.35189154,  0.76189306,
-  0.82800486,  0.5832401,   0.22255531,  0.30426262,  0.87100904,  1.00269823,
-  1.30043951,  0.42935945,  0.32885754,  0.58875139,  0.93616921,  0.71843587,
-  1.04689243]
+p_weights = [ 0.33,       0.019774,   0.027099,   0.044141,   0.08618,    0.033431,
+ -0.0061105,  0.0346125,  0.0544955,  0.0236925,  0.0355805,  0.1077745,
+  0.109684,   0.0421365, -0.002039,  -0.0857735, -0.048519,  -0.00991,
+  0.027473,   0.002009,  -0.012095,   0.053062,   0.024014,   0.08682,
+  0.036538,  -0.0733745, -0.0986845,  0.0095075,  0.078641,  -0.0389175,
+  0.0130335,  0.0022795,  0.117009,   0.0269505, -0.0625085, -0.036384,
+ -0.0407765, -0.062081,   0.118647,   0.075233,  -0.017397,   0.0302475,
+  0.0456765,  0.042965,   0.072804,   0.043611,  -0.0191205,  0.03065,
+  0.053188,   0.0262975,  0.0054895,  0.01852,    0.014349,   0.015545,
+  0.00592,    0.002709,   0.006073,   0.009757,   0.007356,   0.011061,
+  0.007584 ]
+
+#ap_weights = p_weights @ -1 
 
 def perceptron_accuracy(weights, ap=False):
     accuracy = 0
@@ -129,10 +150,10 @@ def perceptron_accuracy(weights, ap=False):
 #Train antiperceptron, store weights 
 
 
-weights = np.array([[0,    -1,      0,     -1],        #1->1  2->1, 3->1, 4->1
-                    [-1,    0,      -1,     0],        #1->2, 2->2, 3->2, 4->2
-                    [1.23,  0,      2,  0],            #1->3, 2->3, 3->3, 4->3
-                    [0,     1.23,   0,      2]])       #1->4, 2->4, 3->4, 4->4
+weights = np.array([[0,    -2,      0,     -2],        #1->1  2->1, 3->1, 4->1
+                    [-2,    0,      -2,     0],        #1->2, 2->2, 3->2, 4->2
+                    [1.23,  0,      2.087,  0],            #1->3, 2->3, 3->3, 4->3
+                    [0,     1.23,   0,      2.087]])       #1->4, 2->4, 3->4, 4->4
 #To help tune up, run a version with just linear v1 and v2 
 #Then, plot the difference, gather some info to guide the weights for the nonlinear model
     
@@ -148,29 +169,30 @@ def perceptronval():
 def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False):
     steps = 0 
     tau = 1
-    dt = 0.05
+    dt = 0.01
     weights = w
     p_weights = p
     ap_weights = ap
     internal_noise = 0.2
-    sensor_noise = 0.04
+    sensor_noise = 0.2
     decision_threshold = 1
     v_hist = np.array([[0, 0, 0, 0]]).T    
     v = np.array([[0, 0, 0, 0]]).T              # values for each neuron
     p_hist = np.array([0])
     ap_hist = np.array([0])
-    perceptron_activation_scalar = 1
+    perceptron_activation_scalar = .8
     l = np.array([[4, 4, 4, 4]]).T                  #steepness of activation fxn
     bias = np.array([[1, 1, 1, 1]]).T 
     #bias is responsible for increasing the amount of input a neuron needs/doesnt need to activate 
-    bias = bias * 1.5
+    bias = bias * 1.1
     sig_idx= [0,1,2,3]
     #Repeatedly have perceptron and AP classify row, feed into circuit
     #until the circuit makes a classification (v3 or v4 is > 1)
     while (v[3] < decision_threshold) and (v[2] < decision_threshold):
         row = data[row_idx]
         #Make sure the data isnt negative
-        nn = np.random.rand(1, 60) * sensor_noise
+        nn = np.random.normal(0, .1, (1, 60)) * sensor_noise
+        
         nn = np.append(nn, data[row_idx][-1])
         noisyRow = np.add(nn, row)
         #noisyData = np.vstack((noisyData, noisyRow))
@@ -180,7 +202,7 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False
         
         #AP is HIGH for 0s
         #ap_classification = 1 - ap_predict(noisyRow, p_weights) * perceptron_activation_scalar
-        ap_classification = predict(noisyRow, ap_weights, piecewise = True) * perceptron_activation_scalar
+        ap_classification = predict(noisyRow, ap_weights, piecewise = True, ap = True) * perceptron_activation_scalar
         steps += 1 
         
         
@@ -194,8 +216,8 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False
         v_hist = np.concatenate((v_hist,v), axis=1)
         p_hist = np.append(p_hist, p_classification)
         ap_hist = np.append(ap_hist, ap_classification)
-        if (steps > 2000):
-            break
+        #if (steps > 2000):
+        #    break
             
     #The issue was there were two variables named noise, one for adding noise to the row and one for noise in dv
     if plot:
@@ -233,9 +255,9 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False
     #Unit 3 predicts 1s (metal), unit 4 predicts 0s (rocks)
     
     if(v[3] >= decision_threshold):
-        return [-1, steps]
-    if(v[2] >= decision_threshold):
         return [1, steps]
+    if(v[2] >= decision_threshold):
+        return [-1, steps]
     #else:
     #    return [-1 , 1000]
     #Plot out a bunch of examples and superimpose them
@@ -248,7 +270,7 @@ def evaluate_circuit(n = 208, eval_perceptron = True):
     
     correct_perceptron = 0
     accuracy_perceptron = 0.0
-    
+    #test_idxs = 208
     for i in test_idxs:
         #print(trial(weights, p_weights, ap_weights, i, plot = False))
         #print(data[i][-1])

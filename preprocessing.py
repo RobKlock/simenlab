@@ -41,7 +41,7 @@ def perceptron_accuracy(weights, ap=False):
         if not ap:
             v = p.predict(data[i], weights = weights)
         else:
-            v = -1 * p.preict(data[i], weights = weights)
+            v = p.predict(data[i], weights = weights, ap = True)
         """
         if not ap:
             if v >= .5:
@@ -53,9 +53,13 @@ def perceptron_accuracy(weights, ap=False):
                 v = 1
             if v >= .5:
                 v = 0
-        """   
-        if v == data[i][-1]:
-            right += 1
+        """  
+        if not ap:
+            if v == data[i][-1]:
+                right += 1
+        else:
+            if v != data[i][-1]:
+                right += 1
     
     accuracy = (right / 208) * 100
     return accuracy 
@@ -80,13 +84,13 @@ np.random.shuffle(train_data)
     #train_data2 = data[np.random.choice(data.shape[0], 154, replace = False), :]
     
     #Train perceptron, store weights
-p_weights = p.gradient_descent(train_data, 0.005, 900)
-#ap_weights = [i * -1 for i in p_weights]
+#p_weights = p.gradient_descent(train_data, 0.005, 900)
+ap_weights = p.gradient_descent(train_data, 0.005, 900, antiperceptron = True)
 #p.gradient_descent(train_data, 0.005, 900, antiperceptron = True)
-#print(ap_weights)
-#print(perceptron_accuracy(ap_weights))
-print(p_weights)
-print(perceptron_accuracy(p_weights))
+print(ap_weights)
+print(perceptron_accuracy(ap_weights, ap = True))
+#print(p_weights)
+#print(perceptron_accuracy(p_weights))
 #print(ap_weights)
    
 #return(ap_weights)

@@ -102,15 +102,21 @@ def evaluate_algorithm(dataset, algorithm, n_folds, *args):
         scores.append(accuracy)
     return scores
 
-def predict(row, weights):
+def predict(row, weights, ap=False):
     activation = weights[0]
     for i in range(len(row)-1):
         activation += weights[i + 1] * row[i]
     #if (1/(1 + math.exp(-activation))) >= .5:
-    if activation > 0.5:
-        return  1
-    else: 
-        return 0
+    if not ap:
+        if activation > 0.5:
+            return  1
+        else: 
+            return 0
+    else:
+        if activation > 0.5:
+            return 1
+        else:
+            return 0
     #if (activation > 0):
     #    return 1
     #if (activation < 0):
@@ -154,7 +160,8 @@ def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = F
             if not antiperceptron:
                 error = row[-1] - prediction
             else:
-                error = -1 * row[-1] - prediction
+                error = (-1 * (row[-1] - 1)) - prediction
+                #error = (row[-1] - prediction) * -1 
            
             #error = row[-1] - prediction if not antiperceptron else (1 - row[-1]) - prediction
             #sum and square error
@@ -163,7 +170,7 @@ def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = F
             
             #update bias
             weights[0] = weights[0] + learning_rate * error
-            for i in range(len(row)-1):
+            for i in range(len(row) - 1):
                 #update weights according to weight_i = weight_i + (learning_rate*error*input)
                 weights[i + 1] = weights[i + 1] + learning_rate * error * row[i]
         np.append(error_arr, sum_error)

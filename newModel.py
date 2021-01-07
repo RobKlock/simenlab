@@ -64,16 +64,18 @@ def p_predict(row, weights, ap=False):
     for i in range(len(row)-1):
         activation += weights[i + 1] * row[i]
     #if (1/(1 + math.exp(-activation))) >= .5:
+    return activation
+    
     if not ap:
         if activation > 0.5:
             return  1
         else: 
-            return -1
+            return 0
     else:
         if activation > 0.5:
             return 1
         else:
-            return -1
+            return 0
 
 def ap_predict(row,weights):
     activation = weights[0]
@@ -83,6 +85,7 @@ def ap_predict(row,weights):
 
 def sigmoid(l, total_input, b, sig_idx):
     #squashes all input values to a range (0,1)
+    
     f = 1/ (1 + np.exp(-l[sig_idx] * (total_input - b[sig_idx])))
     #sig_index is the index of the activcation function we want   
     return f
@@ -165,9 +168,9 @@ def perceptron_accuracy(weights, ap=False):
 
 #Train antiperceptron, store weights 
 
-
-weights = np.array([[0,    -2,      0,     -2],        #1->1  2->1, 3->1, 4->1
-                    [-2,    0,      -2,     0],        #1->2, 2->2, 3->2, 4->2
+#Linear growth - lateral inhibition of -.8
+weights = np.array([[0,    -5,      0,     0],        #1->1  2->1, 3->1, 4->1 Changed 4->1 and 3->2 to 0 on 12/15
+                    [-5,    0,      0,     0],        #1->2, 2->2, 3->2, 4->2
                     [1.23,  0,      2.087,  0],            #1->3, 2->3, 3->3, 4->3
                     [0,     1.23,   0,      2.087]])       #1->4, 2->4, 3->4, 4->4
 #To help tune up, run a version with just linear v1 and v2 
@@ -182,100 +185,108 @@ def perceptronval():
         print(pp)
     
     
-def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 8, plot = False):
-    steps = 0 
-    tau = 1
-    dt = 0.01
-    weights = w
-    p_weights = p
-    ap_weights = ap
-    internal_noise = 0.2
-    sensor_noise = 0.2
-    decision_threshold = 1
-    v_hist = np.array([[0, 0, 0, 0]]).T    
-    v = np.array([[0, 0, 0, 0]]).T              # values for each neuron
-    p_hist = np.array([0])
-    ap_hist = np.array([0])
-    perceptron_activation_scalar = .8
-    l = np.array([[4, 4, 4, 4]]).T                  #steepness of activation fxn
-    bias = np.array([[1, 1, 1, 1]]).T 
-    #bias is responsible for increasing the amount of input a neuron needs/doesnt need to activate 
-    bias = bias * 1.1
-    sig_idx= [0,1,2,3]
-    #Repeatedly have perceptron and AP classify row, feed into circuit
-    #until the circuit makes a classification (v3 or v4 is > 1)
-    while (v[3] < decision_threshold) and (v[2] < decision_threshold):
-        row = data[row_idx]
-        #Make sure the data isnt negative
-        nn = np.random.normal(0, .1, (1, 60)) * sensor_noise
-        
-        nn = np.append(nn, data[row_idx][-1])
-        noisyRow = np.add(nn, row)
-        #noisyData = np.vstack((noisyData, noisyRow))
-        #P is HIGH for 1s
-        #p_classification = predict(noisyRow, p_weights, piecewise = True) * perceptron_activation_scalar
-        p_classification = p_predict(noisyRow, p_weights) * perceptron_activation_scalar
-        #Histogram of response times 
-        
-        #AP is HIGH for 0s
-        #ap_classification = 1 - ap_predict(noisyRow, p_weights) * perceptron_activation_scalar
-        #ap_classification = predict(noisyRow, ap_weights, piecewise = True, ap = True) * perceptron_activation_scalar
-        ap_classification = p_predict(noisyRow, ap_weights, ap=True) * perceptron_activation_scalar
-        steps += 1 
-        
-        
-        activations = weights @ v    #weighted sum of activations, inputs to each unit
-        activations[0] = p_classification + activations[0] #previously self_input[0] + stiulus
-        activations[1] = ap_classification + activations[1] #previously self_input[1] + stimulus
-        #activations = sigmoid(l, activations, bias, sig_idx)
-        dv = tau * ((-v + activations) * dt + internal_noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) # add noise using np.random
-        v = v + dv
-        
-        v_hist = np.concatenate((v_hist,v), axis=1)
-        p_hist = np.append(p_hist, p_classification)
-        ap_hist = np.append(ap_hist, ap_classification)
-        #if (steps > 2000):
-        #    break
+def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 9, plot = False, num = 6):
+     for i in range (0, num): 
+        steps = 0 
+        tau = 1
+        dt = 0.01
+        weights = w
+        p_weights = p
+        ap_weights = ap
+        internal_noise = 0.05
+        sensor_noise = 0.05
+        decision_threshold = 50
+        v_hist = np.array([[0, 0, 0, 0]]).T    
+        v = np.array([[0, 0, 0, 0]]).T              # values for each neuron
+        p_hist = np.array([0])
+        ap_hist = np.array([0])
+        perceptron_activation_scalar = 1.3 #prev .8
+        l = np.array([[4, 4, 4, 4]]).T                  #steepness of activation fxn
+        bias = np.array([[1, 1, 1, 1]]).T 
+        #bias is responsible for increasing the amount of input a neuron needs/doesnt need to activate 
+        bias = bias * 1.1
+        sig_idx= [2,3]
+        #Repeatedly have perceptron and AP classify row, feed into circuit
+        #until the circuit makes a classification (v3 or v4 is > 1)
+        while (v[3] < decision_threshold) and (v[2] < decision_threshold):
+            row = data[row_idx + num]
+            #Make sure the data isnt negative
+            nn = np.random.normal(0, .1, (1, 60)) * sensor_noise
             
-    #The issue was there were two variables named noise, one for adding noise to the row and one for noise in dv
-    if plot:
-        plt.figure()
-        plt.plot(v_hist[0,:]) 
-        plt.plot(v_hist[1,:])
-        plt.plot(v_hist[2,:])
-        plt.plot(v_hist[3,:])
-        plt.legend(["v1","v2","v3","v4"], loc=0)
-        plt.ylabel("activation")
-        plt.xlabel("time")
-        plt.grid('on')
-        plt.title("Units 1-4 Activations")
-        plt.show()
-        
-        #Historical classifcation of the noisy data by p and ap
-        plt.figure()
-    
-        plt.plot(p_hist)
-        plt.plot(ap_hist)
-        plt.legend(["p classification", "ap classification"], loc=0)
-        plt.title("Perceptron and Antiperceptron Activations")
-        plt.show()
+            nn = np.append(nn, data[row_idx][-1])
+            noisyRow = np.add(nn, row)
+            #noisyData = np.vstack((noisyData, noisyRow))
+            #P is HIGH for 1s
+            #p_classification = predict(noisyRow, p_weights, piecewise = True) * perceptron_activation_scalar
+            p_classification = p_predict(noisyRow, p_weights) * perceptron_activation_scalar + .5 #prev 1
+            #Histogram of response times 
+            
+            #AP is HIGH for 0s
+            #ap_classification = 1 - ap_predict(noisyRow, p_weights) * perceptron_activation_scalar
+            #ap_classification = predict(noisyRow, ap_weights, piecewise = True, ap = True) * perceptron_activation_scalar
+            ap_classification = p_predict(noisyRow, ap_weights, ap=True) * perceptron_activation_scalar + .5
+            steps += 1 
+            
+            
+            activations = weights @ v    #weighted sum of activations, inputs to each unit
+            activations[0] = p_classification + activations[0] #previously self_input[0] + stiulus
+            activations[1] = ap_classification + activations[1] #previously self_input[1] + stimulus
+            activations[2:] = sigmoid(l, activations[2:], bias, sig_idx)
+            dv = tau * ((-v + activations) * dt + internal_noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) # add noise using np.random
+            v = v + dv
+            
+            v_hist = np.concatenate((v_hist,v), axis=1)
+            p_hist = np.append(p_hist, p_classification)
+            ap_hist = np.append(ap_hist, ap_classification)
+            if (steps > 1000):
+               break
                 
-        plt.figure()
-        plt.plot(v_hist[1,:] - v_hist[0,:])
-        plt.ylabel("v1 v2 difference")
-        plt.xlabel("time")
-        plt.grid('on')
-        plt.title("V1 V2 Difference (Drift Diffusion)")
-        plt.show()
-    
+        #The issue was there were two variables named noise, one for adding noise to the row and one for noise in dv
+        
+        if plot:
+            plt.figure(1)
+            plt.plot(v_hist[0,:], "r") 
+            plt.plot(v_hist[1,:], "g")
+            plt.plot(v_hist[2,:], "b")
+            plt.plot(v_hist[3,:], "y")
+            plt.legend(["v1","v2","v3","v4"], loc=0)
+            plt.ylabel("activation")
+            plt.xlabel("time")
+            plt.grid('on')
+            plt.title("Units 1-4 Activations")
+            
+            
+            #Historical classifcation of the noisy data by p and ap
+            plt.figure(2)
+            plt.plot(p_hist)
+            plt.plot(ap_hist)
+            plt.legend(["p classification", "ap classification"], loc=0)
+            plt.title("Perceptron and Antiperceptron Activations")
+           
+                    
+            plt.figure(3) 
+            plt.plot(v_hist[1,:] - v_hist[0,:])
+            plt.ylabel("v1 v2 difference")
+            plt.xlabel("time")
+            plt.grid('on')
+            plt.title("V1 V2 Difference (Drift Diffusion)")
+            
+            
+        #Add plots to show multiple trials on one plot
+        
     #plot v2 - v1 
     #will probably always reach the same level when the network makes a decision
     #Unit 3 predicts 1s (metal), unit 4 predicts 0s (rocks)
-    
-    if(v[3] >= decision_threshold):
-        return [1, steps]
-    if(v[2] >= decision_threshold):
-        return [-1, steps]
+        if (steps == 1000):
+            plt.show()
+            return [-1, 1000]
+            
+        #if (num == 1 and v[2] >= decision_threshold):
+        #    return [1, steps]
+        #if(num == 1 and v[3] >= decision_threshold):
+        #    return [-1, steps]
+        #if(i == num-1):
+            #plt.show()
     #else:
     #    return [-1 , 1000]
     #Plot out a bunch of examples and superimpose them
@@ -293,7 +304,7 @@ def evaluate_circuit(n = 208, eval_perceptron = True):
         #print(trial(weights, p_weights, ap_weights, i, plot = False))
         #print(data[i][-1])
         #print()
-        trial_result = trial(weights, p_weights, ap_weights, i, plot = False)
+        trial_result = trial(weights, p_weights, ap_weights, i, plot = False, num = 1)
         if trial_result[0] == data[i][-1]:
             correct_circuit += 1
         

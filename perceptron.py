@@ -142,7 +142,7 @@ def process(datum, index, weights):
     
     return activation
 
-def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = False, plot = False):
+def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = False, plot = False, plotMany = False):
     #outputs a set of trained weights
     #initialize each weight to zero, bias is first index
     #weights = np.random.rand(len(training_data[0]))
@@ -169,11 +169,14 @@ def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = F
             
             
             #update bias
-            weights[0] = weights[0] + learning_rate * error
+            bias_delta = learning_rate * error
+            weights[0] = weights[0] + bias_delta
+            #Plot the last ten 
             for i in range(len(row) - 1):
                 #update weights according to weight_i = weight_i + (learning_rate*error*input)
                 weights[i + 1] = weights[i + 1] + learning_rate * error * row[i]
         np.append(error_arr, sum_error)
+    
     if plot:
         print('>epoch=%d, lrate=%.3f, error=%.3f' % (epoch, learning_rate, sum_error))
         print("weights:", weights)

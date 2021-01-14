@@ -147,6 +147,11 @@ def label_data(data, weights):
             labels[i] = [0,1]
     return labels
 
+def unthresholded_predict(row, weights, ap=False):
+    activation = weights[0]
+    for i in range(0,2):
+        activation += weights[i + 1] * row[i]
+    return activation
 #Weighted sum prediction
 def p_predict(row, weights, ap=False):
     activation = weights[0]
@@ -224,6 +229,7 @@ for i in range (test.shape[0]):
 #Context 2
 correct_context_2 = 0
 left_off_index = 0
+context_retrain = False
 for i in range (test.shape[0]):
     datum = test[i]
     #Now we see accuracy in context 2 with context 1 weights
@@ -239,10 +245,20 @@ for i in range (test.shape[0]):
     
 for i in range (left_off_index, test.shape[0]):
     context_2_timer += 1
-    if (p_predict(datum, context_2_weights) == datum[3]):
+    context_retrain = True
+    prediction = p_predict(datum, context_2_weights) 
+    if (prediction == datum[3]):
         correct_context_2 += 1
+    if context_retrain:
+        for j in range (0, 20):
+            #retrain weights
+            error = datum[3] - prediction
+            bias_delta = learning_rate * error
+            weights[0] = weights[0] + bias_delta
+            weights[i + 1] = weights[i + 1] + learning_rate * error * row[i]
+            context 
         #print(p_predict(datum, context_2_weights))
-    print(predict(context_1_weights, context_2_weights, datum, datum[3]))
+    #print(predict(context_1_weights, context_2_weights, datum, datum[3]))
     #We start getting things wrong, so we need to switch to a new state with 
     #its own weights. Switch on how well youve been doing
         

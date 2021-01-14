@@ -35,6 +35,103 @@ from sklearn.linear_model import SGDClassifier
 
 #Set up dummy data. 4 normal distributions of points classified as a 1 or 0 with values between 0 and 1
 mu, sigma, d = .5, 0.2, .3 # mean and standard deviation
+'''Helper Functions'''
+
+    
+def sigmoid(l, total_input, b, sig_idx):
+    f = 1/ (1 + np.exp(-l[sig_idx] * (total_input - b[sig_idx])))
+    #sig_index is the index of the activcation function we want   
+    return f
+
+#Plt.pause for debugging 
+'''Weights'''
+circuit_weights = np.array([[0,    -.3,      0,     -1],    #1->1  2->1, 3->1, 4->1
+                    [-.3,    0,      -1,     0],            #1->2, 2->2, 3->2, 4->2
+                    [1.23,  0,      2.087,  0],             #1->3, 2->3, 3->3, 4->3
+                    [0,     1.23,   0,      2.087]])        #1->4, 2->4, 3->4  4->4
+    
+#How can we use the circuit to change our weights?
+    
+def predict(c1_weights, c2_weights, datum, label, circuit_weights = circuit_weights, plot = False):                        
+    steps = 0 
+    tau = 1
+    dt = 0.01
+    context_timer = 0
+    p_weights = c1_weights
+    ap_weights = c2_weights
+    internal_noise = 0.15
+    sensor_noise = 0.2
+    decision_threshold = .8
+    v_hist = np.array([[0, 0, 0, 0]]).T    
+    v = np.array([[0, 0, 0, 0]]).T              
+    p_hist = np.array([0])
+    ap_hist = np.array([0])
+    perceptron_activation_scalar = .8
+    l = np.array([[4, 4, 4, 4]]).T                  
+    bias = np.array([[1, 1, 1, 1]]).T 
+  
+    bias = bias * 1.1
+    sig_idx= [2,3]
+    
+    #Repeatedly have perceptron and AP classify row, feed into circuit
+    #until the circuit makes a classification (v3 or v4 is > decision threshold)
+    while (v[3] < decision_threshold) and (v[2] < decision_threshold):
+        row = datum
+        nn = np.random.normal(0, .1, 2) * sensor_noise
+        #noise = np.append(nn, data[row_idx][-1])
+        noisyRow = np.add(nn, row[:2])
+        
+        p_classification = p_predict(noisyRow, p_weights) * perceptron_activation_scalar
+        ap_classification = p_predict(noisyRow, ap_weights, ap=True) * perceptron_activation_scalar
+        
+        steps += 1 
+        
+        activations = circuit_weights @ v                              #weighted sum of activations, inputs to each unit
+        activations[0] = p_classification + activations[0]     
+        activations[1] = ap_classification + activations[1]    
+        activations[2:] = sigmoid(l, activations[2:], bias, sig_idx)
+        dv = tau * ((-v + activations) * dt + internal_noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) # add noise using np.random
+        v = v + dv
+        
+        v_hist = np.concatenate((v_hist,v), axis=1)
+        p_hist = np.append(p_hist, p_classification)
+        ap_hist = np.append(ap_hist, ap_classification)
+    
+    context_timer += 1
+    classification = 1 if ( (v[2] >= decision_threshold) and (v[3] <= decision_threshold)) else 0
+    
+    #Check to see if our classification is right and add to running accuracy 
+        
+                
+        
+    if plot:
+        plt.figure(1)
+        plt.plot(v_hist[0,:]) 
+        plt.plot(v_hist[1,:])
+        plt.plot(v_hist[2,:])
+        plt.plot(v_hist[3,:])
+        plt.legend(["v1","v2","v3","v4"], loc=0)
+        plt.ylabel("activation")
+        plt.xlabel("time")
+        plt.grid('on')
+        plt.title("Units 1-4 Activations")
+        
+        
+        #Historical classifcation of the noisy data by p and ap
+        plt.figure(2)
+        plt.plot(p_hist)
+        plt.plot(ap_hist)
+        plt.legend(["p classification", "ap classification"], loc=0)
+        plt.title("Perceptron and Antiperceptron Activations")
+        
+                
+        plt.figure(3) 
+        plt.plot(v_hist[1,:] - v_hist[0,:])
+        plt.ylabel("v1 v2 difference")
+        plt.xlabel("time")
+        plt.grid('on')
+        plt.title("V1 V2 Difference (Drift Diffusion)")
+    return classification
 
 def label_data(data, weights):
     labels = np.empty((data.shape[0], 2))
@@ -108,7 +205,7 @@ plt.legend()
 plt.show()
 accuracy = 0
 correct_context_1 = 0
-context_2_weights = [0, 0, 0]
+context_2_weights = [1, -1, -1]
 context_1_timer = 0
 context_2_timer = 0
 context_1 = True
@@ -122,7 +219,7 @@ for i in range (test.shape[0]):
     
     if (i > 0):
         running_accuracy = correct_context_1 / (i + 1)
-        print(running_accuracy)
+        #print(running_accuracy)
 
 #Context 2
 correct_context_2 = 0
@@ -134,7 +231,7 @@ for i in range (test.shape[0]):
         correct_context_2 += 1
     
     running_accuracy = (correct_context_1 + correct_context_2) / (i + 801)
-    print(running_accuracy)
+    #print(running_accuracy)
     
     if (running_accuracy < .98):
         left_off_index = i
@@ -144,7 +241,8 @@ for i in range (left_off_index, test.shape[0]):
     context_2_timer += 1
     if (p_predict(datum, context_2_weights) == datum[3]):
         correct_context_2 += 1
-        print(p_predict(datum, context_2_weights))
+        #print(p_predict(datum, context_2_weights))
+    print(predict(context_1_weights, context_2_weights, datum, datum[3]))
     #We start getting things wrong, so we need to switch to a new state with 
     #its own weights. Switch on how well youve been doing
         
@@ -166,108 +264,5 @@ plt.ylabel("Y")
 plt.show()
 """
 
-'''Helper Functions'''
-
-    
-def sigmoid(l, total_input, b, sig_idx):
-    f = 1/ (1 + np.exp(-l[sig_idx] * (total_input - b[sig_idx])))
-    #sig_index is the index of the activcation function we want   
-    return f
-
-#Plt.pause for debugging 
-'''Weights'''
-circuit_weights = np.array([[0,    -.3,      0,     -1],    #1->1  2->1, 3->1, 4->1
-                    [-.3,    0,      -1,     0],            #1->2, 2->2, 3->2, 4->2
-                    [1.23,  0,      2.087,  0],             #1->3, 2->3, 3->3, 4->3
-                    [0,     1.23,   0,      2.087]])        #1->4, 2->4, 3->4  4->4
-    
 
 
-def predict(c1_weights, c2_weights, datum, label, circuit_weights = circuit_weights, plot = False):                        
-    correct = 0
-    context = 0
-    steps = 0 
-    tau = 1
-    dt = 0.01
-    context_timer = 0
-    p_weights = c1_weights
-    ap_weights = c2_weights
-    internal_noise = 0.15
-    sensor_noise = 0.2
-    decision_threshold = .8
-    v_hist = np.array([[0, 0, 0, 0]]).T    
-    v = np.array([[0, 0, 0, 0]]).T              
-    p_hist = np.array([0])
-    ap_hist = np.array([0])
-    perceptron_activation_scalar = .8
-    l = np.array([[4, 4, 4, 4]]).T                  
-    bias = np.array([[1, 1, 1, 1]]).T 
-  
-    bias = bias * 1.1
-    sig_idx= [2,3]
-    
-    #Repeatedly have perceptron and AP classify row, feed into circuit
-    #until the circuit makes a classification (v3 or v4 is > decision threshold)
-    while (v[3] < decision_threshold) and (v[2] < decision_threshold):
-        row = datum
-        nn = np.random.normal(0, .1) * sensor_noise
-        #noise = np.append(nn, data[row_idx][-1])
-        noisyRow = np.add(nn, row)
-        
-        p_classification = p_predict(noisyRow, p_weights) * perceptron_activation_scalar + 1
-        ap_classification = p_predict(noisyRow, ap_weights, ap=True) * perceptron_activation_scalar + 1
-        
-        steps += 1 
-        
-        activations = weights @ v                              #weighted sum of activations, inputs to each unit
-        activations[0] = p_classification + activations[0]     
-        activations[1] = ap_classification + activations[1]    
-        activations[2:] = sigmoid(l, activations[2:], bias, sig_idx)
-        dv = tau * ((-v + activations) * dt + internal_noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) # add noise using np.random
-        v = v + dv
-        
-        v_hist = np.concatenate((v_hist,v), axis=1)
-        p_hist = np.append(p_hist, p_classification)
-        ap_hist = np.append(ap_hist, ap_classification)
-    
-    context_timer += 1
-    classification = 1 if ( (v[2] >= decision_threshold) and (v[3] <= decision_threshold)) else 0
-    
-    #Check to see if our classification is right and add to running accuracy 
-        
-                
-        
-    if plot:
-        plt.figure(1)
-        plt.plot(v_hist[0,:]) 
-        plt.plot(v_hist[1,:])
-        plt.plot(v_hist[2,:])
-        plt.plot(v_hist[3,:])
-        plt.legend(["v1","v2","v3","v4"], loc=0)
-        plt.ylabel("activation")
-        plt.xlabel("time")
-        plt.grid('on')
-        plt.title("Units 1-4 Activations")
-        
-        
-        #Historical classifcation of the noisy data by p and ap
-        plt.figure(2)
-        plt.plot(p_hist)
-        plt.plot(ap_hist)
-        plt.legend(["p classification", "ap classification"], loc=0)
-        plt.title("Perceptron and Antiperceptron Activations")
-        
-                
-        plt.figure(3) 
-        plt.plot(v_hist[1,:] - v_hist[0,:])
-        plt.ylabel("v1 v2 difference")
-        plt.xlabel("time")
-        plt.grid('on')
-        plt.title("V1 V2 Difference (Drift Diffusion)")
-
-    if (plot_num == 1 and v[2] >= decision_threshold):
-        return [1, steps]
-    if(plot_num == 1 and v[3] >= decision_threshold):
-        return [-1, steps]
-    if(i == plot_num-1):
-        plt.show()

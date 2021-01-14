@@ -41,11 +41,13 @@ def label_data(data, weights):
     #Labels random data according to passed in line
     #Takes in data and weights
     #Appends two values, a context 1 label and a context 2 label (opposites)
+    #Context one classifies data above the line as 1, below as 0, and
+    #visa versa for context 2
     for i in range (0, data.shape[0]):
         if data[i][1] >= weights[1] * data[i][0] + weights[0]:
-            labels[i] = [0,1]
-        else:
             labels[i] = [1,0]
+        else:
+            labels[i] = [0,1]
     return labels
 
 #Weighted sum prediction
@@ -56,14 +58,14 @@ def p_predict(row, weights, ap=False):
     #if (1/(1 + math.exp(-activation))) >= .5:
     if not ap:
         if activation > 0:
-            return  1
+            return  0
         else: 
-            return 0
+            return 1
     else:
         if activation > 0:
-            return 0
-        else:
             return 1
+        else:
+            return 0
 
 #Coodinates for random data
 x1 = np.random.normal(mu, sigma, size = (1200, 1))
@@ -80,25 +82,8 @@ data = np.append(data, labels, axis = 1)
 
 
 #Training sets for each quadrant of data (quadrants 1 and 2 = 1, 3 and 4 = 0)
-train =  np.append(data[:400], ones[:400], axis = 1)
-test = np.append(data[400:], ones[:800], axis = 1)
-
-
-#Training sets for context 1
-
-
-#Testing set for context 1
-#test_context_1 =  np.append(test_q1, test_q2, axis = 0)
-#test_context_1 =  np.append(test_context_1, test_q3, axis = 0)
-#test_context_1 =  np.append(test_context_1, test_q4, axis = 0)
-
-#Testing set for context 2 (quadrants 1, 2, and 4 are now 1, quadrant 3 is 0)
-
-
-#Old stuff using SGD from scikit-learn
-#test_c1 = np.append(train_c1[, ones[150:], axis = 1)
-#sgd_clf = SGDClassifier(max_iter=5, tol=-np.infty, random_state=42)
-#sgd_clf.fit(train_c1[:,:2], train_c1[:,2])
+train =  data[:400]
+test = data[400:]
 
 #p_weights = p.gradient_descent(train_context_1, 0.15, 1000)
 p_weights = [ 1       , -1,  -1] #fixed weights so we dont call GD every time we run
@@ -108,25 +93,36 @@ plt.figure("Context 1")
 xx = np.linspace(0, 1, 10)
 above = data[data[:, 2] == 0]
 below = data[data[:,2] == 1]
-plt.scatter(above[0:,0:1], above[0:,1:2], alpha=0.80, marker='^')
-plt.scatter(below[0:,0:1], below[0:,1:2], alpha=0.80, marker='o')
+plt.scatter(above[0:,0:1], above[0:,1:2], alpha=0.80, marker='^', label = "Context: 1, Class: 1")
+plt.scatter(below[0:,0:1], below[0:,1:2], alpha=0.80, marker='o',  label = "Context: 1, Class: 0")
 
 a = -p_weights[1]/p_weights[2]
 #yy = a * xx - p_weights[0] / p_weights[2]
 yy = (-1 / p_weights[2]) * p_weights[1] * xx + p_weights[0]
-plt.plot(xx, yy, '-g')  # solid green
+plt.plot(xx, yy, '-g', label = "Context 1 Weights")  # solid green
 #plt.plot(x, (sgd_clf.intercept_[0] - (sgd_clf.coef_[0][0] * x)) / sgd_clf.coef_[0][1])
 plt.axis([0.0, 1.0, 0.0, 1.0])
 plt.xlabel("X")
 plt.ylabel("Y")
+plt.legend()
 plt.show()
 accuracy = 0
 correct = 0
-for datum in test:
+context_2_weights = [0, 0, 0]
+for i in range (test.shape[0]):
+    datum = test[i]
+    
     if (p_predict(datum, p_weights) == datum[2]):
         correct += 1
+    
+    if (i > 0):
+        running_accuracy = correct / (i + 1)
+        print(correct, i, running_accuracy)
         
-    print(correct / 800)
+    #Decide when to swtich
+    #Update context 2 weights 
+    #analyze
+    #print(correct / 800)
         
 #Plot context 2
 """

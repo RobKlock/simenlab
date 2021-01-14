@@ -107,17 +107,40 @@ plt.ylabel("Y")
 plt.legend()
 plt.show()
 accuracy = 0
-correct = 0
+correct_context_1 = 0
 context_2_weights = [0, 0, 0]
+context_1_timer = 0
+context_2_timer = 0
+context_1 = True
+context_2 = False
 for i in range (test.shape[0]):
+    context_1_timer += 1
     datum = test[i]
     
     if (p_predict(datum, p_weights) == datum[2]):
-        correct += 1
+        correct_context_1 += 1
     
     if (i > 0):
-        running_accuracy = correct / (i + 1)
-        print(correct, i, running_accuracy)
+        running_accuracy = correct_context_1 / (i + 1)
+        print(running_accuracy)
+
+#Context 2
+correct_context_2 = 0
+for i in range (test.shape[0]):
+    datum = test[i]
+    #Now we see accuracy in context 2 with context 1 weights
+    if (p_predict(datum, p_weights) == datum[3]):
+        correct_context_2 += 1
+    
+    running_accuracy = (correct_context_1 + correct_context_2) / (i + 801)
+    print(running_accuracy)
+    
+    if (running_accuracy < .98):
+        break
+    
+context_2_timer += 1
+    #We start getting things wrong, so we need to switch to a new state with 
+    #its own weights. Switch on how well youve been doing
         
     #Decide when to swtich
     #Update context 2 weights 

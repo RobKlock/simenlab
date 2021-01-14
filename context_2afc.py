@@ -31,6 +31,37 @@ import perceptron as p
 import matplotlib.pyplot as plt
 from sklearn.linear_model import SGDClassifier
 
+'''Helper Functions'''
+
+#Weighted sum prediction
+def p_predict(row, weights, ap=False):
+    activation = weights[0]
+    for i in range(2):
+        activation += weights[i + 1] * row[i]
+    #if (1/(1 + math.exp(-activation))) >= .5:
+    if not ap:
+        if activation > 0.5:
+            return  1
+        else: 
+            return 0
+    else:
+        if activation > 0.5:
+            return 1
+        else:
+            return 0
+    
+def sigmoid(l, total_input, b, sig_idx):
+    f = 1/ (1 + np.exp(-l[sig_idx] * (total_input - b[sig_idx])))
+    #sig_index is the index of the activcation function we want   
+    return f
+
+#Plt.pause for debugging 
+'''Weights'''
+circuit_weights = np.array([[0,    -.3,      0,     -1],    #1->1  2->1, 3->1, 4->1
+                    [-.3,    0,      -1,     0],            #1->2, 2->2, 3->2, 4->2
+                    [1.23,  0,      2.087,  0],             #1->3, 2->3, 3->3, 4->3
+                    [0,     1.23,   0,      2.087]])        #1->4, 2->4, 3->4  4->4
+
 #Set up dummy data. 4 normal distributions of points classified as a 1 or 0 with values between 0 and 1
 mu, sigma, d = .5, 0.06, .3 # mean and standard deviation
 
@@ -75,34 +106,40 @@ np.random.shuffle(train_context_1)
 test_context_1 =  np.append(test_q1, test_q2, axis = 0)
 test_context_1 =  np.append(test_context_1, test_q3, axis = 0)
 test_context_1 =  np.append(test_context_1, test_q4, axis = 0)
+np.random.shuffle(test_context_1)
 
 #Testing set for context 2 (quadrants 1, 2, and 4 are now 1, quadrant 3 is 0)
 test_q1_context_2 = np.append(quad1[300:], ones[:400], axis = 1)
 test_q2_context_2 = np.append(quad2[300:], ones[:400], axis = 1)
-test_q3_context_2 = np.append(quad3[300:], ones[:400], axis = 1)
-test_q4_context_2 = np.append(quad4[300:], zeros[:400], axis = 1)
+test_q3_context_2 = np.append(quad4[300:], ones[:400], axis = 1)
+test_q4_context_2 = np.append(quad3[300:], zeros[:400], axis = 1)
 
 test_context_2 =  np.append(test_q1_context_2, test_q2_context_2, axis = 0)
 test_context_2 =  np.append(test_context_2, test_q3_context_2, axis = 0)
 test_context_2 =  np.append(test_context_2, test_q4_context_2, axis = 0)
+np.random.shuffle(test_context_2)
 
-#Context 2 data (quadrants 1,2, 4 are 1, quadrant 3 is 0)
+all_state_data = np.append(test_context_1, test_context_2, axis = 0)
 
-
+#Old stuff using SGD from scikit-learn
 #test_c1 = np.append(train_c1[, ones[150:], axis = 1)
 #sgd_clf = SGDClassifier(max_iter=5, tol=-np.infty, random_state=42)
 #sgd_clf.fit(train_c1[:,:2], train_c1[:,2])
 
-#p_weights = p.gradient_descent(train_context_1, 0.15, 1000)
-p_weights = [ 0.3       , -0.02454649,  0.34936848]
+#weights_context_1 = p.gradient_descent(train_context_1, 0.15, 1000)
+weights_context_1 = [ 0.3       , -0.02454649,  0.34936848] #fixed weights so we dont call GD every time we run
+weights_context_2 = [ 0     , 0     , 0 ]
+#Plot data and decision line
+plt.figure("Context 1")
 xx = np.linspace(0, 1, 10)
-plt.scatter(quad1[0:,0:1], quad1[0:,1:2], alpha=0.80)
-plt.scatter(quad2[0:,0:1], quad2[0:,1:2], alpha=0.80)
+plt.scatter(quad1[0:,0:1], quad1[0:,1:2], alpha=0.80, marker='^')
+plt.scatter(quad2[0:,0:1], quad2[0:,1:2], alpha=0.80, marker='^')
 plt.scatter(quad3[0:,0:1], quad3[0:,1:2], alpha=0.80)
 plt.scatter(quad4[0:,0:1], quad4[0:,1:2], alpha=0.80)
-a = -p_weights[1]/p_weights[2]
+
+a = -weights_context_1[1]/weights_context_1[2]
 #yy = a * xx - p_weights[0] / p_weights[2]
-yy = (-1 / p_weights[2]) * p_weights[1] * xx + p_weights[0]
+yy = (-1 / weights_context_1[2]) * weights_context_1[1] * xx + weights_context_1[0]
 plt.plot(xx, yy, '-g')  # solid green
 #plt.plot(x, (sgd_clf.intercept_[0] - (sgd_clf.coef_[0][0] * x)) / sgd_clf.coef_[0][1])
 plt.axis([0.0, 1.0, 0.0, 1.0])
@@ -110,61 +147,53 @@ plt.xlabel("X")
 plt.ylabel("Y")
 plt.show()
 
-'''Helper Functions'''
-#Loads in sonar data. 
-#Rocks are -1, metal is 1
-def load_data(filename):
-    #Load sonar data
-    dataset = list()
-    with open(filename, 'r') as file:
-        csv_reader = reader(file)
-        for row in csv_reader:
-            if not row:
-                continue
-            dataset.append(row)
-    # Convert string column to float
-    for row in dataset:
-        for column in range(0,  len(row)):
-            if(row[column] == 'R'):
-                row[column] = -1
-            if(row[column] == 'M'):
-                row[column] = 1
-            else:
-                row[column] = float(row[column])
-    data = np.array(dataset)
-    return data
+#Plot context 2
+plt.figure("Context 2")
+plt.scatter(test_q1_context_2[0:,0:1], test_q1_context_2[0:,1:2], alpha=0.80, marker='^')
+plt.scatter(test_q2_context_2[0:,0:1], test_q2_context_2[0:,1:2], alpha=0.80, marker='^')
+plt.scatter(test_q3_context_2[0:,0:1], test_q3_context_2[0:,1:2], alpha=0.80, marker='^')
+plt.scatter(test_q4_context_2[0:,0:1], test_q4_context_2[0:,1:2], alpha=0.80)
+plt.axis([0.0, 1.0, 0.0, 1.0])
+plt.xlabel("X")
+plt.ylabel("Y")
+plt.show()
 
-#Weighted sum prediction
-def p_predict(row, weights, ap=False):
-    activation = weights[0]
-    for i in range(len(row)-1):
-        activation += weights[i + 1] * row[i]
-    #if (1/(1 + math.exp(-activation))) >= .5:
-    if not ap:
-        if activation > 0.5:
-            return  1
-        else: 
-            return 0
-    else:
-        if activation > 0.5:
-            return 1
-        else:
-            return 0
+#Different States of labels. We have only encountered (been trained on) context 1
+#Now we start making predictions for ~3200 instances. The first half are context 1, the second are context 2
+#We keep a running accuracy and step counter for time in our state. Once accuracy dips below __ we recognize
+#That we need to switch into a new context and retrain
+
+current_accuracy = 0
+accuracy_delta = 0
+correct = 0
+context_timer = 0
+context_switch = False
+accuracies = np.empty(all_state_data.shape[0])
+for i in range(all_state_data.shape[0]):
+    Y_pred = p_predict(all_state_data[i], weights_context_1)
+    #Adapt the weights we have or start with a new set of weights?
+    if context_switch:
+        context_timer = 0
+        context_switch = False
+    #feed a noisy sample into the decision network
     
-def sigmoid(l, total_input, b, sig_idx):
-    f = 1/ (1 + np.exp(-l[sig_idx] * (total_input - b[sig_idx])))
-    #sig_index is the index of the activcation function we want   
-    return f
-
-#Plt.pause for debugging 
-'''Weights'''
-circuit_weights = np.array([[0,    -.3,      0,     -1],    #1->1  2->1, 3->1, 4->1
-                    [-.3,    0,      -1,     0],            #1->2, 2->2, 3->2, 4->2
-                    [1.23,  0,      2.087,  0],             #1->3, 2->3, 3->3, 4->3
-                    [0,     1.23,   0,      2.087]])        #1->4, 2->4, 3->4  4->4
+    if (Y_pred == all_state_data[i][2]):
+        correct+=1
+    
+    if i > 1:
+        current_accuracy = correct / i
+    
+    if (i == all_state_data.shape[0]/2):
+        print("Context 1 Accuracy: ", current_accuracy)
+        
+    if (i == all_state_data.shape[0] - 1):
+        print("Contex 1 and 2 Accuracy: ", current_accuracy)
+    
+    accuracies[i] = current_accuracy
     
 
-data = load_data('sonar1.all-data')
+    
+
 """
 def trial(w = circuit_weights, p = p_weights, ap = ap_weights, row_idx = 9, plot = False, plot_num = 1, contexts = 2):
     zeros = np.zeros((contexts - 1,61))

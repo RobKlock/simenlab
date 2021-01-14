@@ -86,7 +86,7 @@ train =  data[:400]
 test = data[400:]
 
 #p_weights = p.gradient_descent(train_context_1, 0.15, 1000)
-p_weights = [ 1       , -1,  -1] #fixed weights so we dont call GD every time we run
+context_1_weights = [ 1       , -1,  -1] #fixed weights so we dont call GD every time we run
 
 #Plot data and decision line
 plt.figure("Context 1")
@@ -96,9 +96,9 @@ below = data[data[:,2] == 1]
 plt.scatter(above[0:,0:1], above[0:,1:2], alpha=0.80, marker='^', label = "Context: 1, Class: 1")
 plt.scatter(below[0:,0:1], below[0:,1:2], alpha=0.80, marker='o',  label = "Context: 1, Class: 0")
 
-a = -p_weights[1]/p_weights[2]
+a = -context_1_weights[1]/context_1_weights[2]
 #yy = a * xx - p_weights[0] / p_weights[2]
-yy = (-1 / p_weights[2]) * p_weights[1] * xx + p_weights[0]
+yy = (-1 / context_1_weights[2]) * context_1_weights[1] * xx + context_1_weights[0]
 plt.plot(xx, yy, '-g', label = "Context 1 Weights")  # solid green
 #plt.plot(x, (sgd_clf.intercept_[0] - (sgd_clf.coef_[0][0] * x)) / sgd_clf.coef_[0][1])
 plt.axis([0.0, 1.0, 0.0, 1.0])
@@ -117,7 +117,7 @@ for i in range (test.shape[0]):
     context_1_timer += 1
     datum = test[i]
     
-    if (p_predict(datum, p_weights) == datum[2]):
+    if (p_predict(datum, context_1_weights) == datum[2]):
         correct_context_1 += 1
     
     if (i > 0):
@@ -126,19 +126,25 @@ for i in range (test.shape[0]):
 
 #Context 2
 correct_context_2 = 0
+left_off_index = 0
 for i in range (test.shape[0]):
     datum = test[i]
     #Now we see accuracy in context 2 with context 1 weights
-    if (p_predict(datum, p_weights) == datum[3]):
+    if (p_predict(datum, context_1_weights) == datum[3]):
         correct_context_2 += 1
     
     running_accuracy = (correct_context_1 + correct_context_2) / (i + 801)
     print(running_accuracy)
     
     if (running_accuracy < .98):
+        left_off_index = i
         break
     
-context_2_timer += 1
+for i in range (left_off_index, test.shape[0]):
+    context_2_timer += 1
+    if (p_predict(datum, context_2_weights) == datum[3]):
+        correct_context_2 += 1
+        print(p_predict(datum, context_2_weights))
     #We start getting things wrong, so we need to switch to a new state with 
     #its own weights. Switch on how well youve been doing
         
@@ -176,102 +182,92 @@ circuit_weights = np.array([[0,    -.3,      0,     -1],    #1->1  2->1, 3->1, 4
                     [0,     1.23,   0,      2.087]])        #1->4, 2->4, 3->4  4->4
     
 
-"""
-def trial(w = circuit_weights, p = p_weights, ap = ap_weights, row_idx = 9, plot = False, plot_num = 1, contexts = 2):
-    zeros = np.zeros((contexts - 1,61))
-    p_context_weights = np.concatenate((p, zeros), axis = 0)
-    ap_context_weights = np.concatenate((ap, zeros), axis = 0)                              
+
+def predict(c1_weights, c2_weights, datum, label, circuit_weights = circuit_weights, plot = False):                        
     correct = 0
-    
     context = 0
-   
+    steps = 0 
+    tau = 1
+    dt = 0.01
+    context_timer = 0
+    p_weights = c1_weights
+    ap_weights = c2_weights
+    internal_noise = 0.15
+    sensor_noise = 0.2
+    decision_threshold = .8
+    v_hist = np.array([[0, 0, 0, 0]]).T    
+    v = np.array([[0, 0, 0, 0]]).T              
+    p_hist = np.array([0])
+    ap_hist = np.array([0])
+    perceptron_activation_scalar = .8
+    l = np.array([[4, 4, 4, 4]]).T                  
+    bias = np.array([[1, 1, 1, 1]]).T 
+  
+    bias = bias * 1.1
+    sig_idx= [2,3]
     
-    for i in range (0, plot_num): 
-        steps = 0 
-        tau = 1
-        dt = 0.01
-        weights = w
-        context_timer = 0
-        p_weights = p[context]
-        ap_weights = ap[context]
-        internal_noise = 0.15
-        sensor_noise = 0.2
-        decision_threshold = .8
-        v_hist = np.array([[0, 0, 0, 0]]).T    
-        v = np.array([[0, 0, 0, 0]]).T              
-        p_hist = np.array([0])
-        ap_hist = np.array([0])
-        perceptron_activation_scalar = .8
-        l = np.array([[4, 4, 4, 4]]).T                  
-        bias = np.array([[1, 1, 1, 1]]).T 
-      
-        bias = bias * 1.1
-        sig_idx= [2,3]
+    #Repeatedly have perceptron and AP classify row, feed into circuit
+    #until the circuit makes a classification (v3 or v4 is > decision threshold)
+    while (v[3] < decision_threshold) and (v[2] < decision_threshold):
+        row = datum
+        nn = np.random.normal(0, .1) * sensor_noise
+        #noise = np.append(nn, data[row_idx][-1])
+        noisyRow = np.add(nn, row)
         
-        #Repeatedly have perceptron and AP classify row, feed into circuit
-        #until the circuit makes a classification (v3 or v4 is > decision threshold)
-        while (v[3] < decision_threshold) and (v[2] < decision_threshold):
-            row = data[row_idx + plot_num]
-            nn = np.random.normal(0, .1, (1, 60)) * sensor_noise
-            
-            nn = np.append(nn, data[row_idx][-1])
-            noisyRow = np.add(nn, row)
-            
-            p_classification = p_predict(noisyRow, p_weights) * perceptron_activation_scalar + 1
-            ap_classification = p_predict(noisyRow, ap_weights, ap=True) * perceptron_activation_scalar + 1
-            
-            steps += 1 
-            
-            activations = weights @ v                              #weighted sum of activations, inputs to each unit
-            activations[0] = p_classification + activations[0]     
-            activations[1] = ap_classification + activations[1]    
-            activations[2:] = sigmoid(l, activations[2:], bias, sig_idx)
-            dv = tau * ((-v + activations) * dt + internal_noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) # add noise using np.random
-            v = v + dv
-            
-            v_hist = np.concatenate((v_hist,v), axis=1)
-            p_hist = np.append(p_hist, p_classification)
-            ap_hist = np.append(ap_hist, ap_classification)
+        p_classification = p_predict(noisyRow, p_weights) * perceptron_activation_scalar + 1
+        ap_classification = p_predict(noisyRow, ap_weights, ap=True) * perceptron_activation_scalar + 1
         
-        context_timer += 1
-        classification = 1 if ( (v[2] >= decision_threshold) and (v[3] <= decision_threshold)) else 0
+        steps += 1 
         
-        #Check to see if our classification is right and add to running accuracy 
+        activations = weights @ v                              #weighted sum of activations, inputs to each unit
+        activations[0] = p_classification + activations[0]     
+        activations[1] = ap_classification + activations[1]    
+        activations[2:] = sigmoid(l, activations[2:], bias, sig_idx)
+        dv = tau * ((-v + activations) * dt + internal_noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) # add noise using np.random
+        v = v + dv
+        
+        v_hist = np.concatenate((v_hist,v), axis=1)
+        p_hist = np.append(p_hist, p_classification)
+        ap_hist = np.append(ap_hist, ap_classification)
+    
+    context_timer += 1
+    classification = 1 if ( (v[2] >= decision_threshold) and (v[3] <= decision_threshold)) else 0
+    
+    #Check to see if our classification is right and add to running accuracy 
         
                 
         
-        if plot:
-            plt.figure(1)
-            plt.plot(v_hist[0,:]) 
-            plt.plot(v_hist[1,:])
-            plt.plot(v_hist[2,:])
-            plt.plot(v_hist[3,:])
-            plt.legend(["v1","v2","v3","v4"], loc=0)
-            plt.ylabel("activation")
-            plt.xlabel("time")
-            plt.grid('on')
-            plt.title("Units 1-4 Activations")
-            
-            
-            #Historical classifcation of the noisy data by p and ap
-            plt.figure(2)
-            plt.plot(p_hist)
-            plt.plot(ap_hist)
-            plt.legend(["p classification", "ap classification"], loc=0)
-            plt.title("Perceptron and Antiperceptron Activations")
-            
-                    
-            plt.figure(3) 
-            plt.plot(v_hist[1,:] - v_hist[0,:])
-            plt.ylabel("v1 v2 difference")
-            plt.xlabel("time")
-            plt.grid('on')
-            plt.title("V1 V2 Difference (Drift Diffusion)")
-    
-        if (plot_num == 1 and v[2] >= decision_threshold):
-            return [1, steps]
-        if(plot_num == 1 and v[3] >= decision_threshold):
-            return [-1, steps]
-        if(i == plot_num-1):
-            plt.show()
-"""
+    if plot:
+        plt.figure(1)
+        plt.plot(v_hist[0,:]) 
+        plt.plot(v_hist[1,:])
+        plt.plot(v_hist[2,:])
+        plt.plot(v_hist[3,:])
+        plt.legend(["v1","v2","v3","v4"], loc=0)
+        plt.ylabel("activation")
+        plt.xlabel("time")
+        plt.grid('on')
+        plt.title("Units 1-4 Activations")
+        
+        
+        #Historical classifcation of the noisy data by p and ap
+        plt.figure(2)
+        plt.plot(p_hist)
+        plt.plot(ap_hist)
+        plt.legend(["p classification", "ap classification"], loc=0)
+        plt.title("Perceptron and Antiperceptron Activations")
+        
+                
+        plt.figure(3) 
+        plt.plot(v_hist[1,:] - v_hist[0,:])
+        plt.ylabel("v1 v2 difference")
+        plt.xlabel("time")
+        plt.grid('on')
+        plt.title("V1 V2 Difference (Drift Diffusion)")
+
+    if (plot_num == 1 and v[2] >= decision_threshold):
+        return [1, steps]
+    if(plot_num == 1 and v[3] >= decision_threshold):
+        return [-1, steps]
+    if(i == plot_num-1):
+        plt.show()

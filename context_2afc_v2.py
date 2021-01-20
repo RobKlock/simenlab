@@ -131,7 +131,7 @@ def predict(c1_weights, c2_weights, datum, label, circuit_weights = circuit_weig
         plt.xlabel("time")
         plt.grid('on')
         plt.title("V1 V2 Difference (Drift Diffusion)")
-    return classification
+    return [classification, steps]
 
 def label_data(data, weights):
     labels = np.empty((data.shape[0], 2))
@@ -246,17 +246,21 @@ for i in range (test.shape[0]):
 for i in range (left_off_index, test.shape[0]):
     context_2_timer += 1
     context_retrain = True
-    prediction = p_predict(datum, context_2_weights) 
-    if (prediction == datum[3]):
-        correct_context_2 += 1
+    
     if context_retrain:
         for j in range (0, 20):
             #retrain weights
+            prediction = predict(context_1_weights, context_2_weights, data[i+j,:2], data[i+j, 3])
+            #prediction = unthresholded_predict(datum, context_2_weights
+            #make learning rate tied to prediction time
             error = datum[3] - prediction
             bias_delta = learning_rate * error
             weights[0] = weights[0] + bias_delta
             weights[i + 1] = weights[i + 1] + learning_rate * error * row[i]
-            context 
+            context_retrain = False 
+    else: 
+        if (prediction == datum[3]):
+            correct_context_2 += 1
         #print(p_predict(datum, context_2_weights))
     #print(predict(context_1_weights, context_2_weights, datum, datum[3]))
     #We start getting things wrong, so we need to switch to a new state with 

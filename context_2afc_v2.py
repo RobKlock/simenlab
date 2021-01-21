@@ -250,13 +250,18 @@ for i in range (left_off_index, test.shape[0]):
     if context_retrain:
         for j in range (0, 20):
             #retrain weights
-            prediction = predict(context_1_weights, context_2_weights, data[i+j,:2], data[i+j, 3])
+            circuit_values = predict(context_1_weights, context_2_weights, data[i+j,:2], data[i+j, 3])
+            prediction = circuit_values[0]
+            steps = circuit_values[1]
             #prediction = unthresholded_predict(datum, context_2_weights
             #make learning rate tied to prediction time
             error = datum[3] - prediction
+            learning_rate = (.5 - ((20 * .0001)) / 2) #Any better ideas for this?
             bias_delta = learning_rate * error
-            weights[0] = weights[0] + bias_delta
-            weights[i + 1] = weights[i + 1] + learning_rate * error * row[i]
+            context_2_weights[0] = context_2_weights[0] + bias_delta
+            for k in range(1, 3):
+                context_2_weights[k] = context_2_weights[k] + learning_rate * error * data[i+j,:2]
+                print(context_2_weights)
             context_retrain = False 
     else: 
         if (prediction == datum[3]):

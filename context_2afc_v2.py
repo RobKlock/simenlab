@@ -29,6 +29,7 @@ import sys
 sys.path.append('/Users/robertklock/Documents/Class/Fall20/SimenLab/simenlab')
 import perceptron as p
 import matplotlib.pyplot as plt
+from matplotlib import colors
 from sklearn.linear_model import SGDClassifier
 
 #Version two just has a normal distribution of data with a line passing through 
@@ -208,9 +209,15 @@ plt.xlabel("X")
 plt.ylabel("Y")
 plt.legend()
 plt.show()
+plt.figure("Context 2")
+above = data[data[:, 3] == 1]
+below = data[data[:, 3] == 0]
+plt.scatter(above[0:,0:1], above[0:,1:2], alpha=0.80, marker='o', label = "Context: 2, Class: 1")
+plt.scatter(below[0:,0:1], below[0:,1:2], alpha=0.80, marker='^',  label = "Context: 2, Class: 0")
+plt.show()
 accuracy = 0
 correct_context_1 = 0
-context_2_weights = [1, -1, -1]
+context_2_weights = np.random.rand(3)
 context_1_timer = 0
 context_2_timer = 0
 context_1 = True
@@ -229,6 +236,7 @@ for i in range (test.shape[0]):
 #Context 2
 correct_context_2 = 0
 left_off_index = 0
+accuracy_threshold = 0.98
 context_retrain = False
 for i in range (test.shape[0]):
     datum = test[i]
@@ -239,33 +247,61 @@ for i in range (test.shape[0]):
     running_accuracy = (correct_context_1 + correct_context_2) / (i + 801)
     #print(running_accuracy)
     
-    if (running_accuracy < .98):
+    if (running_accuracy < accuracy_threshold):
         left_off_index = i
         break
+
+context_retrain = True 
+retrain_weights = np.empty((50,3))
     
+#cmap = colors.LinearSegmentedColormap('custom', cdict)
+
 for i in range (left_off_index, test.shape[0]):
     context_2_timer += 1
-    context_retrain = True
     
     if context_retrain:
-        for j in range (0, 20):
+        for j in range (0, 50):
             #retrain weights
-            circuit_values = predict(context_1_weights, context_2_weights, data[i+j,:2], data[i+j, 3])
+             # retrain a perceptron and antiperceptron on context 2 
+             # have those compete
+            circuit_values = predict(context_1_weights, context_2_weights, data[i+j,:2], data[i+j, 3]) #change to better name like "diffusion_predict"
+            # >> Do we want to have two perceptrons competing here? OR is context1 and c2 weights sufficient
+            # completely separate perceptron/antiperceptron pair 
+           
             prediction = circuit_values[0]
             steps = circuit_values[1]
             #prediction = unthresholded_predict(datum, context_2_weights
             #make learning rate tied to prediction time
             error = datum[3] - prediction
-            learning_rate = (.5 - ((20 * .0001)) / 2) #Any better ideas for this?
+            #Affine function of steps
+            learning_rate = (.5 - ((steps * .0001)) / 2) #Any better ideas for this?
+            
+            #learning_rate = (1 / (steps + 0))
+            #Explore making this logistic
+            # >> Here 
             bias_delta = learning_rate * error
-            context_2_weights[0] = context_2_weights[0] + bias_delta
+            context_2_weights[0] = context_2_weights[0] + (learning_rate * error)
             for k in range(1, 3):
-                context_2_weights[k] = context_2_weights[k] + learning_rate * error * data[i+j,:2]
-                print(context_2_weights)
-            context_retrain = False 
+                context_2_weights[k] = context_2_weights[k] + learning_rate * error * data[i+j, k-1]
+                retrain_weights[j] = context_2_weights
+            #print(context_2_weights)
+            
+        context_retrain = False 
     else: 
+        prediction = p_predict(data[i], context_2_weights)
         if (prediction == datum[3]):
             correct_context_2 += 1
+    
+    if (i == test.shape[0] - 1):
+        print(correct_context_2)
+        plt.figure()
+        xx = np.linspace(0,1,10)
+        for j in range (0, 50):
+            yy2 = (-1 / retrain_weights[j][2]) * retrain_weights[j][1] * xx + retrain_weights[j][0]
+            plt.plot(xx, yy2, c = (0.1, 0.1, .02 * j, .02 * j), label = "Context 2 Weights") 
+        plt.plot(xx, yy, '-r', label = "Context 1 Weights")
+        #plt.axis([0, 10.0, -10.0, 10.0])
+        plt.show()
         #print(p_predict(datum, context_2_weights))
     #print(predict(context_1_weights, context_2_weights, datum, datum[3]))
     #We start getting things wrong, so we need to switch to a new state with 

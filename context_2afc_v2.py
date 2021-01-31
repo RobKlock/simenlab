@@ -134,7 +134,7 @@ def predict(c1_weights, c2_weights, datum, label, circuit_weights = circuit_weig
         plt.title("V1 V2 Difference (Drift Diffusion)")
     return [classification, steps]
 
-def label_data(data, weights):
+def label_data(data, weights1, weights2):
     labels = np.empty((data.shape[0], 2))
     #Labels random data according to passed in line
     #Takes in data and weights
@@ -142,10 +142,17 @@ def label_data(data, weights):
     #Context one classifies data above the line as 1, below as 0, and
     #visa versa for context 2
     for i in range (0, data.shape[0]):
-        if data[i][1] >= weights[1] * data[i][0] + weights[0]:
+        if (data[i][1] >= weights1[1] * data[i][0] + weights1[0]) and (data[i][1] >= (-1/weights2[2]) * data[i][0] * weights2[1] + weights2[0]):
+            labels[i] = [1,1]
+        
+        elif (data[i][1] >= weights1[1] * data[i][0] + weights1[0]) and (data[i][1] <= (-1/weights2[2]) * data[i][0] * weights2[1] + weights2[0]):
             labels[i] = [1,0]
-        else:
+        
+        elif (data[i][1] <= weights1[1] * data[i][0] + weights1[0]) and (data[i][1] >= (-1/weights2[2]) * data[i][0] * weights2[1] + weights2[0]):
             labels[i] = [0,1]
+        
+        else:
+            labels[i] = [0,0]
     return labels
 
 def unthresholded_predict(row, weights, ap=False):
@@ -178,9 +185,13 @@ y1 = np.random.normal(mu, sigma, size = (1200, 1))
 zeros = np.zeros((1200,1))
 ones = np.ones((1200,1))
 
+#p_weights = p.gradient_descent(train_context_1, 0.15, 1000)
+context_1_weights = [ 1       , -1,  -1] #fixed weights so we dont call GD every time we run
+context_2_goal_weights = [0,    2.5,    -2.5]
+
 #Combine pairs of X and Y
 data = np.append(x1, y1, axis = 1)
-labels = label_data(data, [1, -1, -1])
+labels = label_data(data,  context_1_weights, context_2_goal_weights)
 data = np.append(data, labels, axis = 1)
 
 
@@ -188,8 +199,6 @@ data = np.append(data, labels, axis = 1)
 train =  data[:400]
 test = data[400:]
 
-#p_weights = p.gradient_descent(train_context_1, 0.15, 1000)
-context_1_weights = [ 1       , -1,  -1] #fixed weights so we dont call GD every time we run
 
 #Plot data and decision line
 plt.figure("Context 1")
@@ -202,18 +211,22 @@ plt.scatter(below[0:,0:1], below[0:,1:2], alpha=0.80, marker='o',  label = "Cont
 a = -context_1_weights[1]/context_1_weights[2]
 #yy = a * xx - p_weights[0] / p_weights[2]
 yy = (-1 / context_1_weights[2]) * context_1_weights[1] * xx + context_1_weights[0]
+yy2 = (-1 / context_2_goal_weights[2]) * context_2_goal_weights[1] * xx + context_2_goal_weights[0]
 plt.plot(xx, yy, '-g', label = "Context 1 Weights")  # solid green
+plt.plot(xx, yy2, '-b', label = "Context 2 Goal Weights")
 #plt.plot(x, (sgd_clf.intercept_[0] - (sgd_clf.coef_[0][0] * x)) / sgd_clf.coef_[0][1])
 plt.axis([0.0, 1.0, 0.0, 1.0])
 plt.xlabel("X")
 plt.ylabel("Y")
 plt.legend()
 plt.show()
+
 plt.figure("Context 2")
 above = data[data[:, 3] == 1]
 below = data[data[:, 3] == 0]
 plt.scatter(above[0:,0:1], above[0:,1:2], alpha=0.80, marker='o', label = "Context: 2, Class: 1")
 plt.scatter(below[0:,0:1], below[0:,1:2], alpha=0.80, marker='^',  label = "Context: 2, Class: 0")
+plt.plot(xx, yy2, '-b', label = "Context 2 Goal Weights")
 plt.show()
 accuracy = 0
 correct_context_1 = 0

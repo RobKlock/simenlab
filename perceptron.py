@@ -184,6 +184,47 @@ def gradient_descent(training_data, learning_rate, num_epoch, antiperceptron = F
         plt.plot(weights, 'bo')
     return weights
 
+def gradient_descent_variable_eta(training_data, circuit_steps, num_epoch, antiperceptron = False, plot = False):
+    weights = np.zeros(len(training_data[0]))
+    error_arr = np.array([])
+    for epoch in range(num_epoch):
+        sum_error = 0.0
+        i = 0
+        #learning_rate = ((num_epoch/100) - epoch) * learning_rate
+        for row in training_data:
+            #make a prediction with the given weights
+            prediction = predict(row, weights)
+            #calculate error
+            #adjust here to make anti-perceptron (1 - row[-1])
+            #error = (1 - row[-1]) - prediction
+            if not antiperceptron:
+                error = row[-1] - prediction
+            else:
+                error = (-1 * (row[-1] - 1)) - prediction
+                #error = (row[-1] - prediction) * -1 
+           
+            #error = row[-1] - prediction if not antiperceptron else (1 - row[-1]) - prediction
+            #sum and square error
+            sum_error += error**2
+            learning_rate = (1 / (circuit_steps[0][i] + 0))
+            
+            #update bias
+            bias_delta = learning_rate * error
+            weights[0] = weights[0] + bias_delta
+            i += 1
+            #Plot the last ten 
+            for i in range(len(row) - 1):
+                #update weights according to weight_i = weight_i + (learning_rate*error*input)
+                weights[i + 1] = weights[i + 1] + learning_rate * error * row[i]
+        np.append(error_arr, sum_error)
+    
+    if plot:
+        print('>epoch=%d, lrate=%.3f, error=%.3f' % (epoch, learning_rate, sum_error))
+        print("weights:", weights)
+        plt.figure()
+        plt.plot(weights, 'bo')
+    return weights
+
 #Perceptron Function
     #Take in a training set, test set, learning rate, and epoch number
     #Learns weights based on a training set, then returns predictions for the test set

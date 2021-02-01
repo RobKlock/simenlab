@@ -53,7 +53,7 @@ circuit_weights = np.array([[0,    -.3,      0,     -1],    #1->1  2->1, 3->1, 4
     
 #How can we use the circuit to change our weights?
     
-def predict(c1_weights, c2_weights, datum, label, circuit_weights = circuit_weights, plot = False):                        
+def diffusion_predict(c1_weights, c2_weights, datum, label, circuit_weights = circuit_weights, plot = False):                        
     steps = 0 
     tau = 1
     dt = 0.01
@@ -276,6 +276,17 @@ for i in range (left_off_index, test.shape[0]):
         #retrain a perceptron and antiperceptron
         p_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400)
         ap_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400, antiperceptron = True)
+        circuit_steps = np.zeros((1, 50))
+        for j in range (0, 50):
+            circuit_values = diffusion_predict(p_weights, ap_weights, data[i+j,:2], data[i+j, 3])
+        #context_2_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400)
+            circuit_steps[0][j] = circuit_values[1]
+            #circuit_steps.fill(0.2)
+        
+        context_2_weights = p.gradient_descent_variable_eta(data[left_off_index : left_off_index + 50], circuit_steps, 400)
+        
+        context_retrain = False 
+        """
         for a in range (0, 3):
             for j in range (0, 100):
                 #retrain weights
@@ -286,9 +297,9 @@ for i in range (left_off_index, test.shape[0]):
                 # completely separate perceptron/antiperceptron pair 
                
                 #prediction = circuit_values[0]
-                """
-                Need to add a prediction function here for context 2, not the circuit prediction
-                """
+                
+                #Need to add a prediction function here for context 2, not the circuit prediction
+                
                 context_2_datum = np.concatenate((data[i+j, :2], [data[i+j, 3]]))
                 
                 prediction = p_predict(context_2_datum, context_2_weights)
@@ -306,17 +317,18 @@ for i in range (left_off_index, test.shape[0]):
                 # >> Here 
                 
                 #bias_delta = learning_rate + error
-                """
+                
                 context_2_weights[0] = context_2_weights[0] + wi_delta
                 
                 for k in range(1, 3):
                     context_2_weights[k] = context_2_weights[k] + (wi_delta * data[i+j, k-1])
                     #print(context_2_weights)
                     retrain_weights[j] = context_2_weights
-                """
-                #print(context_2_weights)
             
-        context_retrain = False 
+                #print(context_2_weights) 
+                """
+    
+        
     else: 
         prediction = p_predict(data[i], context_2_weights)
         if (prediction == datum[3]):
@@ -326,9 +338,9 @@ for i in range (left_off_index, test.shape[0]):
         #print(correct_context_2)
         plt.figure()
         xx = np.linspace(0,1,10)
-        for j in range (50, 100):
-            yy2 = (-1 / retrain_weights[j][2]) * retrain_weights[j][1] * xx + retrain_weights[j][0]
-            plt.plot(xx, yy2, c = ((0.9 - (.01 * 1)), 0.1, .5, .5 - (.01 )),  label = "Context 2 Weights") 
+        #for j in range (50, 100):
+            #yy2 = (-1 / retrain_weights[j][2]) * retrain_weights[j][1] * xx + retrain_weights[j][0]
+            #plt.plot(xx, yy2, c = ((0.9 - (.01 * 1)), 0.1, .5, .5 - (.01 )),  label = "Context 2 Weights") 
     
         plt.plot(xx, yy, '-r', label = "Context 1 Weights")
         #plt.axis([0, 10.0, -10.0, 10.0])
@@ -336,7 +348,7 @@ for i in range (left_off_index, test.shape[0]):
         yy2 = (-1 / context_2_weights[2]) * context_2_weights[1] * xx + context_2_weights[0]
         plt.plot(xx, yy2)
         plt.plot()
-        print(context_2_weights)
+        #print(context_2_weights)
         #print(p_predict(datum, context_2_weights))
     #print(predict(context_1_weights, context_2_weights, datum, datum[3]))
     #We start getting things wrong, so we need to switch to a new state with 

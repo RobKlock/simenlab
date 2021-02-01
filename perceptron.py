@@ -108,12 +108,12 @@ def predict(row, weights, ap=False):
         activation += weights[i + 1] * row[i]
     #if (1/(1 + math.exp(-activation))) >= .5:
     if not ap:
-        if activation > 0.5:
+        if activation > 0:
             return  1
         else: 
             return 0
     else:
-        if activation > 0.5:
+        if activation > 0:
             return 1
         else:
             return 0

@@ -168,14 +168,14 @@ def p_predict(row, weights, ap=False):
     #if (1/(1 + math.exp(-activation))) >= .5:
     if not ap:
         if activation > 0:
-            return  0
+            return  1
         else: 
-            return 1
+            return -1
     else:
         if activation > 0:
-            return 1
+            return -1
         else:
-            return 0
+            return 1
 
 #Coodinates for random data
 x1 = np.random.normal(mu, sigma, size = (1200, 1))
@@ -265,39 +265,56 @@ for i in range (test.shape[0]):
         break
 
 context_retrain = True 
-retrain_weights = np.empty((50,3))
+retrain_weights = np.empty((100,3))
     
 #cmap = colors.LinearSegmentedColormap('custom', cdict)
 
 for i in range (left_off_index, test.shape[0]):
     context_2_timer += 1
-    
+    datum = data[i]
     if context_retrain:
-        for j in range (0, 50):
-            #retrain weights
-             # retrain a perceptron and antiperceptron on context 2 
-             # have those compete
-            circuit_values = predict(context_1_weights, context_2_weights, data[i+j,:2], data[i+j, 3]) #change to better name like "diffusion_predict"
-            # >> Do we want to have two perceptrons competing here? OR is context1 and c2 weights sufficient
-            # completely separate perceptron/antiperceptron pair 
-           
-            prediction = circuit_values[0]
-            steps = circuit_values[1]
-            #prediction = unthresholded_predict(datum, context_2_weights
-            #make learning rate tied to prediction time
-            error = datum[3] - prediction
-            #Affine function of steps
-            learning_rate = (.5 - ((steps * .0001)) / 2) #Any better ideas for this?
-            
-            #learning_rate = (1 / (steps + 0))
-            #Explore making this logistic
-            # >> Here 
-            bias_delta = learning_rate * error
-            context_2_weights[0] = context_2_weights[0] + (learning_rate * error)
-            for k in range(1, 3):
-                context_2_weights[k] = context_2_weights[k] + learning_rate * error * data[i+j, k-1]
-                retrain_weights[j] = context_2_weights
-            #print(context_2_weights)
+        #retrain a perceptron and antiperceptron
+        p_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400)
+        ap_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400, antiperceptron = True)
+        for a in range (0, 3):
+            for j in range (0, 100):
+                #retrain weights
+                 # retrain a perceptron and antiperceptron on context 2 
+                 # have those compete
+                #circuit_values = predict(p_weights, ap_weights, data[i+j,:2], data[i+j, 3]) #change to better name like "diffusion_predict"
+                # >> Do we want to have two perceptrons competing here? OR is context1 and c2 weights sufficient
+                # completely separate perceptron/antiperceptron pair 
+               
+                #prediction = circuit_values[0]
+                """
+                Need to add a prediction function here for context 2, not the circuit prediction
+                """
+                context_2_datum = np.concatenate((data[i+j, :2], [data[i+j, 3]]))
+                
+                prediction = p_predict(context_2_datum, context_2_weights)
+                steps = 200 #circuit_values[1]
+                #prediction = unthresholded_predict(datum, context_2_weights
+                #make learning rate tied to prediction time
+                error = datum[3] - prediction
+                #print("error: ", error)
+                #Affine function of steps
+                #learning_rate = (.5 - ((steps * .0001)) / 2) #Any better ideas for this?
+                learning_rate = 0.2
+                wi_delta = error * learning_rate 
+                #learning_rate = (1 / (steps + 0))
+                #Explore making this logistic
+                # >> Here 
+                
+                #bias_delta = learning_rate + error
+                """
+                context_2_weights[0] = context_2_weights[0] + wi_delta
+                
+                for k in range(1, 3):
+                    context_2_weights[k] = context_2_weights[k] + (wi_delta * data[i+j, k-1])
+                    #print(context_2_weights)
+                    retrain_weights[j] = context_2_weights
+                """
+                #print(context_2_weights)
             
         context_retrain = False 
     else: 
@@ -306,15 +323,20 @@ for i in range (left_off_index, test.shape[0]):
             correct_context_2 += 1
     
     if (i == test.shape[0] - 1):
-        print(correct_context_2)
+        #print(correct_context_2)
         plt.figure()
         xx = np.linspace(0,1,10)
-        for j in range (0, 50):
+        for j in range (50, 100):
             yy2 = (-1 / retrain_weights[j][2]) * retrain_weights[j][1] * xx + retrain_weights[j][0]
-            plt.plot(xx, yy2, c = (0.1, 0.1, .02 * j, .02 * j), label = "Context 2 Weights") 
+            plt.plot(xx, yy2, c = ((0.9 - (.01 * 1)), 0.1, .5, .5 - (.01 )),  label = "Context 2 Weights") 
+    
         plt.plot(xx, yy, '-r', label = "Context 1 Weights")
         #plt.axis([0, 10.0, -10.0, 10.0])
         plt.show()
+        yy2 = (-1 / context_2_weights[2]) * context_2_weights[1] * xx + context_2_weights[0]
+        plt.plot(xx, yy2)
+        plt.plot()
+        print(context_2_weights)
         #print(p_predict(datum, context_2_weights))
     #print(predict(context_1_weights, context_2_weights, datum, datum[3]))
     #We start getting things wrong, so we need to switch to a new state with 

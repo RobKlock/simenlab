@@ -45,7 +45,9 @@ def sigmoid(l, total_input, b, sig_idx):
     return f
 
 #Plt.pause for debugging 
-'''Weights'''
+'''Weights
+- Unlike the feed-forward model in Bogacz, this model is recurrent in that inhibition flows backwards
+'''
 circuit_weights = np.array([[0,    -1,      0,     0],    #1->1  2->1, 3->1, 4->1
                     [-1,    0,      0,     0],            #1->2, 2->2, 3->2, 4->2
                     [1.23,  0,      2,  0],             #1->3, 2->3, 3->3, 4->3
@@ -68,6 +70,7 @@ def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, pl
     p_hist = np.array([0])
     ap_hist = np.array([0])
     perceptron_activation_scalar = .8
+    
     l = np.array([[4, 4, 4, 4]]).T                  
     bias = np.array([[1, 1, 1, 1]]).T 
   
@@ -293,7 +296,10 @@ for i in range (left_off_index, test.shape[0]):
         for j in range (0, 200):
             circuit_values = diffusion_predict(p_weights, ap_weights, data2[i+j,:2], data[i+j, 3])
             #context_2_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 200)
-       #     circuit_steps[0][j] = circuit_values[1]
+            circuit_steps[0][j] = circuit_values[1]
+            """
+            If we use circuit_steps as 
+            """
             #circuit_steps.fill(0.2)
         
         context_2_weights = p.gradient_descent_variable_eta(data[left_off_index : left_off_index + 50], circuit_steps, 400, plot = True)

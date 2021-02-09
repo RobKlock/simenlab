@@ -289,14 +289,14 @@ for i in range (left_off_index, test.shape[0]):
         #retrain a perceptron and antiperceptron
         p_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400)
         ap_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400, antiperceptron = True)
-        circuit_steps = np.zeros((1, 50))
-        #for j in range (0, 50):
-        #    circuit_values = diffusion_predict(p_weights, ap_weights, data[i+j,:2], data[i+j, 3])
-        context_2_weights = p.gradient_descent(data2, 0.1, 200)
+        circuit_steps = np.ones((1, 200))
+        for j in range (0, 200):
+            circuit_values = diffusion_predict(p_weights, ap_weights, data2[i+j,:2], data[i+j, 3])
+            #context_2_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 200)
        #     circuit_steps[0][j] = circuit_values[1]
             #circuit_steps.fill(0.2)
         
-        #context_2_weights = p.gradient_descent_variable_eta(data[left_off_index : left_off_index + 50], circuit_steps, 400)
+        context_2_weights = p.gradient_descent_variable_eta(data[left_off_index : left_off_index + 50], circuit_steps, 400, plot = True)
         
         context_retrain = False 
         """

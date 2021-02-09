@@ -243,7 +243,7 @@ plt.plot(xx, yy2, '-b', label = "Context 2 Goal Weights")
 plt.show()
 accuracy = 0
 correct_context_1 = 0
-context_2_weights = np.random.rand(3)
+context_2_weights = context_1_weights#np.random.rand(3)
 context_1_timer = 0
 context_2_timer = 0
 context_1 = True
@@ -292,7 +292,7 @@ for i in range (left_off_index, test.shape[0]):
         circuit_steps = np.zeros((1, 50))
         #for j in range (0, 50):
         #    circuit_values = diffusion_predict(p_weights, ap_weights, data[i+j,:2], data[i+j, 3])
-        #context_2_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400)
+        context_2_weights = p.gradient_descent(data2, 0.1, 200)
        #     circuit_steps[0][j] = circuit_values[1]
             #circuit_steps.fill(0.2)
         

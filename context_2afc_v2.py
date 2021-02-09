@@ -48,22 +48,27 @@ def sigmoid(l, total_input, b, sig_idx):
 '''Weights
 - Unlike the feed-forward model in Bogacz, this model is recurrent in that inhibition flows backwards
 '''
-circuit_weights = np.array([[0,    -1,      0,     0],    #1->1  2->1, 3->1, 4->1
-                    [-1,    0,      0,     0],            #1->2, 2->2, 3->2, 4->2
-                    [1.23,  0,      2,  0],             #1->3, 2->3, 3->3, 4->3
-                    [0,     1.23,   0,      2]])        #1->4, 2->4, 3->4  4->4
+circuit_weights = np.array([[0,    -2,      0,     0],    #1->1  2->1, 3->1, 4->1
+                            [-2,    0,      0,     0],            #1->2, 2->2, 3->2, 4->2
+                            [1.5,     0,      2,     0],             #1->3, 2->3, 3->3, 4->3
+                            [0,     1.5,      0,     2]])        #1->4, 2->4, 3->4  4->4
     
 #How can we use the circuit to change our weights?
     
 def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, plot = False):                        
     steps = 0 
-    tau = 1
+    tau = 1.5
     dt = 0.01
+    internal_noise = 0.3
+    sensor_noise = 0.05
+    l = np.array([[4, 4, 4, 4]]).T                  
+    bias = np.array([[1, 1, 1, 1]]).T 
+    
     context_timer = 0
+    
     p_weights = p
     ap_weights = ap
-    internal_noise = 0.15
-    sensor_noise = 0.2
+   
     decision_threshold = .8
     v_hist = np.array([[0, 0, 0, 0]]).T    
     v = np.array([[0, 0, 0, 0]]).T              
@@ -71,10 +76,8 @@ def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, pl
     ap_hist = np.array([0])
     perceptron_activation_scalar = .8
     
-    l = np.array([[4, 4, 4, 4]]).T                  
-    bias = np.array([[1, 1, 1, 1]]).T 
   
-    bias = bias * 1.1
+    bias = bias * 1.5
     sig_idx= [2,3]
     
     #Repeatedly have perceptron and AP classify row, feed into circuit
@@ -94,6 +97,7 @@ def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, pl
         activations[0] = p_classification + activations[0]     
         activations[1] = ap_classification + activations[1]    
         activations[2:] = sigmoid(l, activations[2:], bias, sig_idx)
+        
         dv = tau * ((-v + activations) * dt + internal_noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) # add noise using np.random
         v = v + dv
         

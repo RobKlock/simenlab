@@ -46,20 +46,20 @@ def sigmoid(l, total_input, b, sig_idx):
 
 #Plt.pause for debugging 
 '''Weights'''
-circuit_weights = np.array([[0,    -.3,      0,     -1],    #1->1  2->1, 3->1, 4->1
-                    [-.3,    0,      -1,     0],            #1->2, 2->2, 3->2, 4->2
-                    [1.23,  0,      2.087,  0],             #1->3, 2->3, 3->3, 4->3
-                    [0,     1.23,   0,      2.087]])        #1->4, 2->4, 3->4  4->4
+circuit_weights = np.array([[0,    -1,      0,     0],    #1->1  2->1, 3->1, 4->1
+                    [-1,    0,      0,     0],            #1->2, 2->2, 3->2, 4->2
+                    [1.23,  0,      2,  0],             #1->3, 2->3, 3->3, 4->3
+                    [0,     1.23,   0,      2]])        #1->4, 2->4, 3->4  4->4
     
 #How can we use the circuit to change our weights?
     
-def diffusion_predict(c1_weights, c2_weights, datum, label, circuit_weights = circuit_weights, plot = False):                        
+def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, plot = False):                        
     steps = 0 
     tau = 1
     dt = 0.01
     context_timer = 0
-    p_weights = c1_weights
-    ap_weights = c2_weights
+    p_weights = p
+    ap_weights = ap
     internal_noise = 0.15
     sensor_noise = 0.2
     decision_threshold = .8
@@ -180,7 +180,6 @@ def p_predict(row, weights, ap=False):
 #Coodinates for random data
 x1 = np.random.normal(mu, sigma, size = (1200, 1))
 y1 = np.random.normal(mu, sigma, size = (1200, 1))
-
 #500 instances of data classified as a 1 and data classified as 0 at a time
 zeros = np.zeros((1200,1))
 ones = np.ones((1200,1))
@@ -199,6 +198,20 @@ data = np.append(data, labels, axis = 1)
 train =  data[:400]
 test = data[400:]
 
+#Additional Data
+mu2, sigma2, d = .5, 500, .3 # mean and standard deviation
+x2 = np.random.normal(mu2, sigma2, size = (1200, 1))
+y2 = np.random.normal(mu2, sigma2, size = (1200, 1)) 
+data2 =  np.append(x2,y2, axis = 1)
+data2_labels = label_data(data2, context_1_weights, context_2_goal_weights)
+data2 = np.append(data2, data2_labels, axis = 1)
+
+plt.figure("Additional data")
+above2 = data2[data2[:,2] == 0]
+below2 = data2[data2[:,2] == 1]
+plt.scatter(above2[0:,0:1], above2[0:,1:2], alpha=0.80, marker='^', label = "Additional data class: 1")
+plt.scatter(below2[0:,0:1], below2[0:,1:2], alpha=0.80, marker='o',  label = "Additional data class: 0")
+plt.show()
 
 #Plot data and decision line
 plt.figure("Context 1")
@@ -215,7 +228,7 @@ yy2 = (-1 / context_2_goal_weights[2]) * context_2_goal_weights[1] * xx + contex
 plt.plot(xx, yy, '-g', label = "Context 1 Weights")  # solid green
 plt.plot(xx, yy2, '-b', label = "Context 2 Goal Weights")
 #plt.plot(x, (sgd_clf.intercept_[0] - (sgd_clf.coef_[0][0] * x)) / sgd_clf.coef_[0][1])
-plt.axis([0.0, 1.0, 0.0, 1.0])
+#plt.axis([0.0, 1.0, 0.0, 1.0])
 plt.xlabel("X")
 plt.ylabel("Y")
 plt.legend()
@@ -277,13 +290,13 @@ for i in range (left_off_index, test.shape[0]):
         p_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400)
         ap_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400, antiperceptron = True)
         circuit_steps = np.zeros((1, 50))
-        for j in range (0, 50):
-            circuit_values = diffusion_predict(p_weights, ap_weights, data[i+j,:2], data[i+j, 3])
+        #for j in range (0, 50):
+        #    circuit_values = diffusion_predict(p_weights, ap_weights, data[i+j,:2], data[i+j, 3])
         #context_2_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400)
-            circuit_steps[0][j] = circuit_values[1]
+       #     circuit_steps[0][j] = circuit_values[1]
             #circuit_steps.fill(0.2)
         
-        context_2_weights = p.gradient_descent_variable_eta(data[left_off_index : left_off_index + 50], circuit_steps, 400)
+        #context_2_weights = p.gradient_descent_variable_eta(data[left_off_index : left_off_index + 50], circuit_steps, 400)
         
         context_retrain = False 
         """
@@ -336,7 +349,7 @@ for i in range (left_off_index, test.shape[0]):
     
     if (i == test.shape[0] - 1):
         #print(correct_context_2)
-        plt.figure()
+        plt.figure("Decision Lines")
         xx = np.linspace(0,1,10)
         #for j in range (50, 100):
             #yy2 = (-1 / retrain_weights[j][2]) * retrain_weights[j][1] * xx + retrain_weights[j][0]
@@ -346,7 +359,8 @@ for i in range (left_off_index, test.shape[0]):
         #plt.axis([0, 10.0, -10.0, 10.0])
         plt.show()
         yy2 = (-1 / context_2_weights[2]) * context_2_weights[1] * xx + context_2_weights[0]
-        plt.plot(xx, yy2)
+        plt.plot(xx, yy2, '-b', label = "Context 2 Weights")
+        plt.legend()
         plt.plot()
         #print(context_2_weights)
         #print(p_predict(datum, context_2_weights))

@@ -169,8 +169,8 @@ def perceptron_accuracy(weights, ap=False):
 #Train antiperceptron, store weights 
 
 #Linear growth - lateral inhibition of -.8
-weights = np.array([[0,    -5,      0,     0],        #1->1  2->1, 3->1, 4->1 Changed 4->1 and 3->2 to 0 on 12/15
-                    [-5,    0,      0,     0],        #1->2, 2->2, 3->2, 4->2
+weights = np.array([[0,    -4,      0,     0],        #1->1  2->1, 3->1, 4->1 Changed 4->1 and 3->2 to 0 on 12/15
+                    [-4,    0,      0,     0],        #1->2, 2->2, 3->2, 4->2
                     [1.23,  0,      2.087,  0],            #1->3, 2->3, 3->3, 4->3
                     [0,     1.23,   0,      2.087]])       #1->4, 2->4, 3->4, 4->4
 #To help tune up, run a version with just linear v1 and v2 
@@ -193,9 +193,9 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 9, plot = False
         weights = w
         p_weights = p
         ap_weights = ap
-        internal_noise = 0.05
+        internal_noise = 0.2
         sensor_noise = 0.05
-        decision_threshold = 50
+        decision_threshold = .8
         v_hist = np.array([[0, 0, 0, 0]]).T    
         v = np.array([[0, 0, 0, 0]]).T              # values for each neuron
         p_hist = np.array([0])
@@ -271,7 +271,7 @@ def trial(w = weights, p = p_weights, ap = ap_weights, row_idx = 9, plot = False
             plt.grid('on')
             plt.title("V1 V2 Difference (Drift Diffusion)")
             
-            
+            plt.show()
         #Add plots to show multiple trials on one plot
         
     #plot v2 - v1 

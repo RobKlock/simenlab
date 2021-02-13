@@ -48,8 +48,8 @@ def sigmoid(l, total_input, b, sig_idx):
 '''Weights
 - Unlike the feed-forward model in Bogacz, this model is recurrent in that inhibition flows backwards
 '''
-circuit_weights = np.array([[0,    -2,      0,     0],    #1->1  2->1, 3->1, 4->1
-                            [-2,    0,      0,     0],            #1->2, 2->2, 3->2, 4->2
+circuit_weights = np.array([[0,    -1,      0,     0],    #1->1  2->1, 3->1, 4->1
+                            [-1,    0,      0,     0],            #1->2, 2->2, 3->2, 4->2
                             [1.5,     0,      2,     0],             #1->3, 2->3, 3->3, 4->3
                             [0,     1.5,      0,     2]])        #1->4, 2->4, 3->4  4->4
     
@@ -57,11 +57,13 @@ circuit_weights = np.array([[0,    -2,      0,     0],    #1->1  2->1, 3->1, 4->
     
 def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, plot = False):                        
     steps = 0 
-    tau = 1.5
+    tau = 1
     dt = 0.01
-    internal_noise = 0.3
+    internal_noise = 0.1
     sensor_noise = 0.05
-    l = np.array([[4, 4, 4, 4]]).T                  
+    l = np.array([[4, 4, 4, 4]]).T     
+
+    #bias tells you the left/right adjustment of the sigmoid              
     bias = np.array([[1, 1, 1, 1]]).T 
     
     context_timer = 0
@@ -70,19 +72,20 @@ def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, pl
     ap_weights = ap
    
     decision_threshold = .8
+    # See if the attractor is below .8
     v_hist = np.array([[0, 0, 0, 0]]).T    
     v = np.array([[0, 0, 0, 0]]).T              
     p_hist = np.array([0])
     ap_hist = np.array([0])
-    perceptron_activation_scalar = .8
-    
+    perceptron_activation_scalar = 1
+    leak = -1
   
-    bias = bias * 1.5
+    bias = bias * 1
     sig_idx= [2,3]
     
     #Repeatedly have perceptron and AP classify row, feed into circuit
     #until the circuit makes a classification (v3 or v4 is > decision threshold)
-    while (v[3] < decision_threshold) and (v[2] < decision_threshold):
+    while ((v[3] < decision_threshold) and (v[2] < decision_threshold)) and (steps < 15000):
         row = datum
         nn = np.random.normal(0, .1, 2) * sensor_noise
         #noise = np.append(nn, data[row_idx][-1])
@@ -92,13 +95,20 @@ def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, pl
         ap_classification = p_predict(noisyRow, ap_weights, ap=True) * perceptron_activation_scalar
         
         steps += 1 
-        
+        #if (steps % 1000) == 0:
+        #    print("1000 steps")
+            
         activations = circuit_weights @ v                              #weighted sum of activations, inputs to each unit
         activations[0] = p_classification + activations[0]     
         activations[1] = ap_classification + activations[1]    
         activations[2:] = sigmoid(l, activations[2:], bias, sig_idx)
         
-        dv = tau * ((-v + activations) * dt + internal_noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) # add noise using np.random
+        dv = (1/tau) * (((-v) + activations) * dt + (internal_noise * np.sqrt(dt) * np.random.normal(0,1, (4,1))) / tau) # add noise using np.random
+        #Divide dv and DW by tau (where DW = noise) 
+        # dv [0,1] = leak version for linear units 
+        # dv [1:] = non leak  non linear units (sigmoid units) (fixed at -1, just as before)
+        #Itll converge to I 
+        #dv = (-V + I + wV)
         v = v + dv
         
         v_hist = np.concatenate((v_hist,v), axis=1)
@@ -192,8 +202,8 @@ zeros = np.zeros((1200,1))
 ones = np.ones((1200,1))
 
 #p_weights = p.gradient_descent(train_context_1, 0.15, 1000)
-context_1_weights = [ 1       , -1,  -1] #fixed weights so we dont call GD every time we run
-context_2_goal_weights = [0,    2.5,    -2.5]
+context_1_weights = [-1, -1,  1] #fixed weights so we dont call GD every time we run
+context_2_goal_weights = [1,    1,    1]
 
 #Combine pairs of X and Y
 data = np.append(x1, y1, axis = 1)
@@ -230,8 +240,8 @@ plt.scatter(below[0:,0:1], below[0:,1:2], alpha=0.80, marker='o',  label = "Cont
 
 a = -context_1_weights[1]/context_1_weights[2]
 #yy = a * xx - p_weights[0] / p_weights[2]
-yy = (-1 / context_1_weights[2]) * context_1_weights[1] * xx + context_1_weights[0]
-yy2 = (-1 / context_2_goal_weights[2]) * context_2_goal_weights[1] * xx + context_2_goal_weights[0]
+yy = (-1 / context_1_weights[0]) * context_1_weights[1] * xx + context_1_weights[2]
+yy2 = (-1 / context_2_goal_weights[0]) * context_2_goal_weights[1] * xx + context_2_goal_weights[2]
 plt.plot(xx, yy, '-g', label = "Context 1 Weights")  # solid green
 plt.plot(xx, yy2, '-b', label = "Context 2 Goal Weights")
 #plt.plot(x, (sgd_clf.intercept_[0] - (sgd_clf.coef_[0][0] * x)) / sgd_clf.coef_[0][1])
@@ -293,21 +303,22 @@ for i in range (left_off_index, test.shape[0]):
     context_2_timer += 1
     datum = data[i]
     if context_retrain:
+        context_retrain = False
         #retrain a perceptron and antiperceptron
         p_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400)
         ap_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400, antiperceptron = True)
         circuit_steps = np.ones((1, 200))
         for j in range (0, 200):
-            circuit_values = diffusion_predict(p_weights, ap_weights, data2[i+j,:2], data[i+j, 3])
+            #circuit_values = diffusion_predict(p_weights, ap_weights, data2[i+j,:2], data[i+j, 3])
             #context_2_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 200)
-            circuit_steps[0][j] = circuit_values[1]
+            #circuit_steps[0][j] = circuit_values[1]
             """
             If we use circuit_steps as 
             """
-            #circuit_steps.fill(0.2)
+            circuit_steps.fill(0.2)
         
         context_2_weights = p.gradient_descent_variable_eta(data[left_off_index : left_off_index + 50], circuit_steps, 400, plot = True)
-        
+        print(context_2_weights)
         context_retrain = False 
         """
         for a in range (0, 3):
@@ -356,7 +367,7 @@ for i in range (left_off_index, test.shape[0]):
         prediction = p_predict(data[i], context_2_weights)
         if (prediction == datum[3]):
             correct_context_2 += 1
-    
+        
     if (i == test.shape[0] - 1):
         #print(correct_context_2)
         plt.figure("Decision Lines")
@@ -372,18 +383,18 @@ for i in range (left_off_index, test.shape[0]):
         plt.plot(xx, yy2, '-b', label = "Context 2 Weights")
         plt.legend()
         plt.plot()
-        #print(context_2_weights)
-        #print(p_predict(datum, context_2_weights))
-    #print(predict(context_1_weights, context_2_weights, datum, datum[3]))
-    #We start getting things wrong, so we need to switch to a new state with 
-    #its own weights. Switch on how well youve been doing
-        
-    #Decide when to swtich
-    #Update context 2 weights 
-    #analyze
-    #print(correct / 800)
-        
-#Plot context 2
+            #print(context_2_weights)
+            #print(p_predict(datum, context_2_weights))
+        #print(predict(context_1_weights, context_2_weights, datum, datum[3]))
+        #We start getting things wrong, so we need to switch to a new state with 
+        #its own weights. Switch on how well youve been doing
+            
+        #Decide when to swtich
+        #Update context 2 weights 
+        #analyze
+        #print(correct / 800)
+            
+        #Plot context 2
 """
 plt.figure("Context 2")
 plt.scatter(test_q1_context_2[0:,0:1], test_q1_context_2[0:,1:2], alpha=0.80, marker='^')

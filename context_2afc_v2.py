@@ -158,14 +158,16 @@ def label_data(data, weights1, weights2):
     #Appends two values, a context 1 label and a context 2 label (opposites)
     #Context one classifies data above the line as 1, below as 0, and
     #visa versa for context 2
+    
+    #yy = (-1 / context_1_weights[0]) * context_1_weights[1] * xx + context_1_weights[2]
     for i in range (0, data.shape[0]):
-        if (data[i][1] >= weights1[1] * data[i][0] + weights1[0]) and (data[i][1] >= (-1/weights2[2]) * data[i][0] * weights2[1] + weights2[0]):
+        if (data[i][1] >= weights1[0] * data[i][0] + weights1[2]) and (data[i][1] >= (-1/weights2[1]) * data[i][0] * weights2[0] + weights2[0]):
             labels[i] = [1,1]
         
-        elif (data[i][1] >= weights1[1] * data[i][0] + weights1[0]) and (data[i][1] <= (-1/weights2[2]) * data[i][0] * weights2[1] + weights2[0]):
+        elif (data[i][1] >= weights1[0] * data[i][0] + weights1[2]) and (data[i][1] <= (-1/weights2[1]) * data[i][0] * weights2[0] + weights2[0]):
             labels[i] = [1,0]
         
-        elif (data[i][1] <= weights1[1] * data[i][0] + weights1[0]) and (data[i][1] >= (-1/weights2[2]) * data[i][0] * weights2[1] + weights2[0]):
+        elif (data[i][1] <= weights1[0] * data[i][0] + weights1[2]) and (data[i][1] >= (-1/weights2[1]) * data[i][0] * weights2[0] + weights2[0]):
             labels[i] = [0,1]
         
         else:
@@ -173,10 +175,17 @@ def label_data(data, weights1, weights2):
     return labels
 
 def unthresholded_predict(row, weights, ap=False):
+    # Its called unthresholded, but its really sigmoidal
     activation = weights[2]
     for i in range(0,2):
         activation += weights[i] * row[i]
-    return activation
+    # Numerically sound
+    if activation >= 0:
+        z = math.exp(-activation)
+        return 1 / (1 + z)
+    else:
+        z = math.exp(activation)
+        return z / (1 + z)
 #Weighted sum prediction
 def p_predict(row, weights, ap=False):
     activation = weights[-1]
@@ -351,7 +360,7 @@ for i in range (left_off_index, test.shape[0]):
             """
             circuit_steps.fill(0.2)
         
-        context_2_weights = gradient_descent_variable_eta(data[left_off_index : left_off_index + 50], circuit_steps, 400, context_1_weights, plot = True)
+        context_2_weights = gradient_descent_variable_eta(data2, circuit_steps, 400, context_1_weights, plot = True)
         print(context_2_weights)
         context_retrain = False 
         """
@@ -413,7 +422,7 @@ for i in range (left_off_index, test.shape[0]):
         plt.plot(xx, yy, '-r', label = "Context 1 Weights")
         #plt.axis([0, 10.0, -10.0, 10.0])
         plt.show()
-        yy2 = (-1 / context_2_weights[2]) * context_2_weights[1] * xx + context_2_weights[0]
+        yy2 = (-1 / context_2_weights[0]) * context_2_weights[1] * xx + context_2_weights[2]
         plt.plot(xx, yy2, '-b', label = "Context 2 Weights")
         plt.legend()
         plt.plot()

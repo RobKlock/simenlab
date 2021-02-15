@@ -173,13 +173,13 @@ def label_data(data, weights1, weights2):
     return labels
 
 def unthresholded_predict(row, weights, ap=False):
-    activation = weights[0]
+    activation = weights[2]
     for i in range(0,2):
-        activation += weights[i + 1] * row[i]
+        activation += weights[i] * row[i]
     return activation
 #Weighted sum prediction
 def p_predict(row, weights, ap=False):
-    activation = weights[0]
+    activation = weights[-1]
     for i in range(0,2):
         activation += weights[i + 1] * row[i]
     #if (1/(1 + math.exp(-activation))) >= .5:
@@ -193,6 +193,40 @@ def p_predict(row, weights, ap=False):
             return -1
         else:
             return 1
+        
+def gradient_descent_variable_eta(training_data, circuit_steps, num_epoch, starting_weights, antiperceptron = False, plot = False):
+  
+    '''This is the issue'''
+    #weights = np.zeros(len(training_data[0]))
+    weights = starting_weights
+    for epoch in range(num_epoch):
+        i = 0
+        #learning_rate = ((num_epoch/100) - epoch) * learning_rate
+        for row in training_data:
+            # Make a prediction -- forward pass
+            # Have to use a prediction without a step function, gradient cant descend on a flat surface
+            prediction = unthresholded_predict(row, weights)
+        
+            # Calculate error
+            # Error is target minus output
+            if not antiperceptron:
+                error = row[-1] - prediction
+            
+            else:
+                error = (-1 * (row[-1] - 1)) - prediction
+                #error = (row[-1] - prediction) * -1 
+        
+            # For time being, learning rate is set to .2
+            #learning_rate = (1 / (circuit_steps[0][i] + 0))
+            learning_rate = 0.2
+            #update bias
+            #bias_delta = learning_rate * error
+            #weights[0] = weights[0] + bias_delta
+          
+            for i in range(len(weights) - 1):
+                #update weights according to weight_i = weight_i + (learning_rate*error*input)
+                weights[i] = weights[i] + learning_rate * error * row[i]
+    return weights
 
 #Coodinates for random data
 x1 = np.random.normal(mu, sigma, size = (1200, 1))
@@ -303,7 +337,7 @@ for i in range (left_off_index, test.shape[0]):
     context_2_timer += 1
     datum = data[i]
     if context_retrain:
-        context_retrain = False
+        
         #retrain a perceptron and antiperceptron
         p_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400)
         ap_weights = p.gradient_descent(data[left_off_index : left_off_index + 50], 0.1, 400, antiperceptron = True)
@@ -317,7 +351,7 @@ for i in range (left_off_index, test.shape[0]):
             """
             circuit_steps.fill(0.2)
         
-        context_2_weights = p.gradient_descent_variable_eta(data[left_off_index : left_off_index + 50], circuit_steps, 400, plot = True)
+        context_2_weights = gradient_descent_variable_eta(data[left_off_index : left_off_index + 50], circuit_steps, 400, context_1_weights, plot = True)
         print(context_2_weights)
         context_retrain = False 
         """

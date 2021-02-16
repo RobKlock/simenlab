@@ -38,7 +38,10 @@ from sklearn.linear_model import SGDClassifier
 mu, sigma, d = .5, 0.2, .3 # mean and standard deviation
 '''Helper Functions'''
 
-    
+def graph_sigmoid(l, I, b):
+    f=1/(1+np.exp(-l * (I-b)))
+    return f
+
 def sigmoid(l, total_input, b, sig_idx):
     f = 1/ (1 + np.exp(-l[sig_idx] * (total_input - b[sig_idx])))
     #sig_index is the index of the activcation function we want   
@@ -149,6 +152,37 @@ def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, pl
         plt.xlabel("time")
         plt.grid('on')
         plt.title("V1 V2 Difference (Drift Diffusion)")
+        
+        x_axis_vals = np.arange(-2, 3, .1)
+        plt.figure()
+        print(graph_sigmoid(l[2], x_axis_vals, bias[0] - v[0]).shape)
+        print(l[2].shape)
+        print(x_axis_vals.shape)
+        print(bias[0].shape)
+        print(v[0].shape)
+        plt.plot(x_axis_vals, graph_sigmoid(l[2], x_axis_vals, bias[0] - v[2]))
+        x1 = [0, 3]
+        y1 = [0, 1/circuit_weights[3,3] * 3]
+    
+        plt.plot(x1,y1, label = "strength of unit 4")
+        plt.ylim([0,1])
+        plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
+        plt.title("activation of 4 against sigmoid at penultimate step")
+        plt.grid('on')
+        plt.show() 
+    
+        plt.figure()
+        plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v[3]))
+        x1 = [0, 3]
+        y2 = [0, 1/circuit_weights[2,2] * 3]
+        plt.plot(x1,y2, label = "strength of unit 3")
+        plt.ylim([0,1])
+        plt.legend([ "sigmoid internal", "strength of unit 3"], loc = 0)
+        plt.title("activation of 3 against sigmoid at penultimate step")
+        plt.grid('on')
+        plt.show()
+        
+
     return [classification, steps]
 
 def label_data(data, weights1, weights2):
@@ -174,7 +208,7 @@ def label_data(data, weights1, weights2):
             labels[i] = [0,0]
     return labels
 
-def unthresholded_predict(row, weights, ap=False):
+def sigmoid_predict(row, weights, ap=False):
     # Its called unthresholded, but its really sigmoidal
     activation = weights[2]
     for i in range(0,2):
@@ -207,14 +241,14 @@ def gradient_descent_variable_eta(training_data, circuit_steps, num_epoch, start
   
     '''This is the issue'''
     #weights = np.zeros(len(training_data[0]))
-    weights = starting_weights
+    weights = starting_weights.copy()
     for epoch in range(num_epoch):
         i = 0
         #learning_rate = ((num_epoch/100) - epoch) * learning_rate
         for row in training_data:
             # Make a prediction -- forward pass
             # Have to use a prediction without a step function, gradient cant descend on a flat surface
-            prediction = unthresholded_predict(row, weights)
+            prediction = sigmoid_predict(row, weights)
         
             # Calculate error
             # Error is target minus output
@@ -303,7 +337,7 @@ plt.plot(xx, yy2, '-b', label = "Context 2 Goal Weights")
 plt.show()
 accuracy = 0
 correct_context_1 = 0
-context_2_weights = context_1_weights#np.random.rand(3)
+context_2_weights = [-1, -1, 1]#np.random.rand(3)
 context_1_timer = 0
 context_2_timer = 0
 context_1 = True

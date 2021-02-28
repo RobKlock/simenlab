@@ -53,8 +53,8 @@ def sigmoid(l, total_input, b, sig_idx):
 '''
 circuit_weights = np.array([[0,    -1,      0,     0],    #1->1  2->1, 3->1, 4->1
                             [-1,    0,      0,     0],            #1->2, 2->2, 3->2, 4->2
-                            [1.5,     0,      2,     0],             #1->3, 2->3, 3->3, 4->3
-                            [0,     1.5,      0,     2]])        #1->4, 2->4, 3->4  4->4
+                            [1,     0,      2,     0],             #1->3, 2->3, 3->3, 4->3
+                            [0,     1,      0,     2]])        #1->4, 2->4, 3->4  4->4
     
 #How can we use the circuit to change our weights?
     
@@ -83,7 +83,7 @@ def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, pl
     perceptron_activation_scalar = 1
     leak = -1
   
-    bias = bias * 1
+    bias = bias * 1.3
     sig_idx= [2,3]
     
     #Repeatedly have perceptron and AP classify row, feed into circuit
@@ -155,11 +155,13 @@ def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, pl
         
         x_axis_vals = np.arange(-2, 3, .1)
         plt.figure()
+        '''
         print(graph_sigmoid(l[2], x_axis_vals, bias[0] - v[0]).shape)
         print(l[2].shape)
         print(x_axis_vals.shape)
         print(bias[0].shape)
         print(v[0].shape)
+        '''
         plt.plot(x_axis_vals, graph_sigmoid(l[2], x_axis_vals, bias[0] - v[2]))
         x1 = [0, 3]
         y1 = [0, 1/circuit_weights[3,3] * 3]
@@ -167,7 +169,7 @@ def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, pl
         plt.plot(x1,y1, label = "strength of unit 4")
         plt.ylim([0,1])
         plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
-        plt.title("activation of 4 against sigmoid at penultimate step")
+        plt.title("input to v4 and sigmoid at penultimate step")
         plt.grid('on')
         plt.show() 
     
@@ -178,7 +180,7 @@ def diffusion_predict(p, ap, datum, label, circuit_weights = circuit_weights, pl
         plt.plot(x1,y2, label = "strength of unit 3")
         plt.ylim([0,1])
         plt.legend([ "sigmoid internal", "strength of unit 3"], loc = 0)
-        plt.title("activation of 3 against sigmoid at penultimate step")
+        plt.title("input to v3 and sigmoid at penultimate step")
         plt.grid('on')
         plt.show()
         
@@ -192,7 +194,11 @@ def label_data(data, weights1, weights2):
     #Appends two values, a context 1 label and a context 2 label (opposites)
     #Context one classifies data above the line as 1, below as 0, and
     #visa versa for context 2
+    c1_y = (-(weights1[2]/weights1[1])/(weights1[2]/weights1[0])) + (-weights1[2]/weights1[1])
+    c2_y = (-(weights2[2]/weights2[1])/(weights2[2]/weights2[0])) + (-weights2[2]/weights2[1])
     
+    print(c1_y)
+    print(c2_y)
     #yy = (-1 / context_1_weights[0]) * context_1_weights[1] * xx + context_1_weights[2]
     for i in range (0, data.shape[0]):
         if (data[i][1] >= weights1[0] * data[i][0] + weights1[2]) and (data[i][1] >= (-1/weights2[1]) * data[i][0] * weights2[0] + weights2[0]):
@@ -261,7 +267,7 @@ def gradient_descent_variable_eta(training_data, circuit_steps, num_epoch, start
         
             # For time being, learning rate is set to .2
             #learning_rate = (1 / (circuit_steps[0][i] + 0))
-            learning_rate = 0.2
+            learning_rate = 0.05
             #update bias
             #bias_delta = learning_rate * error
             #weights[0] = weights[0] + bias_delta
@@ -269,6 +275,13 @@ def gradient_descent_variable_eta(training_data, circuit_steps, num_epoch, start
             for i in range(len(weights) - 1):
                 #update weights according to weight_i = weight_i + (learning_rate*error*input)
                 weights[i] = weights[i] + learning_rate * error * row[i]
+                
+            weights[2] = weights[2] + error
+        
+            weights_average = np.mean(weights)
+            
+            weights = weights / weights_average
+            
     return weights
 
 #Coodinates for random data

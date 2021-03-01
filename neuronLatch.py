@@ -27,11 +27,11 @@ data = np.zeros((1,100))
 data[0][20:30] = 1
 data[0][50:60] = 1
 
-weights = np.array([[2,  -1],     # 1->1, 2->1
-                    [1,  2]])   # 1->2, 2->2
+weights = np.array([[1.7,  -1.7],     # 1->1, 2->1
+                    [1,  4]])   # 1->2, 2->2
     
-beta = 5
-lmbd = 5
+beta = 1.1
+lmbd = 4
 v_hist = np.array([[0, 0]]).T    
 
 steps = 0 
@@ -43,14 +43,14 @@ bias = np.array([[beta, beta]]).T
 
 v_hist = np.array([[0, 0]]).T    
 v = np.array([[0, 0]]).T              
-
+activations = [0.0,0.0]
 sig_idx= [0,1]
 
 for i in data[0]:
     
     activations = weights @ v # sum of activations, inputs to each unit
     activations[0] = i + activations[0]    
-    activations[1] = sigmoid(1, activations[1], bias[1])
+    activations[1] = sigmoid(lmbd, activations[1], bias[1])
     
     dv = (1/tau) * (((-v) + activations) * dt) #+ (np.sqrt(dt)) / tau) add noise using np.random
     v = v + dv

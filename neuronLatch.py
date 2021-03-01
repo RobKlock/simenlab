@@ -18,30 +18,32 @@ def sigmoid(l, total_input, b):
     f = 1/ (1 + np.exp(-l * (total_input - b)))
     return f
 
+def graph_sigmoid(l, I, b):
+    f=1/(1+np.exp(-l * (I-b)))
+    return f
 # Setup our time series data, which is a series of zeros with two batches of 1's from
 # 20-30 and 50-60
 data = np.zeros((1,100))
 data[0][20:30] = 1
 data[0][50:60] = 1
 
-weights = np.array([[2,  1],     # 1->1, 1->2
-                    [-1,  2]])   # 2->1, 2->2
+weights = np.array([[2,  -1],     # 1->1, 2->1
+                    [1,  2]])   # 1->2, 2->2
     
-beta = 1.2
-lmbd = 4
+beta = 5
+lmbd = 5
 v_hist = np.array([[0, 0]]).T    
 
 steps = 0 
 tau = 1
-dt = 0.01
+dt = .1
 l = np.array([[lmbd, lmbd]]).T     
     
-bias = np.array([[1, 1]]).T 
+bias = np.array([[beta, beta]]).T 
 
 v_hist = np.array([[0, 0]]).T    
 v = np.array([[0, 0]]).T              
 
-leak = -1
 sig_idx= [0,1]
 
 for i in data[0]:
@@ -50,16 +52,29 @@ for i in data[0]:
     activations[0] = i + activations[0]    
     activations[1] = sigmoid(1, activations[1], bias[1])
     
-    dv = (1/tau) * (((-v) + activations) * dt + (np.sqrt(dt) * np.random.normal(0,1, (2,1))) / tau) # add noise using np.random
+    dv = (1/tau) * (((-v) + activations) * dt) #+ (np.sqrt(dt)) / tau) add noise using np.random
     v = v + dv
     
     v_hist = np.concatenate((v_hist,v), axis=1)
 
-plt.figure(1)
-plt.plot(v_hist[0,:]) 
-plt.plot(v_hist[1,:])
-plt.legend(["v1","v2"], loc=0)
-plt.ylabel("activation")
+fig, axs = plt.subplots(3)
+fig.suptitle("Unit Activations and Stimulus")
+axs[0].plot(v_hist[1,:]) 
+axs[1].plot(v_hist[0,:])
+axs[2].plot(data[0])
+plt.ylabel("Activation")
 plt.xlabel("time")
 plt.grid('on')
-plt.title("Units 1 and 2 Activations")
+
+x_axis_vals = np.arange(-2, 3, .1)
+
+plt.figure()
+plt.plot(x_axis_vals, graph_sigmoid(l[1], x_axis_vals, bias[1] - v[0]))
+x1 = [0, 3]
+y2 = [0, 1/weights[1,1] * 3]
+plt.plot(x1,y2, label = "strength of unit 2")
+plt.ylim([0,1])
+plt.legend([ "sigmoid internal", "strength of unit 2"], loc = 0)
+plt.title("activation of 2 against sigmoid")
+plt.grid('on')
+plt.show()

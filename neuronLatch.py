@@ -23,7 +23,7 @@ def graph_sigmoid(l, I, b):
     return f
 # Setup our time series data, which is a series of zeros with two batches of 1's from
 # 20-30 and 50-60
-data = np.zeros((1,100))
+data = np.zeros((1,300))
 data[0][20:30] = 1
 data[0][50:60] = 1
 
@@ -51,8 +51,9 @@ for i in data[0]:
     activations = weights @ v # sum of activations, inputs to each unit
     activations[0] = i + activations[0]    
     activations[1] = sigmoid(lmbd, activations[1], bias[1])
+    dv = tau * ((-v + activations) * dt * np.sqrt(dt)) #* np.random.normal(0,1, (6,1)))  add noise using np.random
+    #dv = (1/tau) * (((-v) + activations) * dt) + (np.sqrt(dt)) / tau) add noise using np.random
     
-    dv = (1/tau) * (((-v) + activations) * dt) #+ (np.sqrt(dt)) / tau) add noise using np.random
     v = v + dv
     
     v_hist = np.concatenate((v_hist,v), axis=1)
@@ -60,10 +61,12 @@ for i in data[0]:
 fig, axs = plt.subplots(3)
 fig.suptitle("Unit Activations and Stimulus")
 axs[0].plot(v_hist[1,:]) 
+axs[0].set_ylabel("Unit 2 Activation")
 axs[1].plot(v_hist[0,:])
+axs[1].set_ylabel("Unit 1 Activation")
 axs[2].plot(data[0])
-plt.ylabel("Activation")
-plt.xlabel("time")
+axs[2].set_ylabel("Input Stimulus")
+plt.xlabel("Time")
 plt.grid('on')
 
 x_axis_vals = np.arange(-2, 3, .1)

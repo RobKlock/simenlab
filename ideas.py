@@ -21,6 +21,13 @@ def graph_sigmoid(l, I, b):
     f=1/(1+np.exp(-l * (I-b)))
     return f
 
+def sq_error(t, o):
+    
+    # T is target (desired) output
+    # O is actual output
+    return (t - o) ** 2
+
+# def state(unit_index, weights, )
 # Setup our time series data, which is a series of zeros with two batches of 1's from
 # 20-30 and 50-60
 dt = .01
@@ -28,39 +35,56 @@ data = np.zeros((1,round(300/dt)))
 data[0][round(20/dt):round(30/dt)] = 1
 data[0][round(50/dt):round(60/dt)] = 1
 
-weights = np.array([[0,  0, 1, 4, 5],     # 1->1, 2->1, 3->1, 4->1, 5->1
-                    [1.0,  2,   0, 4, -1],     # 1->2, 2->2, 3->2, 4->2, 5->2
-                    [1, 0,  2, 4, 5],           # 1->3, 2->3, 3->3, 4->3, 5->3
-                    [1.0,  2,   0, 4, -1 ],       # 1->4, 2->4, 3->4, 4->4, 5->4
-                    [1.0,  2,   0, 4, -1]])        # 1->5, 2->5, 3->5, 4->5, 5->5
+
+weights = np.array([[0,     0,      0,      0,      0,      0],       # 1->1, 2->1, 3->1, 4->1, 5->1, 6->1
+                    [0,     0,      0,      0,      0,      0],       # 1->2, 2->2, 3->2, 4->2, 5->2, 6->2
+                    [1.0,   0,      2.0,    0,      -1,     0],       # 1->3, 2->3, 3->3, 4->3, 5->3, 6->3
+                    [-1.0,  1.0,    -1.0,   2.0,    0,      0],       # 1->4, 2->4, 3->4, 4->4, 5->4, 6->4
+                    [0,     -1.0,   0,      -1,     2.0,    0],       # 1->5, 2->5, 3->5, 4->5, 5->5, 6->5
+                    [0,     0,      1.0,    1.0,    1.0,    0]])      # 1->6, 2->6, 3->6, 4->6, 5->6, 6->6
     
-beta = 1.2
+beta = 1.2 
 lmbd = 4
-v_hist = np.array([[0, 0,0,0,0]]).T    
+v_hist = np.array([[0, 0,0,0,0,0]]).T    
 noise = 0
 steps = 0 
 tau = 1
-l = np.array([[lmbd, lmbd,lmbd,lmbd,lmbd]]).T     
+l = np.array([[lmbd, lmbd,lmbd,lmbd,lmbd, lmbd]]).T     
     
-bias = np.array([[1.2, beta,beta,beta,beta]]).T 
+bias = np.array([[1.2, 1.2,beta,beta,beta, beta]]).T 
 
-v_hist = np.array([[0, 0,0,0,0]]).T    
-v = np.array([[0, 0,0,0,0]]).T              
-activations = [0.0,0.0,0.0,0.0,0.0]
-sig_idx= [0,4]
+v_hist = np.array([[0, 0,0,0,0,0]]).T    
+v = np.array([[0, 0,0,0,0,0]]).T              
+activations = [0.0,0.0,0.0,0.0,0.0,0.0]
+sig_idx= [0,5]
 
 for i in data[0]:
     
     activations = weights @ v # sum of activations, inputs to each unit
     activations[0] = sigmoid(lmbd, i + activations[0], bias[0])    
-    activations[1] = sigmoid(lmbd, activations[1], bias[1])
+    activations[1] = sigmoid(lmbd, i + activations[1], bias[1])
     # dv = (1/tau) * ((-v + activations) * dt) # No noise
-    dv = (1/tau) * ((-v + activations) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (5,1)))  # Add noise using np.random
+    dv = (1/tau) * ((-v + activations) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (6,1)))  # Add noise using np.random
     #dv = (1/tau) * (((-v) + activations) * dt) + (np.sqrt(dt)) / tau) add noise using np.random
     
     v = v + dv
     
     v_hist = np.concatenate((v_hist,v), axis=1)
+
+plt.figure()
+activation_plot_xvals = np.arange(0, 300, dt)
+plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
+plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [2,2])
+plt.plot(activation_plot_xvals, v_hist[3,0:-1], dashes = [3,3])
+plt.plot(activation_plot_xvals, v_hist[4,0:-1], dashes = [2,2])
+plt.ylim([0,1])
+#plt.plot(v2_v1_diff, dashes = [5,5])
+plt.legend(["v1","v2","v3","v4", "v5", "v6"], loc=0)
+plt.ylabel("activation")
+plt.xlabel("steps")
+plt.grid('on')
+plt.show()
     
 fig, axs = plt.subplots(3)
 activation_plot_xvals = np.arange(0, 300, dt)

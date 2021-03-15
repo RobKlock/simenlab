@@ -47,45 +47,45 @@ def piecewise_linear(v, cutoff):
     if (v <= 0):
         return 0
     elif (v > 0) and (v < cutoff):
-        return v
+        return v * .5
     else:
         return 1
 # Setup our time series data, which is a series of zeros with two batches of 1's from
 # 20-30 and 50-60
 dt = .01
 data1 = np.zeros((1,round(300/dt)))
-data1[0][round(20/dt):round(30/dt)] = 1
+data1[0][round(20/dt):round(25/dt)] = 3
 
 
 data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 3
 
-weights = np.array([[1,   0,      0],      # 1->1, 2->1, 3->1
-                    [1,     1,         -.2],      # 1->2, 2->2, 3->2
-                    [0,     1,      2]])      # 1->3, 2->3, 3->3
+weights = np.array([[2,   0,      -2],      # 1->1, 2->1, 3->1
+                    [.4,     2,    -2],      # 1->2, 2->2, 3->2
+                    [0,     1,      4]])      # 1->3, 2->3, 3->3
                          
     
 beta = 1.2
-lmbd = 2
+third_unit_beta = 1.1
+lmbd = 4
 v_hist = np.array([[0, 0, 0]]).T    
 noise = 0.0
 steps = 0 
 tau = 1
-l = np.array([[lmbd, lmbd, lmbd]]).T     
+l = np.array([[lmbd, 2, lmbd]]).T     
     
-bias = np.array([[beta, beta, beta]]).T 
+bias = np.array([[beta, beta + .1, third_unit_beta]]).T 
 
 v_hist = np.array([[0, 0, 0]]).T    
 v = np.array([[0, 0, 0]]).T              
 net_in = [0.0,0.0, 0.0]
-sig_idx= [0,1]
 
 for i in range (0, data1.size):
     
     net_in = weights @ v # sum of activations, inputs to each unit
-    net_in[0] = sigmoid(lmbd, data1[0][i], bias[0])    
-    net_in[1] = sigmoid(lmbd, net_in[1], bias[1])
-    net_in[2] = sigmoid(lmbd, net_in[2], bias[2])
+    net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
+    net_in[1] = sigmoid(l[1], net_in[1], bias[1])
+    net_in[2] = sigmoid(l[2], net_in[2], bias[2])
     
     # dv = (1/tau) * ((-v + activations) * dt) # No noise
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (3,1)))  # Add noise using np.random
@@ -110,7 +110,7 @@ plt.show()
 
 x_axis_vals = np.arange(-2, 3, dt)
 plt.figure()
-plt.plot(x_axis_vals, graph_sigmoid(l[1], x_axis_vals, bias[2] - v[2]))
+plt.plot(x_axis_vals, graph_sigmoid(l[2], x_axis_vals, bias[2] - v[2]))
 x1 = [0, 3]
 y2 = [0, 1/weights[2,2] * 3]
 plt.plot(x1,y2, label = "strength of unit 2")
@@ -120,20 +120,48 @@ plt.title("activation of OUT Unit against sigmoid")
 plt.grid('on')
 plt.show()
 
-fig, axs = plt.subplots(3)
+x_axis_vals = np.arange(-2, 3, dt)
+plt.figure()
+plt.plot(x_axis_vals, graph_sigmoid(l[2], x_axis_vals, bias[2] - v_hist[2][-1]))
+x1 = [0, 3]
+y2 = [0, 1/weights[1,1] * 3]
+plt.plot(x1,y2, label = "strength of unit 2")
+plt.ylim([0,1])
+plt.legend([ "sigmoid internal", "strength of unit 2"], loc = 0)
+plt.title("activation of MID Unit against sigmoid")
+plt.grid('on')
+plt.show()
+
+x_axis_vals = np.arange(-2, 3, dt)
+plt.figure()
+plt.plot(x_axis_vals, graph_sigmoid(l[0], x_axis_vals, bias[0] - v[0]))
+x1 = [0, 3]
+y2 = [0, 1/weights[0,0] * 3]
+plt.plot(x1,y2, label = "strength of unit 1")
+plt.ylim([0,1])
+plt.legend([ "sigmoid internal", "strength of unit 2"], loc = 0)
+plt.title("activation of FIRST Unit against sigmoid")
+plt.grid('on')
+plt.show()
+
+fig, axs = plt.subplots(4)
 activation_plot_xvals = np.arange(0, 300, dt)
 fig.suptitle("Unit Activations and Stimulus")
-axs[0].plot(activation_plot_xvals, v_hist[1,0:-1]) 
+axs[0].plot(activation_plot_xvals, v_hist[2,0:-1]) 
 axs[0].set_ylabel("OUT Unit Activation")
 axs[0].set_ylim([0,1])
 axs[0].grid('on')
-axs[1].plot(activation_plot_xvals, v_hist[0,0:-1])
-axs[1].set_ylabel("IN Unit Activation")
+axs[1].plot(activation_plot_xvals, v_hist[1,0:-1])
+axs[1].set_ylabel("MID Unit Activation")
 axs[1].set_ylim([0,1])
 axs[1].grid('on')
-axs[2].plot(activation_plot_xvals, data1[0])
-axs[2].set_ylabel("Input Stimulus")
+axs[2].plot(activation_plot_xvals, v_hist[0,0:-1])
+axs[2].set_ylabel("IN Unit Activation")
 axs[2].set_ylim([0,1])
+axs[2].grid('on')
+axs[3].plot(activation_plot_xvals, data1[0])
+axs[3].set_ylabel("Input Stimulus")
+axs[3].set_ylim([0,1])
 plt.xlabel("Time Steps")
 plt.grid('on')
 plt.show()

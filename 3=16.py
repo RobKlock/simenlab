@@ -60,9 +60,9 @@ data1[0][round(20/dt):round(25/dt)] = 3
 data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 3
 
-weights = np.array([[2,   0,      -2],      # 1->1, 2->1, 3->1
-                    [.4,     2,    -2],      # 1->2, 2->2, 3->2
-                    [0,     1,      4]])      # 1->3, 2->3, 3->3
+weights = np.array([[2.2,   0,      0],      # 1->1, 2->1, 3->1
+                    [1.005,     2,    0],      # 1->2, 2->2, 3->2
+                    [0,     1,      1]])      # 1->3, 2->3, 3->3
                          
     
 beta = 1.2
@@ -72,9 +72,9 @@ v_hist = np.array([[0, 0, 0]]).T
 noise = 0.0
 steps = 0 
 tau = 1
-l = np.array([[lmbd, 2, lmbd]]).T     
+l = np.array([[lmbd, lmbd, lmbd]]).T     
     
-bias = np.array([[beta, beta + .1, third_unit_beta]]).T 
+bias = np.array([[beta + .1, beta + .5, beta]]).T 
 
 v_hist = np.array([[0, 0, 0]]).T    
 v = np.array([[0, 0, 0]]).T              
@@ -128,7 +128,7 @@ y2 = [0, 1/weights[1,1] * 3]
 plt.plot(x1,y2, label = "strength of unit 2")
 plt.ylim([0,1])
 plt.legend([ "sigmoid internal", "strength of unit 2"], loc = 0)
-plt.title("activation of MID Unit against sigmoid")
+plt.title("activation of RAMP Unit against sigmoid")
 plt.grid('on')
 plt.show()
 

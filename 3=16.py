@@ -79,11 +79,11 @@ beta = 1.2
 third_unit_beta = 1.1
 lmbd = 4
 v_hist = np.array([[0, 0, 0]]).T    
-noise = 0.0
+noise = 0.02
 steps = 0 
 tau = 1
 l = np.array([[lmbd, lmbd, lmbd]]).T     
-pl_slope = 2
+pl_slope = weights[1][1]
 bias = np.array([[beta, beta - 1.15, beta]]).T 
 
 v_hist = np.array([[0, 0, 0]]).T    

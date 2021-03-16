@@ -44,10 +44,21 @@ def energy(weights, v):
     return (-1/2) * v.T * weights * v
 
 def piecewise_linear(v, cutoff, bias):
-    if (v < 0):
+    if ((v - bias) < 0):
         return 0
     else:
-        return v / cutoff
+        return (v - bias) / cutoff
+    
+def graph_pl(v, cutoff, bias):
+    f = np.zeros(v.size)
+    for i in range (0, v.size):
+        if (v[i] - bias < 0):
+            f[i] = 0
+        elif (v[i] - bias >= 0) and (v[i] - bias < cutoff):
+            f[i] = ((v[i] - bias) / cutoff)
+        else:
+            f[i] = 1
+    return f
    
 # Setup our time series data, which is a series of zeros with two batches of 1's from
 # 20-30 and 50-60
@@ -60,7 +71,7 @@ data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 3
 
 weights = np.array([[2,   0,      0],      # 1->1, 2->1, 3->1
-                    [.5,     1.99,    0],      # 1->2, 2->2, 3->2
+                    [1,     2,    0],      # 1->2, 2->2, 3->2
                     [0,     1,      1]])      # 1->3, 2->3, 3->3
                          
     
@@ -72,8 +83,8 @@ noise = 0.0
 steps = 0 
 tau = 1
 l = np.array([[lmbd, lmbd, lmbd]]).T     
-    
-bias = np.array([[beta, beta, beta]]).T 
+pl_slope = 2
+bias = np.array([[beta, beta - 1.15, beta]]).T 
 
 v_hist = np.array([[0, 0, 0]]).T    
 v = np.array([[0.0, 0.0, 0.0]]).T              
@@ -83,7 +94,8 @@ for i in range (0, data1.size):
     
     net_in = weights @ v # sum of activations, inputs to each unit
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
-    net_in[1] = sigmoid(l[1], net_in[1], bias[1])    # piecewise_linear(net_in[1], 4, bias[1])
+    
+    net_in[1] = piecewise_linear(net_in[1], pl_slope, bias[1])
     net_in[2] = sigmoid(l[2], net_in[2], bias[2])
     
     # dv = (1/tau) * ((-v + activations) * dt) # No noise
@@ -121,13 +133,13 @@ plt.show()
 
 x_axis_vals = np.arange(-2, 3, dt)
 plt.figure()
-plt.plot(x_axis_vals, graph_sigmoid(l[2], x_axis_vals, bias[2] - v_hist[2][-1]))
+plt.plot(x_axis_vals, graph_pl(x_axis_vals, pl_slope, bias[1]))
 x1 = [0, 3]
 y2 = [0, 1/weights[1,1] * 3]
 plt.plot(x1,y2, label = "strength of unit 2")
-plt.ylim([0,1])
-plt.legend([ "sigmoid internal", "strength of unit 2"], loc = 0)
-plt.title("activation of RAMP Unit against sigmoid")
+plt.ylim([-.1,1.1])
+plt.legend([ "piecewise linar", "strength of unit 2"], loc = 0)
+plt.title("activation of RAMP Unit against piecewise linear")
 plt.grid('on')
 plt.show()
 

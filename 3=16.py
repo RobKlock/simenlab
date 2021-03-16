@@ -43,25 +43,24 @@ def state(unit_index, weights, v):
 def energy(weights, v):
     return (-1/2) * v.T * weights * v
 
-def piecewise_linear(v, cutoff):
-    if (v <= 0):
+def piecewise_linear(v, cutoff, bias):
+    if (v < 0):
         return 0
-    elif (v > 0) and (v < cutoff):
-        return v * .5
     else:
-        return 1
+        return v / cutoff
+   
 # Setup our time series data, which is a series of zeros with two batches of 1's from
 # 20-30 and 50-60
 dt = .01
 data1 = np.zeros((1,round(300/dt)))
-data1[0][round(20/dt):round(25/dt)] = 3
+data1[0][round(20/dt):round(25/dt)] = 1
 
 
 data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 3
 
-weights = np.array([[2.2,   0,      0],      # 1->1, 2->1, 3->1
-                    [1.005,     2,    0],      # 1->2, 2->2, 3->2
+weights = np.array([[2,   0,      0],      # 1->1, 2->1, 3->1
+                    [.5,     1.99,    0],      # 1->2, 2->2, 3->2
                     [0,     1,      1]])      # 1->3, 2->3, 3->3
                          
     
@@ -74,17 +73,17 @@ steps = 0
 tau = 1
 l = np.array([[lmbd, lmbd, lmbd]]).T     
     
-bias = np.array([[beta + .1, beta + .5, beta]]).T 
+bias = np.array([[beta, beta, beta]]).T 
 
 v_hist = np.array([[0, 0, 0]]).T    
-v = np.array([[0, 0, 0]]).T              
+v = np.array([[0.0, 0.0, 0.0]]).T              
 net_in = [0.0,0.0, 0.0]
 
 for i in range (0, data1.size):
     
     net_in = weights @ v # sum of activations, inputs to each unit
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
-    net_in[1] = sigmoid(l[1], net_in[1], bias[1])
+    net_in[1] = sigmoid(l[1], net_in[1], bias[1])    # piecewise_linear(net_in[1], 4, bias[1])
     net_in[2] = sigmoid(l[2], net_in[2], bias[2])
     
     # dv = (1/tau) * ((-v + activations) * dt) # No noise

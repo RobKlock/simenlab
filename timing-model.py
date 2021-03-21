@@ -49,6 +49,11 @@ def graph_pl(v, cutoff, bias):
         else:
             f[i] = 1
     return f
+
+def round_up(n, decimals=0):
+    multiplier = 10 ** decimals
+    return math.ceil(n * multiplier) / multiplier
+
    
 # Setup our time series data, which is a series of zeros with two batches of 1's from
 # 20-30 and 50-60
@@ -94,23 +99,29 @@ for i in range (0, data1.size):
     # If the network gets a signal, start learning its duration
     if data1[0][i] == 1:
         timer_learn = True 
-
+    
     if (data1[0][i] == 0) and (timer_learn == True):
-        x_end = net_in[1]
-        delta_A = A * ((z - x_end)/x_end)
-        timer_learn = False
-        weights[1][0] = weights[1][0] + delta_A
-        print(delta_A)
-    
-    
+        # If we hit our target late 
+        if (round_up(v[1], 1)) <= .99:
+            # Do the late update
+            print("ok")
+            # Do the late update
+            x_end = net_in[1]
+            delta_A = A * ((z - x_end)/x_end)
+            timer_learn = False
+            weights[1][0] = weights[1][0] + delta_A
+            print(delta_A)
+            
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
     net_in[1] = piecewise_linear(net_in[1], pl_slope, bias[1])
     net_in[2] = sigmoid(l[2], net_in[2], bias[2])
     
+            
     # dv = (1/tau) * ((-v + activations) * dt) # No noise
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (4,1)))  # Add noise using np.random
     #dv = (1/tau) * (((-v) + activations) * dt) + (np.sqrt(dt)) / tau) add noise using np.random
     v = v + dv
+            
     v_hist = np.concatenate((v_hist,v), axis=1)
 
 activation_plot_xvals = np.arange(0, 300, dt)

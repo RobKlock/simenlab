@@ -70,7 +70,7 @@ data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 1
 
 weights = np.array([[2,   0,      0, 0],      # 1->1, 2->1, 3->1
-                    [.1,     2,    0, 0],      # 1->2, 2->2, 3->2
+                    [.08,     2,    0, 0],      # 1->2, 2->2, 3->2
                     [0,     0,      0.1, 0],      # 1->3, 2->3, 3->3
                     [0,     0,      0, 0]])      # 1->4, 2->4, 3->4
                          
@@ -87,7 +87,7 @@ tau = 1
 delta_A = 0
 l = np.array([[lmbd, lmbd, lmbd, lmbd]]).T     
 pl_slope = weights[1][1]
-bias = np.array([[beta, beta, beta, beta]]).T 
+bias = np.array([[beta, ramp_bias, beta, beta]]).T 
  
 v = np.array([[0.0, 0.0, 0.0, 0.0]]).T            
 net_in = [0.0,0.0, 0.0, 0.0]
@@ -102,17 +102,6 @@ for i in range (0, data1.size):
     if data1[0][i] == 1:
         timer_learn = True 
     
-#    if (data1[0][i] == 1) and (timer_learn == True) and (net_in[1] > z):
-#        # We hit our target early
-#        early = True
-#        print("Early")
-#        dA = (- ((weights[1][0] ** 2) / z)) * dt
-#        weights[1][0] = weights[1][0] + dA
-#        
-#    if (data1[0][i] == 0) and (timer_learn == True) and (early == True):
-#        # Done with the early correction
-#        timer_learn = False
-#        early = False
     net_in = weights @ v # sum of activations, inputs to each unit        
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
     #net_in[1] = sigmoid(l[1], net_in[0], bias[1])
@@ -120,9 +109,7 @@ for i in range (0, data1.size):
     net_in[2] = sigmoid(l[2], net_in[2], bias[2])
     
             
-    # dv = (1/tau) * ((-v + activations) * dt) # No noise
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (4,1)))  # Add noise using np.random
-    #dv = (1/tau) * (((-v) + activations) * dt) + (np.sqrt(dt)) / tau) add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
     
@@ -134,19 +121,16 @@ for i in range (0, data1.size):
         B = bias[1]
         z = net_in[0][-1]
         Vt = net_in[1][-1]
-
-        # The threshold on ramp-up values is C
+        drift = (weights[1][0] - bias[1] / 2)
+        d_A = drift * ((z-Vt)/Vt)
+        
+        weights[1][0] = weights[1][0] + d_A
+        # The thre should on ramp-up values is C
         # The input weight to the ramp is w
         # The bias of the ramp unit is \beta
         # Thus the drift imposed by the weight is \epsilon = w - \beta
         # learning_rate * (W_end - beta) * (C - Cn) / Cn) <- Prof Simen's
-        
-        delta_A = (Sn + .1) * ((z - Vt)/Vt)
-        weights[1][0] = weights[1][0] + delta_A
-        
-        print(delta_A)
-        print(weights[1][0])
-        print("goal: [0.163] ish")
+    
     # If the stimulus stops and we're in learning mode and late...
     
         

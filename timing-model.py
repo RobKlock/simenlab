@@ -70,7 +70,7 @@ data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 1
 
 weights = np.array([[2,   0,      0, 0],      # 1->1, 2->1, 3->1
-                    [.26,     2,    0, 0],      # 1->2, 2->2, 3->2
+                    [.1,     2,    0, 0],      # 1->2, 2->2, 3->2
                     [0,     0,      0.1, 0],      # 1->3, 2->3, 3->3
                     [0,     0,      0, 0]])      # 1->4, 2->4, 3->4
                          
@@ -102,6 +102,24 @@ for i in range (0, data1.size):
     if data1[0][i] == 1:
         timer_learn = True 
     
+   
+    
+    if (v[1] >= net_in[0]) and timer_learn == True:
+        early = True
+        print("early")
+        if (data1[0][i] == 1):
+            # We're still in the interval, so we keep updating
+            drift = (weights[1][0] - bias[1] / 2)
+            z = 1.2
+            d_A = (- (drift ** 2)/z) * dt
+            print(d_A)
+            weights[1][0] = weights[1][0] + d_A
+            print(weights[1][0])
+        else:
+            timer_learn = False
+            print(weights)
+            
+            
     net_in = weights @ v # sum of activations, inputs to each unit        
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
     #net_in[1] = sigmoid(l[1], net_in[0], bias[1])
@@ -113,23 +131,6 @@ for i in range (0, data1.size):
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
     
-    if (v[1] >= net_in[0]) and timer_learn == True:
-        early = True
-        print("early")
-        if (data1[0][i] == 1):
-            # We're still in the interval, so we keep updating
-            drift = (weights[1][0] - bias[1] / 2)
-            z = 1
-            d_A = (- (drift ** 2)/z) * dt
-            print(d_A)
-            weights[1][0] = weights[1][0] + d_A
-            print(weights[1][0])
-        else:
-            timer_learn = False
-            print(weights)
-            
-            
-    
     if (data1[0][i] == 0) and (timer_learn == True) and (not early):
         # If we hit our target late
         # Do the late update
@@ -138,7 +139,7 @@ for i in range (0, data1.size):
         B = bias[1]
         z = net_in[0][-1]
         # z = 1 <- Rivest has this for notation sake in their paper
-        z = 1
+        z = 1.2
         Vt = net_in[1][-1]
         drift = (weights[1][0] - bias[1] / 2)
         d_A = drift * ((z-Vt)/Vt)
@@ -149,7 +150,7 @@ for i in range (0, data1.size):
         # The bias of the ramp unit is \beta
         # Thus the drift imposed by the weight is \epsilon = w - \beta
         # learning_rate * (W_end - beta) * (C - Cn) / Cn) <- Prof Simen's
-
+    
 activation_plot_xvals = np.arange(0, 300, dt)
 plt.figure()
 activation_plot_xvals = np.arange(0, 300, dt)
@@ -256,4 +257,24 @@ plt.ylabel("activation")
 plt.xlabel("steps")
 plt.grid('on')
 plt.title("Timer after learning")
+plt.show()
+
+
+fig, axs = plt.subplots(2)
+activation_plot_xvals = np.arange(0, 300, dt)
+fig.suptitle("Timer behavior before and after learning")
+axs[0].plot(activation_plot_xvals, v_hist[1,0:-1]) 
+axs[0].plot(activation_plot_xvals, v_hist[0,0:-1]) 
+axs[0].plot(activation_plot_xvals, data1[0][0:]) 
+axs[0].set_ylabel("Activation")
+axs[0].set_ylim([0,1])
+axs[0].grid('on')
+axs[1].plot(activation_plot_xvals, v_hist_test[1,0:-1], dashes = [1,1])
+axs[1].plot(activation_plot_xvals, v_hist_test[0,0:-1], dashes = [1,1])
+axs[1].plot(activation_plot_xvals, data1[0][0:]) 
+axs[1].set_ylabel("Activation")
+axs[1].set_ylim([0,1])
+axs[1].grid('on')
+plt.xlabel("Time Steps")
+plt.grid('on')
 plt.show()

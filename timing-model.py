@@ -70,7 +70,7 @@ data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 1
 
 weights = np.array([[2,   0,      0, 0],      # 1->1, 2->1, 3->1
-                    [.2,     2,    0, 0],      # 1->2, 2->2, 3->2
+                    [.26,     2,    0, 0],      # 1->2, 2->2, 3->2
                     [0,     0,      0.1, 0],      # 1->3, 2->3, 3->3
                     [0,     0,      0, 0]])      # 1->4, 2->4, 3->4
                          
@@ -113,16 +113,21 @@ for i in range (0, data1.size):
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
     
-    if (v[1] >= v[0]) and timer_learn == True:
+    if (v[1] >= net_in[0]) and timer_learn == True:
         early = True
+        print("early")
         if (data1[0][i] == 1):
             # We're still in the interval, so we keep updating
             drift = (weights[1][0] - bias[1] / 2)
-            z = net_in[0]
-            d_A = - (A ** 2)/z
+            z = 1
+            d_A = (- (drift ** 2)/z) * dt
+            print(d_A)
             weights[1][0] = weights[1][0] + d_A
+            print(weights[1][0])
         else:
             timer_learn = False
+            print(weights)
+            
             
     
     if (data1[0][i] == 0) and (timer_learn == True) and (not early):

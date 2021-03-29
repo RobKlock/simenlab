@@ -70,7 +70,7 @@ data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 1
 
 weights = np.array([[2,   0,      0, 0],      # 1->1, 2->1, 3->1
-                    [.08,     2,    0, 0],      # 1->2, 2->2, 3->2
+                    [.1,     2,    0, 0],      # 1->2, 2->2, 3->2
                     [0,     0,      0.1, 0],      # 1->3, 2->3, 3->3
                     [0,     0,      0, 0]])      # 1->4, 2->4, 3->4
                          
@@ -87,7 +87,7 @@ tau = 1
 delta_A = 0
 l = np.array([[lmbd, lmbd, lmbd, lmbd]]).T     
 pl_slope = weights[1][1]
-bias = np.array([[beta, ramp_bias, beta, beta]]).T 
+bias = np.array([[beta, beta, beta, beta]]).T 
  
 v = np.array([[0.0, 0.0, 0.0, 0.0]]).T            
 net_in = [0.0,0.0, 0.0, 0.0]
@@ -97,7 +97,7 @@ early = False
 for i in range (0, data1.size):
     
     A = 1 / weights[1][0]
-    z = v[0]
+    
     # If the network gets a signal, start learning its duration
     if data1[0][i] == 1:
         timer_learn = True 
@@ -113,23 +113,6 @@ for i in range (0, data1.size):
 #        # Done with the early correction
 #        timer_learn = False
 #        early = False
-    if (data1[0][i] == 0) and (timer_learn == True) and (not early):
-        # If we hit our target late
-    
-        # Do the late update
-      
-        Vt = v[1]
-        # The threshold on ramp-up values is C
-        # The input weight to the ramp is w
-        # The bias of the ramp unit is \beta
-        # Thus the drift imposed by the weight is \epsilon = w - \beta
-        # learning_rate * (W_end - beta) * (C - Cn) / Cn) <- Prof Simen's
-        
-        delta_A = (((weights[1][0]) - bias[1] + 0.5) * ((z - Vt)/Vt)) * dt
-        timer_learn = False
-        weights[1][0] = weights[1][0] + delta_A
-        print(delta_A)
-            
     net_in = weights @ v # sum of activations, inputs to each unit        
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
     #net_in[1] = sigmoid(l[1], net_in[0], bias[1])
@@ -142,6 +125,28 @@ for i in range (0, data1.size):
     #dv = (1/tau) * (((-v) + activations) * dt) + (np.sqrt(dt)) / tau) add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
+    
+    if (data1[0][i] == 0) and (timer_learn == True) and (not early):
+        # If we hit our target late
+        # Do the late update
+        timer_learn = False
+        Sn = weights[1][0]
+        B = bias[1]
+        z = net_in[0][-1]
+        Vt = net_in[1][-1]
+
+        # The threshold on ramp-up values is C
+        # The input weight to the ramp is w
+        # The bias of the ramp unit is \beta
+        # Thus the drift imposed by the weight is \epsilon = w - \beta
+        # learning_rate * (W_end - beta) * (C - Cn) / Cn) <- Prof Simen's
+        
+        delta_A = (Sn + .1) * ((z - Vt)/Vt)
+        weights[1][0] = weights[1][0] + delta_A
+        
+        print(delta_A)
+        print(weights[1][0])
+        print("goal: [0.163] ish")
     # If the stimulus stops and we're in learning mode and late...
     
         
@@ -181,7 +186,7 @@ x1 = [0, 3]
 y2 = [0, 1/weights[1,1] * 3]
 plt.plot(x1,y2, label = "strength of unit 2")
 plt.ylim([-.1,1.1])
-plt.legend([ "piecewise linar", "strength of unit 2"], loc = 0)
+plt.legend([ "piecewise linear", "strength of unit 2"], loc = 0)
 plt.title("activation of RAMP Unit against piecewise linear")
 plt.grid('on')
 plt.show()

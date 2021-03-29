@@ -70,7 +70,7 @@ data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 1
 
 weights = np.array([[2,   0,      0, 0],      # 1->1, 2->1, 3->1
-                    [.08,     2,    0, 0],      # 1->2, 2->2, 3->2
+                    [.2,     2,    0, 0],      # 1->2, 2->2, 3->2
                     [0,     0,      0.1, 0],      # 1->3, 2->3, 3->3
                     [0,     0,      0, 0]])      # 1->4, 2->4, 3->4
                          
@@ -113,6 +113,18 @@ for i in range (0, data1.size):
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
     
+    if (v[1] >= v[0]) and timer_learn == True:
+        early = True
+        if (data1[0][i] == 1):
+            # We're still in the interval, so we keep updating
+            drift = (weights[1][0] - bias[1] / 2)
+            z = net_in[0]
+            d_A = - (A ** 2)/z
+            weights[1][0] = weights[1][0] + d_A
+        else:
+            timer_learn = False
+            
+    
     if (data1[0][i] == 0) and (timer_learn == True) and (not early):
         # If we hit our target late
         # Do the late update
@@ -120,20 +132,18 @@ for i in range (0, data1.size):
         Sn = weights[1][0]
         B = bias[1]
         z = net_in[0][-1]
+        # z = 1 <- Rivest has this for notation sake in their paper
+        z = 1
         Vt = net_in[1][-1]
         drift = (weights[1][0] - bias[1] / 2)
         d_A = drift * ((z-Vt)/Vt)
         
         weights[1][0] = weights[1][0] + d_A
-        # The thre should on ramp-up values is C
+        # The threshold on ramp-up values is C
         # The input weight to the ramp is w
         # The bias of the ramp unit is \beta
         # Thus the drift imposed by the weight is \epsilon = w - \beta
         # learning_rate * (W_end - beta) * (C - Cn) / Cn) <- Prof Simen's
-    
-    # If the stimulus stops and we're in learning mode and late...
-    
-        
 
 activation_plot_xvals = np.arange(0, 300, dt)
 plt.figure()

@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Mar 20 19:24:22 2021
-
 @author: Robert Klock
 A simulation of a neural network learning a time sequence using adaption rules
 """
@@ -63,15 +62,15 @@ dt = .01
 data1 = np.zeros((1,round(300/dt)))
 data1[0][round(20/dt):round(40/dt)] = 1
 #data1[0][round(70/dt):round(90/dt)] = 1
-data1[0][round(200/dt):round(220/dt)] = 1
+#data1[0][round(100/dt):round(120/dt)] = 1
 
 
 data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 1
 
-weights = np.array([[2,   0,      0, 0],      # 1->1, 2->1, 3->1 4->1
+weights = np.array([[2,   0,      0, 0],      # 1->1, 2->1, 3->1
                     [.3,     2,    0, 0],      # 1->2, 2->2, 3->2
-                    [0,     .5,      2, 0],      # 1->3, 2->3, 3->3
+                    [0,     0,      0, 0],      # 1->3, 2->3, 3->3
                     [0,     0,      0, 0]])      # 1->4, 2->4, 3->4
                          
     
@@ -81,7 +80,7 @@ third_unit_beta = 1.1
 lmbd = 4
 v_hist = np.array([[0, 0, 0, 0]]).T 
 v_hist_test = np.array([[0, 0, 0, 0]]).T      
-noise = 0.0
+noise = 0.02
 steps = 0 
 tau = 1
 delta_A = 0
@@ -102,24 +101,23 @@ for i in range (0, data1.size):
     if data1[0][i] == 1:
         timer_learn = True 
     
-    if i >=20000:
-        timer_learn = False
-        
-    if (v[1] >= net_in[0]) and timer_learn == True:
+   
+    z = .9
+    if (v[1] >= z) and timer_learn == True:
         early = True
-        
+        print("early")
         if (data1[0][i] == 1):
             # We're still in the interval, so we keep updating
             drift = (weights[1][0] - bias[1] / 2)
-            z = 1.2
+    
             d_A = (- (drift ** 2)/z) * dt
-            #print(d_A)
+            print(d_A)
             weights[1][0] = weights[1][0] + d_A
-            #print(weights[1][0])
+            print(weights[1][0])
+        
         else:
             timer_learn = False
-            print("early")
-            #print(weights)
+            print(weights)
             
             
     net_in = weights @ v # sum of activations, inputs to each unit        
@@ -136,13 +134,12 @@ for i in range (0, data1.size):
     if (data1[0][i] == 0) and (timer_learn == True) and (not early):
         # If we hit our target late
         # Do the late update
-        print("late")
         timer_learn = False
         Sn = weights[1][0]
         B = bias[1]
         z = net_in[0][-1]
         # z = 1 <- Rivest has this for notation sake in their paper
-        z = .9
+        z = 1.2
         Vt = net_in[1][-1]
         drift = (weights[1][0] - bias[1] / 2)
         d_A = drift * ((z-Vt)/Vt)
@@ -232,7 +229,8 @@ v_test = np.array([[0.0, 0.0, 0.0, 0.0]]).T
 for i in range (0, data1.size):
     
     net_in_test = weights @ v_test # sum of activations, inputs to each unit
-    z = 1.2
+    A = 1 / weights[1][0]
+    z = .999
     # If the network gets a signal, start learning its duration
     net_in_test[0] = sigmoid(l[0], data1[0][i] + net_in_test[0], bias[0])    
     net_in_test[1] = piecewise_linear(net_in_test[1], pl_slope, bias[1])
@@ -261,33 +259,22 @@ plt.grid('on')
 plt.title("Timer after learning")
 plt.show()
 
-plt.figure()
+
+fig, axs = plt.subplots(2)
 activation_plot_xvals = np.arange(0, 300, dt)
-plt.plot(activation_plot_xvals, v_hist[1,0:-1]) 
-plt.plot(activation_plot_xvals, v_hist[0,0:-1]) 
-plt.plot(activation_plot_xvals, data1[0][0:]) 
-plt.ylabel("Activation")
+fig.suptitle("Timer behavior before and after learning")
+axs[0].plot(activation_plot_xvals, v_hist[1,0:-1]) 
+axs[0].plot(activation_plot_xvals, v_hist[0,0:-1]) 
+axs[0].plot(activation_plot_xvals, data1[0][0:]) 
+axs[0].set_ylabel("Activation")
+axs[0].set_ylim([0,1])
+axs[0].grid('on')
+axs[1].plot(activation_plot_xvals, v_hist_test[1,0:-1], dashes = [1,1])
+axs[1].plot(activation_plot_xvals, v_hist_test[0,0:-1], dashes = [1,1])
+axs[1].plot(activation_plot_xvals, data1[0][0:]) 
+axs[1].set_ylabel("Activation")
+axs[1].set_ylim([0,1])
+axs[1].grid('on')
 plt.xlabel("Time Steps")
 plt.grid('on')
-plt.set_ylim([0,1.5])
-plt.title("Timer behavior during one trial")
 plt.show()
-
-#fig, axs = plt.subplots(1)
-#activation_plot_xvals = np.arange(0, 300, dt)
-#fig.suptitle("Timer behavior before and after learning")
-#axs[0].plot(activation_plot_xvals, v_hist[1,0:-1]) 
-#axs[0].plot(activation_plot_xvals, v_hist[0,0:-1]) 
-#axs[0].plot(activation_plot_xvals, data1[0][0:]) 
-#axs[0].set_ylabel("Activation")
-#axs[0].set_ylim([0,1])
-#axs[0].grid('on')
-#axs[1].plot(activation_plot_xvals, v_hist_test[1,0:-1], dashes = [1,1])
-#axs[1].plot(activation_plot_xvals, v_hist_test[0,0:-1], dashes = [1,1])
-#axs[1].plot(activation_plot_xvals, data1[0][0:]) 
-#axs[1].set_ylabel("Activation")
-#axs[1].set_ylim([0,1])
-#axs[1].grid('on')
-#plt.xlabel("Time Steps")
-#plt.grid('on')
-#plt.show()

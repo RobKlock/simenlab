@@ -69,29 +69,33 @@ data1[0][round(200/dt):round(220/dt)] = 1
 data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 1
 
-weights = np.array([[2,   0,      0, 0],      # 1->1, 2->1, 3->1 4->1
-                    [.3,     2,    0, 0],      # 1->2, 2->2, 3->2
-                    [0,     .5,      2, 0],      # 1->3, 2->3, 3->3
-                    [0,     0,      0, 0]])      # 1->4, 2->4, 3->4
+weights = np.array([[2,   0,      0,  -.8, 0, 0, 0, 0],      # 1->1, 2->1, 3->1 4->1
+                    [.163,     2,    0, -.8, 0, 0, 0, 0],      # 1->2, 2->2, 3->2
+                    [0,     .8,      2, 0, 0, 0, 0,0],      # 1->3, 2->3, 3->3
+                    [0,     0,      .7, 0, 0, 0 ,0 ,0],     # 1->4, 2->4, 3->4 ... 
+                    [0, 0, 0, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, .163, 2, 0, -2],
+                    [0, 0, 0, 0, 0, .5, 2, 0],
+                    [0, 0, 0, 0, 0, 0, .7, 0]])          
                          
     
 beta = 1.2
 ramp_bias = .1
 third_unit_beta = 1.1
 lmbd = 4
-v_hist = np.array([[0, 0, 0, 0]]).T 
-v_hist_test = np.array([[0, 0, 0, 0]]).T      
+v_hist = np.array([np.zeros(weights.shape[0])]).T 
+v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
 noise = 0.0
 steps = 0 
 tau = 1
 delta_A = 0
-l = np.array([[lmbd, lmbd, lmbd, lmbd]]).T     
+l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T     
 pl_slope = weights[1][1]
-bias = np.array([[beta, ramp_bias, beta, beta]]).T 
+bias = np.array([[beta, ramp_bias, beta, beta, beta, beta, beta, beta]]).T 
  
-v = np.array([[0.0, 0.0, 0.0, 0.0]]).T            
-net_in = [0.0,0.0, 0.0, 0.0]
-net_in_test = [0.0,0.0, 0.0, 0.0]
+v = np.array([np.zeros(weights.shape[0])]).T 
+net_in = np.zeros(weights.shape[0])
+net_in_test = np.zeros(weights.shape[0])
 timer_learn = False  
 early = False
 for i in range (0, data1.size):
@@ -129,7 +133,7 @@ for i in range (0, data1.size):
     net_in[2] = sigmoid(l[2], net_in[2], bias[2])
     
             
-    dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (4,1)))  # Add noise using np.random
+    dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
     
@@ -161,9 +165,13 @@ plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2])
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[3,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[4,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[7,0:-1], dashes = [1,1])
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["v1","v2", "v3", "v4"], loc=0)
+plt.legend(["v1","v2", "v3", "v4", "v5", "v6", "v7", "v8"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("Timer before learning")
@@ -228,7 +236,7 @@ plt.xlabel("Time Steps")
 plt.grid('on')
 plt.show()
 
-v_test = np.array([[0.0, 0.0, 0.0, 0.0]]).T     
+v_test = np.array([np.zeros(weights.shape[0])]).T 
 for i in range (0, data1.size):
     
     net_in_test = weights @ v_test # sum of activations, inputs to each unit
@@ -239,7 +247,7 @@ for i in range (0, data1.size):
     net_in_test[2] = sigmoid(l[2], net_in_test[2], bias[2])
     
     # dv = (1/tau) * ((-v + activations) * dt) # No noise
-    dv = (1/tau) * ((-v_test + net_in_test) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (4,1)))  # Add noise using np.random
+    dv = (1/tau) * ((-v_test + net_in_test) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     #dv = (1/tau) * (((-v) + activations) * dt) + (np.sqrt(dt)) / tau) add noise using np.random
     v_test = v_test + dv
     v_hist_test = np.concatenate((v_hist_test,v_test), axis=1)
@@ -269,25 +277,6 @@ plt.plot(activation_plot_xvals, data1[0][0:])
 plt.ylabel("Activation")
 plt.xlabel("Time Steps")
 plt.grid('on')
-plt.set_ylim([0,1.5])
+plt.ylim([0,1.2])
 plt.title("Timer behavior during one trial")
 plt.show()
-
-#fig, axs = plt.subplots(1)
-#activation_plot_xvals = np.arange(0, 300, dt)
-#fig.suptitle("Timer behavior before and after learning")
-#axs[0].plot(activation_plot_xvals, v_hist[1,0:-1]) 
-#axs[0].plot(activation_plot_xvals, v_hist[0,0:-1]) 
-#axs[0].plot(activation_plot_xvals, data1[0][0:]) 
-#axs[0].set_ylabel("Activation")
-#axs[0].set_ylim([0,1])
-#axs[0].grid('on')
-#axs[1].plot(activation_plot_xvals, v_hist_test[1,0:-1], dashes = [1,1])
-#axs[1].plot(activation_plot_xvals, v_hist_test[0,0:-1], dashes = [1,1])
-#axs[1].plot(activation_plot_xvals, data1[0][0:]) 
-#axs[1].set_ylabel("Activation")
-#axs[1].set_ylim([0,1])
-#axs[1].grid('on')
-#plt.xlabel("Time Steps")
-#plt.grid('on')
-#plt.show()

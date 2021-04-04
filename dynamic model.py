@@ -68,22 +68,28 @@ interval2 = np.zeros((1,round(300/dt)))
 interval2[0][round(40/dt):round(60/dt)] = 1
 interval3 = np.zeros((1,round(300/dt)))
 interval3[0][round(60/dt):round(120/dt)] = 1
+interval4 = np.zeros((1,round(300/dt)))
+interval4[0][round(110/dt):round(120/dt)] = 1
 
-
-weights = np.array([[2,     0,  0,  -20,  0,  0,  0,  0, 0,  0,  0,  0],      # 1->1, 2->1, 3->1 4->1
-                    [.157,  2,  0,  -1,  0,  0,  0,   0, 0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     1,  2,    0,  0,  0,  0,  0, 0,  0,  0,  0],      # 1->3, 2->3, 3->3
-                    [0,     0,  1,    0,  0,  0,  0,  0, 0,  0,  0,  0],
+weights = np.array([[2,     0,  0,  -20,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
+                    [.157,  2,  0,  -1,       0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [0,     1,  2,    0,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->3, 2->3, 3->3
+                    [0,     0,  1,    0,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],
                     # 1->4, 2->4, 3->4 ... 
-                    [0,     0,  1,    0,  2,  0,  0,-10, 0,  0,  0,  0],
-                    [0,     0,  0,    0, .157,2,  0,-1,  0,  0,  0,  0],
-                    [0,     0,  0,    0,  0,  .9,  2, 0,  0,  0,  0,  0],
-                    [0,     0,  0,    0,  0,  0,  1, 0,   0,  0,  0,  0],
+                    [0,     0,  1,    0,      2,  0,  0,-10,    0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,     .157,2,  0,-1,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  1,  2, 0,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  1, 0,     0, 0,  0,  0,   0,  0,  0,  0],
                     
-                    [0,     0,  0,    0,  0,  0,  1, 0,   2,  0,  0,  -10],
-                    [0,     0,  0,    0,  0,  0,  0, 0,   .081287,2,  0,  -1],
-                    [0,     0,  0,    0,  0,  0,  0, 0,   0,  1,  2,  0],
-                    [0,     0,  0,    0,  0,  0,  0, 0,   0,  0,  1,  0]])          
+                    [0,     0,  0,    0,      0,  0,  1, 0,     2, 0,  0,-10,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,.081287,2,  0, -1,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 1,  2,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  .9,  0,   0,  0,  0,  0],
+                    
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  0,   2,  0,  0,  -10],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,  .275,2,  0, -1],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  1,  2,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  0,  1,  0]])          
                          
     
 beta = 1.2
@@ -92,14 +98,14 @@ third_unit_beta = 1.1
 lmbd = 4
 v_hist = np.array([np.zeros(weights.shape[0])]).T 
 v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
-noise = 0.0
+noise = 0.01
 steps = 0 
 tau = 1
 delta_A = 0
-l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T   
+l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T   
 #l = np.full([ weights.shape[0] ], lmbd).T  
 interval_1_slope = weights[1][1]
-bias = np.array([[beta, ramp_bias, beta, beta, beta, ramp_bias, beta, beta, beta, ramp_bias, beta, beta,]]).T 
+bias = np.array([[beta, ramp_bias, beta, beta, beta, ramp_bias, beta, beta, beta + .2, ramp_bias, beta, beta, beta, ramp_bias, beta, beta]]).T 
  
 v = np.array([np.zeros(weights.shape[0])]).T 
 net_in = np.zeros(weights.shape[0])
@@ -115,11 +121,19 @@ for i in range (0, data1.size):
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
     net_in[1] = piecewise_linear(net_in[1], interval_1_slope, bias[1])
     net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
+    
     net_in[5] = piecewise_linear(net_in[5], interval_1_slope, bias[5])
     net_in[6:9] = sigmoid(l[6:9], net_in[6:9], bias[6:9])
-    net_in[9] = piecewise_linear(net_in[9], interval_1_slope, bias[9])
-    net_in[10:] = sigmoid(l[10:], net_in[10:], bias[10:])
     
+    net_in[9] = piecewise_linear(net_in[9], interval_1_slope, bias[9])
+    net_in[10:13] = sigmoid(l[10:13], net_in[10:13], bias[10:13])
+    #net_in[10:11] = sigmoid(l[10:11], net_in[10:11], bias[10:11])
+    #net_in[12] = sigmoid(l[12], net_in[12], bias[12])
+    net_in[13] = piecewise_linear(net_in[13], interval_1_slope, bias[13])
+    net_in[14:] = sigmoid(l[14:], net_in[14:], bias[14:])
+#    net_in[10:13] = sigmoid(l[10:13], net_in[10:13], bias[10:13])
+    #net_in[13] = piecewise_linear(net_in[13], interval_1_slope, bias[13])
+    #net_in[13:] = sigmoid(l[13:], net_in[13:], bias[13:])
             
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
@@ -173,6 +187,43 @@ plt.legend(["v9", "v10", "v11", "v12", "interval 3"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("Third module of timers")
+plt.grid('on')
+plt.show()
+
+activation_plot_xvals = np.arange(0, 300, dt)
+plt.figure()
+activation_plot_xvals = np.arange(0, 300, dt)
+plt.plot(activation_plot_xvals, v_hist[12,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[13,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[14,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[15,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, interval4[0])
+plt.ylim([0,1])
+#plt.plot(v2_v1_diff, dashes = [5,5])
+plt.legend(["v13", "v14", "v15", "v16", "interval 4"], loc=0)
+plt.ylabel("activation")
+plt.xlabel("steps")
+plt.title("Fourth module of timers")
+plt.grid('on')
+plt.show()
+
+activation_plot_xvals = np.arange(0, 300, dt)
+plt.figure()
+activation_plot_xvals = np.arange(0, 300, dt)
+plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
+plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [2,2]) 
+plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [2,2]) 
+plt.plot(activation_plot_xvals, v_hist[9,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[10,0:-1], dashes = [2,2]) 
+plt.plot(activation_plot_xvals, v_hist[13,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[14,0:-1], dashes = [2,2]) 
+plt.ylim([0,1])
+#plt.plot(v2_v1_diff, dashes = [5,5])
+plt.legend(["timer 1","timer 2", "timer 3", "timer 4"], loc=0)
+plt.ylabel("activation")
+plt.xlabel("steps")
+plt.title("All timers")
 plt.grid('on')
 plt.show()
 

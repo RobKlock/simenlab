@@ -65,8 +65,9 @@ data1[0][round(20/dt):round(40/dt)] = 1
 data1[0][round(20/dt):] = 1
 #data1[0][round(70/dt):round(90/dt)] = 
 interval2 = np.zeros((1,round(300/dt)))
-
 interval2[0][round(40/dt):round(60/dt)] = 1
+interval3 = np.zeros((1,round(300/dt)))
+interval3[0][round(60/dt):round(120/dt)] = 1
 
 
 weights = np.array([[2,     0,  0,  -20,  0,  0,  0,  0, 0,  0,  0,  0],      # 1->1, 2->1, 3->1 4->1
@@ -76,11 +77,11 @@ weights = np.array([[2,     0,  0,  -20,  0,  0,  0,  0, 0,  0,  0,  0],      # 
                     # 1->4, 2->4, 3->4 ... 
                     [0,     0,  1,    0,  2,  0,  0,-10, 0,  0,  0,  0],
                     [0,     0,  0,    0, .157,2,  0,-1,  0,  0,  0,  0],
-                    [0,     0,  0,    0,  0,  1,  2, 0,  0,  0,  0,  0],
+                    [0,     0,  0,    0,  0,  .9,  2, 0,  0,  0,  0,  0],
                     [0,     0,  0,    0,  0,  0,  1, 0,   0,  0,  0,  0],
                     
                     [0,     0,  0,    0,  0,  0,  1, 0,   2,  0,  0,  -10],
-                    [0,     0,  0,    0,  0,  0,  0, 0,   .123,  2,  0,  -1],
+                    [0,     0,  0,    0,  0,  0,  0, 0,   .081287,2,  0,  -1],
                     [0,     0,  0,    0,  0,  0,  0, 0,   0,  1,  2,  0],
                     [0,     0,  0,    0,  0,  0,  0, 0,   0,  0,  1,  0]])          
                          
@@ -131,6 +132,7 @@ plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2])
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[3,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, data1[0])
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
 plt.legend(["v1","v2", "v3", "v4"], loc=0)
@@ -164,10 +166,10 @@ plt.plot(activation_plot_xvals, v_hist[8,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[9,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[10,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[11,0:-1], dashes = [1,1])
-plt.plot(activation_plot_xvals, interval2[0])
+plt.plot(activation_plot_xvals, interval3[0])
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["v7", "v8", "v9", "v10", "interval 3"], loc=0)
+plt.legend(["v9", "v10", "v11", "v12", "interval 3"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("Third module of timers")

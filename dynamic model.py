@@ -62,21 +62,20 @@ def round_up(n, decimals=0):
 dt = .01
 data1 = np.zeros((1,round(300/dt)))
 data1[0][round(20/dt):round(40/dt)] = 1
-#data1[0][round(70/dt):round(90/dt)] = 1
-data1[0][round(200/dt):round(220/dt)] = 1
+#data1[0][round(70/dt):round(90/dt)] = 
+interval2 = np.zeros((1,round(300/dt)))
+
+interval2[0][round(40/dt):round(60/dt)] = 1
 
 
-data2 = np.zeros((1,round(300/dt)))
-data2[0][round(50/dt):round(60/dt)] = 1
-
-weights = np.array([[2,   0,      0,  -.8, 0, 0, 0, 0],      # 1->1, 2->1, 3->1 4->1
-                    [.163,     2,    0, -.8, 0, 0, 0, 0],      # 1->2, 2->2, 3->2
-                    [0,     .8,      2, 0, 0, 0, 0,0],      # 1->3, 2->3, 3->3
-                    [0,     0,      .7, 0, 0, 0 ,0 ,0],     # 1->4, 2->4, 3->4 ... 
-                    [0, 0, 0, 0, 0, 0, 0, 0],
-                    [0, 0, 0, 0, .163, 2, 0, -2],
-                    [0, 0, 0, 0, 0, .5, 2, 0],
-                    [0, 0, 0, 0, 0, 0, .7, 0]])          
+weights = np.array([[2,     0,  0,  -.3,  0,  0,  0,  0],      # 1->1, 2->1, 3->1 4->1
+                    [.157,  2,  0,  -.3,  0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [0,     1,  2,    0,  0,  0,  0,  0],      # 1->3, 2->3, 3->3
+                    [0,     0,  1,    0,  0,  0,  0,  0],     # 1->4, 2->4, 3->4 ... 
+                    [0,     0,  1,    0,  2,  0,  0,-.3],
+                    [0,     0,  0,    0, .157,2,  0,-.3],
+                    [0,     0,  0,    0,  0,  1,  2, 0],
+                    [0,     0,  0,    0,  0,  0,  1, 0]])          
                          
     
 beta = 1.2
@@ -91,7 +90,7 @@ tau = 1
 delta_A = 0
 l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T     
 pl_slope = weights[1][1]
-bias = np.array([[beta, ramp_bias, beta, beta, beta, beta, beta, beta]]).T 
+bias = np.array([[beta, ramp_bias, beta, beta, beta, ramp_bias, beta, beta]]).T 
  
 v = np.array([np.zeros(weights.shape[0])]).T 
 net_in = np.zeros(weights.shape[0])
@@ -99,64 +98,21 @@ net_in_test = np.zeros(weights.shape[0])
 timer_learn = False  
 early = False
 for i in range (0, data1.size):
+    # No learning in this model, all weights are hard-coded for interval timing
+                     
+    net_in = weights @ v      
     
-    A = 1 / weights[1][0]
-    
-    # If the network gets a signal, start learning its duration
-    if data1[0][i] == 1:
-        timer_learn = True 
-    
-    if i >=20000:
-        timer_learn = False
-        
-    if (v[1] >= net_in[0]) and timer_learn == True:
-        early = True
-        
-        if (data1[0][i] == 1):
-            # We're still in the interval, so we keep updating
-            drift = (weights[1][0] - bias[1] / 2)
-            z = 1.2
-            d_A = (- (drift ** 2)/z) * dt
-            #print(d_A)
-            weights[1][0] = weights[1][0] + d_A
-            #print(weights[1][0])
-        else:
-            timer_learn = False
-            print("early")
-            #print(weights)
-            
-            
-    net_in = weights @ v # sum of activations, inputs to each unit        
+    # Transfer functions
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
-    #net_in[1] = sigmoid(l[1], net_in[0], bias[1])
     net_in[1] = piecewise_linear(net_in[1], pl_slope, bias[1])
-    net_in[2] = sigmoid(l[2], net_in[2], bias[2])
+    net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
+    net_in[5] = piecewise_linear(net_in[5], pl_slope, bias[5])
+    net_in[6:] = sigmoid(l[6:], net_in[6:], bias[6:])
     
             
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
-    
-    if (data1[0][i] == 0) and (timer_learn == True) and (not early):
-        # If we hit our target late
-        # Do the late update
-        print("late")
-        timer_learn = False
-        Sn = weights[1][0]
-        B = bias[1]
-        z = net_in[0][-1]
-        # z = 1 <- Rivest has this for notation sake in their paper
-        z = .9
-        Vt = net_in[1][-1]
-        drift = (weights[1][0] - bias[1] / 2)
-        d_A = drift * ((z-Vt)/Vt)
-        
-        weights[1][0] = weights[1][0] + d_A
-        # The threshold on ramp-up values is C
-        # The input weight to the ramp is w
-        # The bias of the ramp unit is \beta
-        # Thus the drift imposed by the weight is \epsilon = w - \beta
-        # learning_rate * (W_end - beta) * (C - Cn) / Cn) <- Prof Simen's
     
 activation_plot_xvals = np.arange(0, 300, dt)
 plt.figure()
@@ -165,118 +121,103 @@ plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2])
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[3,0:-1], dashes = [1,1])
+plt.ylim([0,1])
+#plt.plot(v2_v1_diff, dashes = [5,5])
+plt.legend(["v1","v2", "v3", "v4"], loc=0)
+plt.ylabel("activation")
+plt.xlabel("steps")
+plt.title("First module of timers")
+plt.grid('on')
+plt.show()
+
+activation_plot_xvals = np.arange(0, 300, dt)
+plt.figure()
+activation_plot_xvals = np.arange(0, 300, dt)
 plt.plot(activation_plot_xvals, v_hist[4,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[7,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, interval2[0])
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["v1","v2", "v3", "v4", "v5", "v6", "v7", "v8"], loc=0)
+plt.legend(["v5", "v6", "v7", "v8", "interval 2"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
-plt.title("Timer before learning")
+plt.title("Second module of timers")
 plt.grid('on')
 plt.show()
 
-x_axis_vals = np.arange(-2, 3, dt)
-plt.figure()
-plt.plot(x_axis_vals, graph_sigmoid(l[2], x_axis_vals, bias[2] - v[2]))
-x1 = [0, 3]
-y2 = [0, 1/weights[2,2] * 3]
-plt.plot(x1,y2, label = "strength of unit 2")
-plt.ylim([0,1])
-plt.legend([ "sigmoid internal", "strength of unit 2"], loc = 0)
-plt.title("activation of OUT Unit against sigmoid")
-plt.grid('on')
-plt.show()
+#x_axis_vals = np.arange(-2, 3, dt)
+#plt.figure()
+#plt.plot(x_axis_vals, graph_sigmoid(l[2], x_axis_vals, bias[2] - v[2]))
+#x1 = [0, 3]
+#y2 = [0, 1/weights[2,2] * 3]
+#plt.plot(x1,y2, label = "strength of unit 2")
+#plt.ylim([0,1])
+#plt.legend([ "sigmoid internal", "strength of unit 2"], loc = 0)
+#plt.title("activation of OUT Unit against sigmoid")
+#plt.grid('on')
+#plt.show()
+#
+#x_axis_vals = np.arange(-2, 3, dt)
+#plt.figure()
+#plt.plot(x_axis_vals, graph_pl(x_axis_vals, pl_slope, bias[1]))
+#x1 = [0, 3]
+#y2 = [0, 1/weights[1,1] * 3]
+#plt.plot(x1,y2, label = "strength of unit 2")
+#plt.ylim([-.1,1.1])
+#plt.legend([ "piecewise linear", "strength of unit 2"], loc = 0)
+#plt.title("activation of RAMP Unit against piecewise linear")
+#plt.grid('on')
+#plt.show()
 
-x_axis_vals = np.arange(-2, 3, dt)
-plt.figure()
-plt.plot(x_axis_vals, graph_pl(x_axis_vals, pl_slope, bias[1]))
-x1 = [0, 3]
-y2 = [0, 1/weights[1,1] * 3]
-plt.plot(x1,y2, label = "strength of unit 2")
-plt.ylim([-.1,1.1])
-plt.legend([ "piecewise linear", "strength of unit 2"], loc = 0)
-plt.title("activation of RAMP Unit against piecewise linear")
-plt.grid('on')
-plt.show()
-
-x_axis_vals = np.arange(-2, 3, dt)
-plt.figure()
-plt.plot(x_axis_vals, graph_sigmoid(l[0], x_axis_vals, bias[0] - v[0]))
-x1 = [0, 3]
-y2 = [0, 1/weights[0,0] * 3]
-plt.plot(x1,y2, label = "strength of unit 1")
-plt.ylim([0,1])
-plt.legend([ "sigmoid internal", "strength of unit 2"], loc = 0)
-plt.title("activation of FIRST Unit against sigmoid")
-plt.grid('on')
-plt.show()
-
-fig, axs = plt.subplots(4)
-activation_plot_xvals = np.arange(0, 300, dt)
-fig.suptitle("Unit Activations and Stimulus")
-axs[0].plot(activation_plot_xvals, v_hist[2,0:-1]) 
-axs[0].set_ylabel("OUT Unit Activation")
-axs[0].set_ylim([0,1])
-axs[0].grid('on')
-axs[1].plot(activation_plot_xvals, v_hist[1,0:-1])
-axs[1].set_ylabel("MID Unit Activation")
-axs[1].set_ylim([0,1])
-axs[1].grid('on')
-axs[2].plot(activation_plot_xvals, v_hist[0,0:-1])
-axs[2].set_ylabel("IN Unit Activation")
-axs[2].set_ylim([0,1])
-axs[2].grid('on')
-axs[3].plot(activation_plot_xvals, data1[0])
-axs[3].set_ylabel("Input Stimulus")
-axs[3].set_ylim([0,1])
-plt.xlabel("Time Steps")
-plt.grid('on')
-plt.show()
-
-v_test = np.array([np.zeros(weights.shape[0])]).T 
-for i in range (0, data1.size):
-    
-    net_in_test = weights @ v_test # sum of activations, inputs to each unit
-    z = 1.2
-    # If the network gets a signal, start learning its duration
-    net_in_test[0] = sigmoid(l[0], data1[0][i] + net_in_test[0], bias[0])    
-    net_in_test[1] = piecewise_linear(net_in_test[1], pl_slope, bias[1])
-    net_in_test[2] = sigmoid(l[2], net_in_test[2], bias[2])
-    
-    # dv = (1/tau) * ((-v + activations) * dt) # No noise
-    dv = (1/tau) * ((-v_test + net_in_test) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
-    #dv = (1/tau) * (((-v) + activations) * dt) + (np.sqrt(dt)) / tau) add noise using np.random
-    v_test = v_test + dv
-    v_hist_test = np.concatenate((v_hist_test,v_test), axis=1)
+#x_axis_vals = np.arange(-2, 3, dt)
+#plt.figure()
+#plt.plot(x_axis_vals, graph_sigmoid(l[0], x_axis_vals, bias[0] - v[0]))
+#x1 = [0, 3]
+#y2 = [0, 1/weights[0,0] * 3]
+#plt.plot(x1,y2, label = "strength of unit 1")
+#plt.ylim([0,1])
+#plt.legend([ "sigmoid internal", "strength of unit 2"], loc = 0)
+#plt.title("activation of FIRST Unit against sigmoid")
+#plt.grid('on')
+#plt.show()
+#
+#fig, axs = plt.subplots(4)
+#activation_plot_xvals = np.arange(0, 300, dt)
+#fig.suptitle("Unit Activations and Stimulus")
+#axs[0].plot(activation_plot_xvals, v_hist[2,0:-1]) 
+#axs[0].set_ylabel("OUT Unit Activation")
+#axs[0].set_ylim([0,1])
+#axs[0].grid('on')
+#axs[1].plot(activation_plot_xvals, v_hist[1,0:-1])
+#axs[1].set_ylabel("MID Unit Activation")
+#axs[1].set_ylim([0,1])
+#axs[1].grid('on')
+#axs[2].plot(activation_plot_xvals, v_hist[0,0:-1])
+#axs[2].set_ylabel("IN Unit Activation")
+#axs[2].set_ylim([0,1])
+#axs[2].grid('on')
+#axs[3].plot(activation_plot_xvals, data1[0])
+#axs[3].set_ylabel("Input Stimulus")
+#axs[3].set_ylim([0,1])
+#plt.xlabel("Time Steps")
+#plt.grid('on')
+#plt.show()
 
 
-activation_plot_xvals = np.arange(0, 300, dt)
-plt.figure()
-activation_plot_xvals = np.arange(0, 300, dt)
-plt.plot(activation_plot_xvals, v_hist_test[0,0:-1], dashes = [2,2]) 
-plt.plot(activation_plot_xvals, v_hist_test[1,0:-1], dashes = [1,1])
-plt.plot(activation_plot_xvals, v_hist_test[2,0:-1], dashes = [1,1])
-plt.plot(activation_plot_xvals, v_hist_test[3,0:-1], dashes = [1,1])
-plt.ylim([0,1])
-#plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["v1_learned","v2_learned", "v3_learned", "v4_learned"], loc=0)
-plt.ylabel("activation")
-plt.xlabel("steps")
-plt.grid('on')
-plt.title("Timer after learning")
-plt.show()
-
-plt.figure()
-activation_plot_xvals = np.arange(0, 300, dt)
-plt.plot(activation_plot_xvals, v_hist[1,0:-1]) 
-plt.plot(activation_plot_xvals, v_hist[0,0:-1]) 
-plt.plot(activation_plot_xvals, data1[0][0:]) 
-plt.ylabel("Activation")
-plt.xlabel("Time Steps")
-plt.grid('on')
-plt.ylim([0,1.2])
-plt.title("Timer behavior during one trial")
-plt.show()
+#activation_plot_xvals = np.arange(0, 300, dt)
+#plt.figure()
+#activation_plot_xvals = np.arange(0, 300, dt)
+#plt.plot(activation_plot_xvals, v_hist_test[0,0:-1], dashes = [2,2]) 
+#plt.plot(activation_plot_xvals, v_hist_test[1,0:-1], dashes = [1,1])
+#plt.plot(activation_plot_xvals, v_hist_test[2,0:-1], dashes = [1,1])
+#plt.plot(activation_plot_xvals, v_hist_test[3,0:-1], dashes = [1,1])
+#plt.ylim([0,1])
+##plt.plot(v2_v1_diff, dashes = [5,5])
+#plt.legend(["v1_learned","v2_learned", "v3_learned", "v4_learned"], loc=0)
+#plt.ylabel("activation")
+#plt.xlabel("steps")
+#plt.grid('on')
+#plt.title("Timer after learning")
+#plt.show()

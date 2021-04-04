@@ -115,7 +115,7 @@ for i in range (0, data1.size):
             d_A = (- (drift ** 2)/z) * dt
             #print(d_A)
             weights[1][0] = weights[1][0] + d_A
-            #print(weights[1][0])
+            print(weights[1][0])
         else:
             timer_learn = False
             print("early")

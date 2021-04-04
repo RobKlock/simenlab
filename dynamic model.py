@@ -69,14 +69,20 @@ interval2 = np.zeros((1,round(300/dt)))
 interval2[0][round(40/dt):round(60/dt)] = 1
 
 
-weights = np.array([[2,     0,  0,  -20,  0,  0,  0,  0],      # 1->1, 2->1, 3->1 4->1
-                    [.157,  2,  0,  -1,  0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     1,  2,    0,  0,  0,  0,  0],      # 1->3, 2->3, 3->3
-                    [0,     0,  1,    0,  0,  0,  0,  0],     # 1->4, 2->4, 3->4 ... 
-                    [0,     0,  1,    0,  2,  0,  0,-10],
-                    [0,     0,  0,    0, .157,2,  0,-1],
-                    [0,     0,  0,    0,  0,  1,  2, 0],
-                    [0,     0,  0,    0,  0,  0,  1, 0]])          
+weights = np.array([[2,     0,  0,  -20,  0,  0,  0,  0, 0,  0,  0,  0],      # 1->1, 2->1, 3->1 4->1
+                    [.157,  2,  0,  -1,  0,  0,  0,   0, 0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [0,     1,  2,    0,  0,  0,  0,  0, 0,  0,  0,  0],      # 1->3, 2->3, 3->3
+                    [0,     0,  1,    0,  0,  0,  0,  0, 0,  0,  0,  0],
+                    # 1->4, 2->4, 3->4 ... 
+                    [0,     0,  1,    0,  2,  0,  0,-10, 0,  0,  0,  0],
+                    [0,     0,  0,    0, .157,2,  0,-1,  0,  0,  0,  0],
+                    [0,     0,  0,    0,  0,  1,  2, 0,  0,  0,  0,  0],
+                    [0,     0,  0,    0,  0,  0,  1, 0,   0,  0,  0,  0],
+                    
+                    [0,     0,  0,    0,  0,  0,  1, 0,   2,  0,  0,  -10],
+                    [0,     0,  0,    0,  0,  0,  0, 0,   .123,  2,  0,  -1],
+                    [0,     0,  0,    0,  0,  0,  0, 0,   0,  1,  2,  0],
+                    [0,     0,  0,    0,  0,  0,  0, 0,   0,  0,  1,  0]])          
                          
     
 beta = 1.2
@@ -89,9 +95,10 @@ noise = 0.0
 steps = 0 
 tau = 1
 delta_A = 0
-l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T     
-pl_slope = weights[1][1]
-bias = np.array([[beta, ramp_bias, beta, beta, beta, ramp_bias, beta, beta]]).T 
+l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T   
+#l = np.full([ weights.shape[0] ], lmbd).T  
+interval_1_slope = weights[1][1]
+bias = np.array([[beta, ramp_bias, beta, beta, beta, ramp_bias, beta, beta, beta, ramp_bias, beta, beta,]]).T 
  
 v = np.array([np.zeros(weights.shape[0])]).T 
 net_in = np.zeros(weights.shape[0])
@@ -105,10 +112,12 @@ for i in range (0, data1.size):
     
     # Transfer functions
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
-    net_in[1] = piecewise_linear(net_in[1], pl_slope, bias[1])
+    net_in[1] = piecewise_linear(net_in[1], interval_1_slope, bias[1])
     net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
-    net_in[5] = piecewise_linear(net_in[5], pl_slope, bias[5])
-    net_in[6:] = sigmoid(l[6:], net_in[6:], bias[6:])
+    net_in[5] = piecewise_linear(net_in[5], interval_1_slope, bias[5])
+    net_in[6:9] = sigmoid(l[6:9], net_in[6:9], bias[6:9])
+    net_in[9] = piecewise_linear(net_in[9], interval_1_slope, bias[9])
+    net_in[10:] = sigmoid(l[10:], net_in[10:], bias[10:])
     
             
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
@@ -145,6 +154,23 @@ plt.legend(["v5", "v6", "v7", "v8", "interval 2"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("Second module of timers")
+plt.grid('on')
+plt.show()
+
+activation_plot_xvals = np.arange(0, 300, dt)
+plt.figure()
+activation_plot_xvals = np.arange(0, 300, dt)
+plt.plot(activation_plot_xvals, v_hist[8,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[9,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[10,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, v_hist[11,0:-1], dashes = [1,1])
+plt.plot(activation_plot_xvals, interval2[0])
+plt.ylim([0,1])
+#plt.plot(v2_v1_diff, dashes = [5,5])
+plt.legend(["v7", "v8", "v9", "v10", "interval 3"], loc=0)
+plt.ylabel("activation")
+plt.xlabel("steps")
+plt.title("Third module of timers")
 plt.grid('on')
 plt.show()
 

@@ -71,6 +71,9 @@ interval3[0][round(60/dt):round(120/dt)] = 1
 interval4 = np.zeros((1,round(300/dt)))
 interval4[0][round(110/dt):round(120/dt)] = 1
 
+stretch = .5
+ramp_bias = 0.1
+other_term = 1
 weights = np.array([[2,     0,  0,  -20,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
                     [.157,  2,  0,  -1,       0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],      # 1->2, 2->2, 3->2
                     [0,     1,  2,    0,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->3, 2->3, 3->3
@@ -79,11 +82,11 @@ weights = np.array([[2,     0,  0,  -20,      0,  0,  0,  0,    0, 0,  0,  0,   
                     [0,     0,  1,    0,      2,  0,  0,-10,    0, 0,  0,  0,   0,  0,  0,  0],
                     [0,     0,  0,    0,     .157,2,  0,-1,     0, 0,  0,  0,   0,  0,  0,  0],
                     [0,     0,  0,    0,      0,  1,  2, 0,     0, 0,  0,  0,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  1, 0,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  .9, 0,     0, 0,  0,  0,   0,  0,  0,  0],
                     
                     [0,     0,  0,    0,      0,  0,  1, 0,     2, 0,  0,-10,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  0, 0,.081287,2,  0, -1,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 1,  2,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0, .0811, 2,  0, -1,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, .9,  2,  0,   0,  0,  0,  0],
                     [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  .9,  0,   0,  0,  0,  0],
                     
                     [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  0,   2,  0,  0,  -10],
@@ -91,21 +94,38 @@ weights = np.array([[2,     0,  0,  -20,      0,  0,  0,  0,    0, 0,  0,  0,   
                     [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  1,  2,  0],
                     [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  0,  1,  0]])          
                          
-    
+weights2 = np.array([[2,     0,  0,  -20,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
+                    [other_term * (ramp_bias / 2) + stretch * (weights[1][0] - (ramp_bias / 2)),  2,  0,  -1,       0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [0,     1,  2,    0,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->3, 2->3, 3->3
+                    [0,     0,  1,    0,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],
+                    # 1->4, 2->4, 3->4 ... 
+                    [0,     0,  1,    0,      2,  0,  0,-10,    0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      other_term * (ramp_bias / 2) + stretch * (weights[5][4] - (ramp_bias / 2)),2,  0,-1,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  1,  2, 0,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  .9, 0,     0, 0,  0,  0,   0,  0,  0,  0],
+                    
+                    [0,     0,  0,    0,      0,  0,  1, 0,     2, 0,  0,-10,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0, other_term * (ramp_bias / 2) + stretch * (weights[9][8] - (ramp_bias / 2)), 2,  0, -1,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, .9,  2,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  .9,  0,   0,  0,  0,  0],
+                    
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  0,   2,  0,  0,  -10],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,  other_term * (ramp_bias / 2) + stretch * (weights[13][12] - (ramp_bias / 2)),2,  0, -1],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  1,  2,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  0,  1,  0]])  
 beta = 1.2
-ramp_bias = .1
 third_unit_beta = 1.1
 lmbd = 4
 v_hist = np.array([np.zeros(weights.shape[0])]).T 
 v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
-noise = 0.01
+noise = 0.0
 steps = 0 
 tau = 1
 delta_A = 0
 l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T   
 #l = np.full([ weights.shape[0] ], lmbd).T  
 interval_1_slope = weights[1][1]
-bias = np.array([[beta, ramp_bias, beta, beta, beta, ramp_bias, beta, beta, beta + .2, ramp_bias, beta, beta, beta, ramp_bias, beta, beta]]).T 
+bias = np.array([[beta, ramp_bias, beta, beta, beta, ramp_bias, beta, beta, beta, ramp_bias, beta, beta, beta, ramp_bias, beta, beta]]).T 
  
 v = np.array([np.zeros(weights.shape[0])]).T 
 net_in = np.zeros(weights.shape[0])
@@ -115,7 +135,7 @@ early = False
 for i in range (0, data1.size):
     # No learning in this model, all weights are hard-coded for interval timing
                      
-    net_in = weights @ v      
+    net_in = weights2 @ v      
     
     # Transfer functions
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    

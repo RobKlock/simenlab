@@ -61,7 +61,7 @@ def round_up(n, decimals=0):
 # 20-30 and 50-60
 dt = .01
 data1 = np.zeros((1,round(300/dt)))
-data1[0][round(20/dt):round(30/dt)] = 1
+data1[0][round(20/dt):round(60/dt)] = 1
 #data1[0][round(70/dt):round(90/dt)] = 1
 data1[0][round(200/dt):round(220/dt)] = 1
 
@@ -70,7 +70,7 @@ data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 1
 
 weights = np.array([[2,   0,      0, 0],      # 1->1, 2->1, 3->1 4->1
-                    [.3,     2,    0, 0],      # 1->2, 2->2, 3->2
+                    [.2,     2,    0, 0],      # 1->2, 2->2, 3->2
                     [0,     .5,      2, 0],      # 1->3, 2->3, 3->3
                     [0,     0,      0, 0]])      # 1->4, 2->4, 3->4
                          
@@ -80,7 +80,8 @@ ramp_bias = .1
 third_unit_beta = 1.1
 lmbd = 4
 v_hist = np.array([[0, 0, 0, 0]]).T 
-v_hist_test = np.array([[0, 0, 0, 0]]).T      
+v_hist_test = np.array([[0, 0, 0, 0]]).T 
+early_rule_hist = np.zeros((1,round(300/dt)))     
 noise = 0.0
 steps = 0 
 tau = 1
@@ -95,7 +96,6 @@ net_in_test = [0.0,0.0, 0.0, 0.0]
 timer_learn = False  
 early = False
 for i in range (0, data1.size):
-    
     A = 1 / weights[1][0]
     
     # If the network gets a signal, start learning its duration
@@ -107,7 +107,7 @@ for i in range (0, data1.size):
         
     if (v[1] >= net_in[0]) and timer_learn == True:
         early = True
-        
+        early_rule_hist[0][i] = weights[1][0]
         if (data1[0][i] == 1):
             # We're still in the interval, so we keep updating
             drift = (weights[1][0] - bias[1] / 2)
@@ -115,9 +115,11 @@ for i in range (0, data1.size):
             d_A = (- (drift ** 2)/z) * dt
             #print(d_A)
             weights[1][0] = weights[1][0] + d_A
+            early_rule_hist[0][i] = weights[1][0]
             print(weights[1][0])
         else:
             timer_learn = False
+            early_rule_hist[0][i] = weights[1][0]
             print("early")
             #print(weights)
             
@@ -170,6 +172,15 @@ plt.xlabel("steps")
 plt.title("Timer before learning")
 plt.grid('on')
 plt.show()
+
+plt.figure()
+plt.plot(activation_plot_xvals, early_rule_hist[0])
+plt.ylim([0,1])
+plt.legend(["early update rule values"], loc = 0)
+plt.xlabel("steps")
+plt.grid('on')
+plt.show()
+
 
 x_axis_vals = np.arange(-2, 3, dt)
 plt.figure()

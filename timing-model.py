@@ -69,10 +69,10 @@ data1[0][round(200/dt):round(220/dt)] = 1
 data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 1
 
-weights = np.array([[2,   0,      0, 0],      # 1->1, 2->1, 3->1 4->1
-                    [.2,     2,    0, 0],      # 1->2, 2->2, 3->2
+weights = np.array([[2,   0,      0,  -.5],      # 1->1, 2->1, 3->1 4->1
+                    [.2,     2,    0, -.5],      # 1->2, 2->2, 3->2
                     [0,     .5,      2, 0],      # 1->3, 2->3, 3->3
-                    [0,     0,      0, 0]])      # 1->4, 2->4, 3->4
+                    [0,     0,      1, 2]])      # 1->4, 2->4, 3->4
                          
     
 beta = 1.2
@@ -88,7 +88,7 @@ tau = 1
 delta_A = 0
 l = np.array([[lmbd, lmbd, lmbd, lmbd]]).T     
 pl_slope = weights[1][1]
-bias = np.array([[beta, ramp_bias, beta, beta]]).T 
+bias = np.array([[beta, ramp_bias, beta, beta + .4]]).T 
  
 v = np.array([[0.0, 0.0, 0.0, 0.0]]).T            
 net_in = [0.0,0.0, 0.0, 0.0]
@@ -97,7 +97,19 @@ timer_learn = False
 early = False
 for i in range (0, data1.size):
     A = 1 / weights[1][0]
+    x_axis_vals = np.arange(-2, 3, dt)
     
+    if (i==0):
+        plt.figure()
+        plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v[3]))
+        x1 = [0, 3]
+        y2 = [0, 1/weights[3,3] * 3]
+        plt.plot(x1,y2, label = "strength of unit 4")
+        plt.ylim([0,1])
+        plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
+        plt.title("activation of 4 Unit against sigmoid BOT")
+        plt.grid('on')
+        plt.show()
     # If the network gets a signal, start learning its duration
     if data1[0][i] == 1:
         timer_learn = True 
@@ -116,7 +128,7 @@ for i in range (0, data1.size):
             #print(d_A)
             weights[1][0] = weights[1][0] + d_A
             early_rule_hist[0][i] = weights[1][0]
-            print(weights[1][0])
+            #print(weights[1][0])
         else:
             timer_learn = False
             early_rule_hist[0][i] = weights[1][0]
@@ -129,7 +141,7 @@ for i in range (0, data1.size):
     #net_in[1] = sigmoid(l[1], net_in[0], bias[1])
     net_in[1] = piecewise_linear(net_in[1], pl_slope, bias[1])
     net_in[2] = sigmoid(l[2], net_in[2], bias[2])
-    
+    net_in[3] = sigmoid(l[3], net_in[3], bias[3])
             
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (4,1)))  # Add noise using np.random
     v = v + dv            
@@ -150,7 +162,6 @@ for i in range (0, data1.size):
         d_A = drift * ((z-Vt)/Vt)
         
         weights[1][0] = weights[1][0] + d_A
-        print(weights[1][0])
         # The threshold on ramp-up values is C
         # The input weight to the ramp is w
         # The bias of the ramp unit is \beta
@@ -173,6 +184,7 @@ plt.title("Timer before learning")
 plt.grid('on')
 plt.show()
 
+'''
 plt.figure()
 plt.plot(activation_plot_xvals, early_rule_hist[0])
 plt.ylim([0,1])
@@ -180,20 +192,21 @@ plt.legend(["early update rule values"], loc = 0)
 plt.xlabel("steps")
 plt.grid('on')
 plt.show()
-
+'''
 
 x_axis_vals = np.arange(-2, 3, dt)
 plt.figure()
-plt.plot(x_axis_vals, graph_sigmoid(l[2], x_axis_vals, bias[2] - v[2]))
+plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v[3]))
 x1 = [0, 3]
-y2 = [0, 1/weights[2,2] * 3]
-plt.plot(x1,y2, label = "strength of unit 2")
+y2 = [0, 1/weights[3,3] * 3]
+plt.plot(x1,y2, label = "strength of unit 4")
 plt.ylim([0,1])
-plt.legend([ "sigmoid internal", "strength of unit 2"], loc = 0)
-plt.title("activation of OUT Unit against sigmoid")
+plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
+plt.title("activation of 4 Unit against sigmoid EOT")
 plt.grid('on')
 plt.show()
 
+'''
 x_axis_vals = np.arange(-2, 3, dt)
 plt.figure()
 plt.plot(x_axis_vals, graph_pl(x_axis_vals, pl_slope, bias[1]))
@@ -217,7 +230,7 @@ plt.legend([ "sigmoid internal", "strength of unit 2"], loc = 0)
 plt.title("activation of FIRST Unit against sigmoid")
 plt.grid('on')
 plt.show()
-
+'''
 fig, axs = plt.subplots(4)
 activation_plot_xvals = np.arange(0, 300, dt)
 fig.suptitle("Unit Activations and Stimulus")
@@ -272,7 +285,7 @@ plt.xlabel("steps")
 plt.grid('on')
 plt.title("Timer after learning")
 plt.show()
-
+'''
 plt.figure()
 activation_plot_xvals = np.arange(0, 300, dt)
 plt.plot(activation_plot_xvals, v_hist[1,0:-1]) 
@@ -284,7 +297,7 @@ plt.grid('on')
 plt.ylim([0,1.2])
 plt.title("Timer behavior during one trial")
 plt.show()
-
+'''
 #fig, axs = plt.subplots(1)
 #activation_plot_xvals = np.arange(0, 300, dt)
 #fig.suptitle("Timer behavior before and after learning")

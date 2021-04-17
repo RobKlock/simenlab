@@ -12,6 +12,18 @@ import sys
 sys.path.append('/Users/robertklock/Documents/Class/Fall20/SimenLab/simenlab')
 import matplotlib.pyplot as plt
 
+def plot_curves(bias, lambd = 4, slf_excitation = 2, v = 0):
+    x_axis_vals = np.arange(-2, 3, dt)
+    plt.plot(x_axis_vals, graph_sigmoid(lambd, x_axis_vals, bias - v))
+    x1 = [0, 3]
+    y2 = [0, 1/slf_excitation * 3]
+    plt.plot(x1,y2, label = "strength of module 1 OFF")
+    plt.ylim([0,1])
+    plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
+    plt.title("activation of 4 Unit against sigmoid BOT")
+    plt.grid('on')
+    plt.show() 
+
 def sigmoid(l, total_input, b):
     f = 1/ (1 + np.exp(-l * (total_input - b)))
     return f
@@ -59,10 +71,10 @@ def round_up(n, decimals=0):
    
 # Setup our time series data, which is a series of zeros with two batches of 1's from
 # 20-30 and 50-60
-dt = .01
+dt = .1
 
 ''' Establish Intervals '''
-data1 = np.zeros((1,round(300/dt)))
+data1 = np.zeros((1,round(800/dt)))
 data1[0][round(20/dt):round(40/dt)] = 1
 data1[0][round(41/dt):] = 0
 interval1 = np.zeros((1,round(300/dt)))
@@ -74,51 +86,51 @@ interval3[0][round(60/dt):round(120/dt)] = 1
 interval4 = np.zeros((1,round(300/dt)))
 interval4[0][round(117/dt):round(127/dt)] = 1
 
-stretch = .5
+stretch = .4
 ramp_bias = 0.1
 
-weights = np.array([[2,     0,  0,  - .25,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.157,  2,  0,  -.25,       0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     1,  2,    -.4,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->3, 2->3, 3->3
+weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
+                    [.157,  2,  0,   -1,       0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [0,     1,  2,   -1,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],
                      
-                    [0,     0,  1,    0,      2,  0,  0,-.25,    0, 0,  0,  0,   0,  0,  0,  0],
-                    [0,     0,  0,    0,     .157,2,  0,-.25,     0, 0,  0,  0,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  1,  2, -.4,     0, 0,  0,  0,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  1, 1,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  1,    0,      2,  0,  0,-1,    0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,     .157,2,  0,-1,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  1,  2, -1,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  1, 2,     0, 0,  0,  0,   0,  0,  0,  0],
                     
-                    [0,     0,  0,    0,      0,  0,  1, 0,     2, 0,  0,-.25,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  0, 0, .0811, 2,  0, -.25,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 1,  2, -.4,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  1,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  1, 0,     2, 0,  0,-1,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0, .0811, 2,  0, -1,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 1,  2, -1,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  2,   0,  0,  0,  0],
                     
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  0,   2,  0,  0,  -.25],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,  .275,2,  0, -.25],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  1,  2,  -.4],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  0,  1,  1]])          
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  0,   2,  0,  0,  -1],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,  .275,2,  0, -1],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  1,  2,  -1],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  0,  1,  2]])          
                          
 
-stretched_weights = np.array([[2,     0,  0,  -20,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
+stretched_weights = np.array([[2,     0,  0,  -1,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
                     [(ramp_bias / 2) + stretch * (weights[1][0] - (ramp_bias / 2)),  2,  0,  -1,       0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     1,  2,    0,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->3, 2->3, 3->3
-                    [0,     0,  1,    0,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     1,  2,    -1,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->3, 2->3, 3->3
+                    [0,     0,  1,    2,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],
                     
-                    [0,     0,  1,    0,      2,  0,  0,-10,    0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  1,    0,      2,  0,  0,-1,    0, 0,  0,  0,   0,  0,  0,  0],
                     [0,     0,  0,    0,      (ramp_bias / 2) + stretch * (weights[5][4] - (ramp_bias / 2)),2,  0,-1,     0, 0,  0,  0,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  1,  2, 0,     0, 0,  0,  0,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  .9, 0,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  1,  2, -1,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  1, 2,     0, 0,  0,  0,   0,  0,  0,  0],
                     
-                    [0,     0,  0,    0,      0,  0,  1, 0,     2, 0,  0,-10,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  1, 0,     2, 0,  0,-1,   0,  0,  0,  0],
                     [0,     0,  0,    0,      0,  0,  0, 0,     (ramp_bias / 2) + stretch * (weights[9][8] - (ramp_bias / 2)), 2,  0, -1,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, .9,  2,  0,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  .9,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 1,  2,  -1,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  2,   0,  0,  0,  0],
                     
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  0,   2,  0,  0,  -10],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  0,   2,  0,  0,  -1],
                     [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,  (ramp_bias / 2) + stretch * (weights[13][12] - (ramp_bias / 2)),2,  0, -1],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  1,  2,  0],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  0,  1,  0]])  
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  1,  2,  -1],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  0,  1,  2]])  
 beta = 1.2
-inhibition_unit_bias = 1.45
+inhibition_unit_bias = 1.4
 third_unit_beta = 1.1
 lmbd = 4
 v_hist = np.array([np.zeros(weights.shape[0])]).T 
@@ -130,7 +142,7 @@ delta_A = 0
 l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T   
 #l = np.full([ weights.shape[0] ], lmbd).T  
 interval_1_slope = weights[1][1]
-bias = np.array([[beta, ramp_bias, beta, beta + .1, beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta + .1811, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias]]).T 
+bias = np.array([[beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias]]).T 
  
 v = np.array([np.zeros(weights.shape[0])]).T 
 net_in = np.zeros(weights.shape[0])
@@ -151,9 +163,10 @@ for i in range (0, data1.size):
         plt.title("activation of 4 Unit against sigmoid BOT")
         plt.grid('on')
         plt.show() 
+        
              
-    net_in = weights @ v      
-    # net_in = stretched_weights @ v
+    # net_in = weights @ v      
+    net_in = stretched_weights @ v
     
     # Transfer functions
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
@@ -174,7 +187,7 @@ for i in range (0, data1.size):
     v_hist = np.concatenate((v_hist,v), axis=1)
     
 ''' Plotting ''' 
-
+'''
 activation_plot_xvals = np.arange(0, 300, dt)
 plt.figure()
 activation_plot_xvals = np.arange(0, 300, dt)
@@ -241,10 +254,10 @@ plt.xlabel("steps")
 plt.title("Fourth module of timers")
 plt.grid('on')
 plt.show()
-
 activation_plot_xvals = np.arange(0, 300, dt)
+'''
 plt.figure()
-activation_plot_xvals = np.arange(0, 300, dt)
+activation_plot_xvals = np.arange(0, 800, dt)
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
@@ -255,13 +268,13 @@ plt.plot(activation_plot_xvals, v_hist[13,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[14,0:-1], dashes = [2,2]) 
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["timer 1","timer 2", "timer 3", "timer 4"], loc=0)
+plt.legend(["timer 1", "module 1 output switch","timer 2", "module 2 output switch", "timer 3", "module 3 output switch", "timer 4", "module 4 output switch"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("All timers")
 plt.grid('on')
 plt.show()
-
+'''
 x_axis_vals = np.arange(-2, 3, dt)
 plt.figure()
 plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v[3]))
@@ -273,3 +286,4 @@ plt.legend([ "sigmoid internal", "strength of unit 4"], loc = 0)
 plt.title("activation of 4 Unit against sigmoid EOT")
 plt.grid('on')
 plt.show()
+'''

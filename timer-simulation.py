@@ -15,13 +15,10 @@ import matplotlib.pyplot as plt
 fig, ax = plt.subplots(1, 1)
 mean, var, skew, kurt = stats.norm.stats(moments='mvsk')
 x = np.linspace(stats.norm.ppf(0.01),
-
                 stats.norm.ppf(0.99), 100)
 
 ax.plot(x, stats.norm.pdf(x),
-
        'r-', lw=3, alpha=.3, label='norm pdf')
-
 rv = stats.norm()
 
 ax.plot(x, rv.pdf(x), 'k-', lw=2, label='frozen pdf')

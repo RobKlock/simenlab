@@ -97,7 +97,7 @@ event2 = np.zeros((1,round(total_duration/dt)))
 event2[0][round(events["pCA"]/dt)] = 1
 
 
-stretch = .4
+stretch = .3
 ramp_bias = 0.1
 
 weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
@@ -126,14 +126,14 @@ stretched_weights = np.array([[2,     0,  0,  -1,      0,  0,  0,  0,    0, 0,  
                     [0,     .5,  2,    -1,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],
                     
-                    [0,     0,  1,    0,      2,  0,  0,-1,    0, 0,  0,  0,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      (ramp_bias / 2) + stretch * (weights[5][4] - (ramp_bias / 2)),2,  0,-1,     0, 0,  0,  0,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  .5,  2, -1,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  1,    0,      2,  0,  0,-.9,    0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      (ramp_bias / 2) + stretch * (weights[5][4] - (ramp_bias / 2)),2,  0,-.9,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  .5,  2, -.9,     0, 0,  0,  0,   0,  0,  0,  0],
                     [0,     0,  0,    0,      0,  0,  1, 2,     0, 0,  0,  0,   0,  0,  0,  0],
                     
-                    [0,     0,  0,    0,      0,  0,  1, 0,     2, 0,  0,-1,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     (ramp_bias / 2) + stretch * (weights[9][8] - (ramp_bias / 2)), 2,  0, -1,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, .5,  2,  -1,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  1, 0,     2, 0,  0,-.8,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     (ramp_bias / 2) + stretch * (weights[9][8] - (ramp_bias / 2)), 2,  0, -.8,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, .5,  2,  -.8,   0,  0,  0,  0],
                     [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  2,   0,  0,  0,  0],
                     
                     [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  0,   2,  0,  0,  -1],
@@ -197,8 +197,8 @@ for i in range (0, event1.size):
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
 
-print("Timer 1 Sq Error: ", sq_error(events["pBA"], np.amin(np.where(v_hist[4] > .8)) / 10))
-print("Timer 2 Sq Error: ", sq_error(events["pCA"], np.amin(np.where(v_hist[8] > .8)) / 10))
+# print("Timer 1 Sq Error: ", sq_error(events["pBA"], np.amin(np.where(v_hist[4] > .8)) / 10))
+# print("Timer 2 Sq Error: ", sq_error(events["pCA"], np.amin(np.where(v_hist[8] > .8)) / 10))
 plt.figure()
 activation_plot_xvals = np.arange(0, total_duration, dt)
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
@@ -207,13 +207,14 @@ plt.plot(activation_plot_xvals, event2[0])
 plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [2,2]) 
+plt.plot(activation_plot_xvals, v_hist[7,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[9,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[10,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[13,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[14,0:-1], dashes = [2,2]) 
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["timer 1", "interval 1", "event 2", "module 1 output switch","timer 2", "module 2 output switch", "timer 3", "module 3 output switch", "timer 4", "module 4 output switch"], loc=0)
+plt.legend(["timer 1", "event 1", "event 2", "module 1 output switch","timer 2", "module 2 output switch","module 2 inhibition unit", "timer 3", "module 3 output switch", "timer 4", "module 4 output switch"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("All timers")

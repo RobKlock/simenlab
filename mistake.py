@@ -60,7 +60,7 @@ def round_up(n, decimals=0):
 # 20-30 and 50-60
 dt = .01
 data1 = np.zeros((1,round(300/dt)))
-data1[0][round(20/dt):round(40/dt)] = 1
+data1[0][round(100/dt):round(200/dt)] = 1
 #data1[0][round(70/dt):round(90/dt)] = 1
 #data1[0][round(100/dt):round(120/dt)] = 1
 
@@ -69,7 +69,7 @@ data2 = np.zeros((1,round(300/dt)))
 data2[0][round(50/dt):round(60/dt)] = 1
 
 weights = np.array([[2,   0,      0, 0],      # 1->1, 2->1, 3->1
-                    [.3,     2,    0, 0],      # 1->2, 2->2, 3->2
+                    [.03,     2,    0, 0],      # 1->2, 2->2, 3->2
                     [0,     0,      0, 0],      # 1->3, 2->3, 3->3
                     [0,     0,      0, 0]])      # 1->4, 2->4, 3->4
                          

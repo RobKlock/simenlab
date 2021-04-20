@@ -17,29 +17,6 @@ import sys
 
 sys.path.append('/Users/robertklock/Documents/Class/Fall20/SimenLab/simenlab')
 
-
-fig, ax = plt.subplots(1, 1)
-mean, var, skew, kurt = stats.norm.stats(moments='mvsk')
-x = np.linspace(stats.norm.ppf(0.01),
-                stats.norm.ppf(0.99), 100)
-ax.plot(x, stats.norm.pdf(x),
-       'r-', lw=3, alpha=.3, label='norm pdf')
-rv = stats.norm()
-ax.plot(x, rv.pdf(x), 'k-', lw=2, label='frozen pdf')
-vals = stats.norm.ppf([0.001, 0.5, 0.999])
-np.allclose([0.001, 0.5, 0.999], stats.norm.cdf(vals))
-r = stats.norm.rvs(size=1000)
-ax.hist(r, density=True, histtype='stepfilled', alpha=0.2)
-ax.legend(loc='best', frameon=False)
-plt.show()
-## generate the data and plot it for an ideal normal curve## x-axis for the plot
-x_data = np.arange(-5, 20, 0.001)## y-axis as the gaussian
-y_data1 = stats.norm.pdf(x_data, 3, 3)## plot data
-#y_data2 = stats.norm.pdf(x_data, 15, 6)
-y_data = y_data1
-plt.plot(x_data, y_data)
-plt.show()
-
 def plot_curves(bias, lambd = 4, slf_excitation = 2, v = 0):
     x_axis_vals = np.arange(-2, 3, dt)
     plt.plot(x_axis_vals, graph_sigmoid(lambd, x_axis_vals, bias - v))
@@ -96,39 +73,40 @@ def round_up(n, decimals=0):
     multiplier = 10 ** decimals
     return math.ceil(n * multiplier) / multiplier
 
-distributions = {
-        "pBA": np.random.normal(100, .1),
-        "pCA": np.random.normal(100, .1),
+pBA = np.random.normal(100, 10, 100)
+pCA = np.random.normal(300, 10, 100)
+pCB = np.random.normal(100, 10, 100)
+pBC = np.random.normal(100, 10, 100)
+
+events = {
+        "pBA": np.amin(pBA),
+        "pCA": np.amin(pCA),
         "pCB": np.random.normal(),
         "pBC": np.random.normal()}
    
 # Setup our time series data, which is a series of zeros with two batches of 1's from
 # 20-30 and 50-60
 dt = .1
+total_duration = 3000
+''' Establish Events '''
+data1 = np.zeros((1,round(total_duration/dt)))
+data1[0][0:round(10/dt)] = 1
+event1 = np.zeros((1,round(total_duration/dt)))
+event1[0][round(events["pBA"]/dt)] = 1
+event2 = np.zeros((1,round(total_duration/dt)))
+event2[0][round(events["pCA"]/dt)] = 1
 
-''' Establish Intervals '''
-data1 = np.zeros((1,round(800/dt)))
-data1[0][round(distributions["pBA"]/dt):round((distributions["pBA"] + 20)/dt)] = 1
-data1[0][round(distributions["pBA"] + 20/dt):] = 0
-interval1 = np.zeros((1,round(300/dt)))
-interval1[0][round(20/dt):round(40/dt)] = 1
-interval2 = np.zeros((1,round(300/dt)))
-interval2[0][round(40/dt):round(60/dt)] = 1
-interval3 = np.zeros((1,round(300/dt)))
-interval3[0][round(60/dt):round(120/dt)] = 1
-interval4 = np.zeros((1,round(300/dt)))
-interval4[0][round(117/dt):round(127/dt)] = 1
 
 stretch = .4
 ramp_bias = 0.1
 
 weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.157,  2,  0,   -1,       0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [.11,  2,  0,   -1,       0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],      # 1->2, 2->2, 3->2
                     [0,     1,  2,   -1,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],
                      
                     [0,     0,  1,    0,      2,  0,  0,-1,    0, 0,  0,  0,   0,  0,  0,  0],
-                    [0,     0,  0,    0,     .157,2,  0,-1,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,     .085, 2,  0,-1,     0, 0,  0,  0,   0,  0,  0,  0],
                     [0,     0,  0,    0,      0,  1,  2, -1,     0, 0,  0,  0,   0,  0,  0,  0],
                     [0,     0,  0,    0,      0,  0,  1, 2,     0, 0,  0,  0,   0,  0,  0,  0],
                     
@@ -145,22 +123,22 @@ weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0,    0, 0,  0,  0,   
 
 stretched_weights = np.array([[2,     0,  0,  -1,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
                     [(ramp_bias / 2) + stretch * (weights[1][0] - (ramp_bias / 2)),  2,  0,  -1,       0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     1,  2,    -1,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->3, 2->3, 3->3
+                    [0,     .5,  2,    -1,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0,    0, 0,  0,  0,   0,  0,  0,  0],
                     
                     [0,     0,  1,    0,      2,  0,  0,-1,    0, 0,  0,  0,   0,  0,  0,  0],
                     [0,     0,  0,    0,      (ramp_bias / 2) + stretch * (weights[5][4] - (ramp_bias / 2)),2,  0,-1,     0, 0,  0,  0,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  1,  2, -1,     0, 0,  0,  0,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  .5,  2, -1,     0, 0,  0,  0,   0,  0,  0,  0],
                     [0,     0,  0,    0,      0,  0,  1, 2,     0, 0,  0,  0,   0,  0,  0,  0],
                     
                     [0,     0,  0,    0,      0,  0,  1, 0,     2, 0,  0,-1,   0,  0,  0,  0],
                     [0,     0,  0,    0,      0,  0,  0, 0,     (ramp_bias / 2) + stretch * (weights[9][8] - (ramp_bias / 2)), 2,  0, -1,   0,  0,  0,  0],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 1,  2,  -1,   0,  0,  0,  0],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, .5,  2,  -1,   0,  0,  0,  0],
                     [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  2,   0,  0,  0,  0],
                     
                     [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  1,  0,   2,  0,  0,  -1],
                     [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,  (ramp_bias / 2) + stretch * (weights[13][12] - (ramp_bias / 2)),2,  0, -1],
-                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  1,  2,  -1],
+                    [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  .5,  2,  -1],
                     [0,     0,  0,    0,      0,  0,  0, 0,     0, 0,  0,  0,   0,  0,  1,  2]])  
 beta = 1.2
 inhibition_unit_bias = 1.4
@@ -182,7 +160,7 @@ net_in = np.zeros(weights.shape[0])
 net_in_test = np.zeros(weights.shape[0])
 timer_learn = False  
 early = False
-for i in range (0, data1.size):
+for i in range (0, event1.size):
     # No learning in this model, all weights are hard-coded for interval timing
     if i == 1:
         x_axis_vals = np.arange(-2, 3, dt)
@@ -218,11 +196,14 @@ for i in range (0, data1.size):
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
-    
+
+print("Timer 1 Sq Error: ", sq_error(events["pBA"], np.amin(np.where(v_hist[4] > .8)) / 10))
+print("Timer 2 Sq Error: ", sq_error(events["pCA"], np.amin(np.where(v_hist[8] > .8)) / 10))
 plt.figure()
-activation_plot_xvals = np.arange(0, 800, dt)
+activation_plot_xvals = np.arange(0, total_duration, dt)
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
-plt.plot(activation_plot_xvals, data1[0])
+plt.plot(activation_plot_xvals, event1[0])
+plt.plot(activation_plot_xvals, event2[0])
 plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [2,2]) 
@@ -232,10 +213,71 @@ plt.plot(activation_plot_xvals, v_hist[13,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[14,0:-1], dashes = [2,2]) 
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["timer 1", "module 1 output switch","timer 2", "module 2 output switch", "timer 3", "module 3 output switch", "timer 4", "module 4 output switch"], loc=0)
+plt.legend(["timer 1", "interval 1", "event 2", "module 1 output switch","timer 2", "module 2 output switch", "timer 3", "module 3 output switch", "timer 4", "module 4 output switch"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("All timers")
 plt.grid('on')
 plt.show()
+
+def invariance():
+    beta = 1.2
+    inhibition_unit_bias = 1.4
+    lmbd = 4
+    noise = 0.002
+    tau = 1
+    l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T   
+    #l = np.full([ weights.shape[0] ], lmbd).T  
+    interval_1_slope = weights[1][1]
+    bias = np.array([[beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias]]).T 
+    
+    for j in range(0,3):
+        v = np.array([np.zeros(weights.shape[0])]).T 
+        v_hist = np.array([np.zeros(weights.shape[0])]).T 
+        net_in = np.zeros(weights.shape[0])
+        for i in range (0, event1.size):
+            # No learning in this model, all weights are hard-coded for interval timing    
+                     
+            # net_in = weights @ v      
+            net_in = stretched_weights @ v
+            
+            # Transfer functions
+            net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
+            net_in[1] = piecewise_linear(net_in[1], interval_1_slope, bias[1])
+            net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
+            
+            net_in[5] = piecewise_linear(net_in[5], interval_1_slope, bias[5])
+            net_in[6:9] = sigmoid(l[6:9], net_in[6:9], bias[6:9])
+            
+            net_in[9] = piecewise_linear(net_in[9], interval_1_slope, bias[9])
+            net_in[10:13] = sigmoid(l[10:13], net_in[10:13], bias[10:13])
+           
+            net_in[13] = piecewise_linear(net_in[13], interval_1_slope, bias[13])
+            net_in[14:] = sigmoid(l[14:], net_in[14:], bias[14:])
+        
+            dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
+            v = v + dv            
+            v_hist = np.concatenate((v_hist,v), axis=1)
+    
+        print("Timer 1 Sq Error: ", sq_error(events["pBA"], np.amin(np.where(v_hist[4] > .8)) / 10))
+        print("Timer 2 Sq Error: ", sq_error(events["pCA"], np.amin(np.where(v_hist[8] > .8)) / 10))
+        activation_plot_xvals = np.arange(0, 800, dt)
+        plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
+        plt.plot(activation_plot_xvals, event1[0])
+        plt.plot(activation_plot_xvals, event2[0])
+        plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [2,2]) 
+        plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
+        plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [2,2]) 
+        plt.plot(activation_plot_xvals, v_hist[9,0:-1], dashes = [1,1])
+        plt.plot(activation_plot_xvals, v_hist[10,0:-1], dashes = [2,2]) 
+        plt.plot(activation_plot_xvals, v_hist[13,0:-1], dashes = [1,1])
+        plt.plot(activation_plot_xvals, v_hist[14,0:-1], dashes = [2,2]) 
+        plt.ylim([0,1])
+        #plt.plot(v2_v1_diff, dashes = [5,5])
+        plt.legend(["timer 1", "interval 1", "event 2", "module 1 output switch","timer 2", "module 2 output switch", "timer 3", "module 3 output switch", "timer 4", "module 4 output switch"], loc=0)
+        plt.ylabel("activation")
+        plt.xlabel("steps")
+        plt.title("All timers")
+        plt.grid('on')
+    plt.show()
     

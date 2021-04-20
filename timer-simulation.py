@@ -14,6 +14,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 import math
 import sys
+
 sys.path.append('/Users/robertklock/Documents/Class/Fall20/SimenLab/simenlab')
 
 
@@ -95,6 +96,11 @@ def round_up(n, decimals=0):
     multiplier = 10 ** decimals
     return math.ceil(n * multiplier) / multiplier
 
+distributions = {
+        "pBA": np.random.normal(100, .1),
+        "pCA": np.random.normal(100, .1),
+        "pCB": np.random.normal(),
+        "pBC": np.random.normal()}
    
 # Setup our time series data, which is a series of zeros with two batches of 1's from
 # 20-30 and 50-60
@@ -102,8 +108,8 @@ dt = .1
 
 ''' Establish Intervals '''
 data1 = np.zeros((1,round(800/dt)))
-data1[0][round(20/dt):round(40/dt)] = 1
-data1[0][round(41/dt):] = 0
+data1[0][round(distributions["pBA"]/dt):round((distributions["pBA"] + 20)/dt)] = 1
+data1[0][round(distributions["pBA"] + 20/dt):] = 0
 interval1 = np.zeros((1,round(300/dt)))
 interval1[0][round(20/dt):round(40/dt)] = 1
 interval2 = np.zeros((1,round(300/dt)))
@@ -216,6 +222,7 @@ for i in range (0, data1.size):
 plt.figure()
 activation_plot_xvals = np.arange(0, 800, dt)
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
+plt.plot(activation_plot_xvals, data1[0])
 plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [2,2]) 

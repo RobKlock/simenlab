@@ -74,7 +74,7 @@ pCB = np.random.normal(100, 10, 1)
 pBC = np.random.normal(100, 10, 1)
 
 events = {
-        "pBA": np.random.normal(100, 10, 1)[0],
+        "pBA": np.random.normal(50, 10, 1)[0],
         "pCA": np.random.normal(200, 10, 1)[0],
         "pCB": np.random.normal(),
         "pBC": np.random.normal()}
@@ -96,17 +96,17 @@ stretch = 1
 ramp_bias = 0.05
 
 weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.11,  2,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     1,  2,   -1,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
+                    [.1,  2,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [0,     .55,  2,   -1,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],
                      
                     [0,     0,  1,    0,      2,  0,  0,-1],
                     [0,     0,  0,    0,     .085, 2,  0,-1],
-                    [0,     0,  0,    0,      0,  1,  2, -1],
+                    [0,     0,  0,    0,      0,  .6,  2, -1],
                     [0,     0,  0,    0,      0,  0,  1, 2]])         
                          
  
-beta = 1.2
+beta = 1.17
 inhibition_unit_bias = 1.4
 third_unit_beta = 1.1
 lmbd = 4
@@ -144,31 +144,32 @@ for i in range (0, data1.size):
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
     
-    z = .6
+    z = .8
     if (v[1] >= z) and timer_learn_1 == True:
         early = True
         print("early")
         if i < round(events["pBA"]/dt):
             # We're still in the interval, so we keep updating
-            drift = (weights[1][0] - bias[1] / 2)
+            drift = (weights[1][0] - bias[1])
             d_A = (- (drift ** 2)/z) * dt
-            weights[1][0] = weights[1][0] + d_A
-            print(weights)        
+            weights[1][0] = weights[1][0] + d_A       
         else:
             timer_learn_1 = False
-            print(weights)
+           
+    
     
     if (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early):
-        print("late, ", i)
+        
         # If we hit our target late
         # Do the late update
         timer_learn_1 = False
         Sn = weights[1][0]
         B = bias[1]
         z = net_in[0][-1]
-        z = 1.2
+        # z = 1 <- Rivest has this for notation sake in their paper
+        z = .9
         Vt = net_in[1][-1]
-        drift = (weights[1][0] - bias[1] / 2)
+        drift = (weights[1][0] - bias[1])
         d_A = drift * ((z-Vt)/Vt)
         
         weights[1][0] = weights[1][0] + d_A
@@ -182,18 +183,34 @@ activation_plot_xvals = np.arange(0, total_duration, dt)
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, event1[0])
 plt.plot(activation_plot_xvals, event2[0])
+plt.plot(activation_plot_xvals, v_hist[3,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
 plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[7,0:-1], dashes = [2,2])  
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["timer 1", "event 1", "event 2", "module 1 output switch","timer 2", "module 2 output switch","module 2 inhibition unit"], loc=0)
+plt.legend(["timer 1", "event 1", "event 2", "module 1 inhibition unit", "module 1 output switch","timer 2", "module 2 output switch","module 2 inhibition unit"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("All timers before learning")
 plt.grid('on')
 plt.show()
+
+x_axis_vals = np.arange(-2, 3, dt)
+plt.figure()
+plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v_hist[3][1]))
+plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v_hist[3][round(events["pBA"]/dt) - 100]))
+plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v_hist[3][round(events["pBA"]/dt)]), dashes=[2,2])
+plt.plot(x_axis_vals, graph_sigmoid(l[3], x_axis_vals, bias[3] - v_hist[3][round(events["pBA"]/dt) + 100]))
+x1 = [0, 3]
+y2 = [0, 1/weights[3,3] * 3]
+plt.plot(x1,y2, label = "strength of inh unit")
+plt.ylim([0,1])
+plt.legend(["strength of inh start", "strength of inh unit -10 event", "strength of inh unit event","strength of inh unit +10 event", "inh unit reference line"], loc = 0)
+plt.title("activation of inhibition Unit against sigmoid")
+plt.grid('on')
+plt.show() 
 
   
 for i in range (0, data1.size):

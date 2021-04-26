@@ -262,25 +262,36 @@ plt.title("All timers after learning")
 plt.grid('on')
 plt.show()
 
-def multiple_trials(n=5):
+def multiple_trials(n=5, s = 1, noise = 0):
     ramp_bias = 0.05
     dt = .1
-    total_duration = 300    
+    total_duration = 300  
+    stretch_factor = s
     weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                        [.1,  2,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                        [ramp_bias + stretch_factor * (0.1 - ramp_bias),  2,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
                         [0,     .55,  2,   -1,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                         [0,     0,  1,    2,      0,  0,  0,  0],
                          
                         [0,     0,  1,    0,      2,  0,  0,-1],
-                        [0,     0,  0,    0,     .09, 2,  0,-1],
+                        [0,     0,  0,    0,     ramp_bias + stretch_factor * (.08 - ramp_bias), 2,  0,-1],
                         [0,     0,  0,    0,      0,  .55,  2, -1],
-                        [0,     0,  0,    0,      0,  0,  1, 2]])  
+                        [0,     0,  0,    0,      0,  0,  1, 2]]) 
+    
+    stretch_weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
+                        [ramp_bias + stretch_factor * (weights[1][0] - ramp_bias),  2,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                        [0,     .55,  2,   -1,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
+                        [0,     0,  1,    2,      0,  0,  0,  0],
+                         
+                        [0,     0,  1,    0,      2,  0,  0,-1],
+                        [0,     0,  0,    0,     ramp_bias + stretch_factor * (weights[5][4] - ramp_bias), 2,  0,-1],
+                        [0,     0,  0,    0,      0,  .55,  2, -1],
+                        [0,     0,  0,    0,      0,  0,  1, 2]]) 
     plt.figure()
     activation_plot_xvals = np.arange(0, total_duration, dt)
     for i in range(n):
         events = {
-        "pBA": np.random.normal(50, 5, 1)[0],
-        "pCA": np.random.normal(100, 5, 1)[0],
+        "pBA": np.random.normal(70, 5, 1)[0],
+        "pCA": np.random.normal(140, 5, 1)[0],
         "pCB": np.random.normal(),
         "pBC": np.random.normal()}
         ''' Establish Events '''
@@ -296,7 +307,7 @@ def multiple_trials(n=5):
         inhibition_unit_bias = 1.4
         lmbd = 4
         v_hist = np.array([np.zeros(weights.shape[0])]).T 
-        noise = 0.01
+        noise = noise
         tau = 1
         l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T   
         #l = np.full([ weights.shape[0] ], lmbd).T  
@@ -310,7 +321,8 @@ def multiple_trials(n=5):
         early_1 = False
         early_2 = False
         for i in range (0, data1.size):     
-            net_in = weights @ v      
+            net_in = weights @ v  
+            #net_in = stretch_weights @ v 
             # Transfer functions
             net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
             net_in[1] = piecewise_linear(net_in[1], interval_1_slope, bias[1])
@@ -365,16 +377,16 @@ def multiple_trials(n=5):
                 drift = (weights[5][4] - bias[5])
                 d_A = drift * ((z-Vt)/Vt)
                 weights[5][4] = weights[5][4] + d_A
-        plt.plot(activation_plot_xvals, event1[0], 'k')
-        plt.plot(activation_plot_xvals, event2[0], 'k')      
+        plt.plot(activation_plot_xvals, event1[0], 'k', alpha = .6)
+        plt.plot(activation_plot_xvals, event2[0], 'k', alpha = .6)      
         plt.plot(activation_plot_xvals, v_hist[1,0:-1], 'b', dashes = [2,2]) 
         plt.plot(activation_plot_xvals, v_hist[5,0:-1], 'r', dashes = [2,2]) 
         plt.ylim([0,1])
         #plt.plot(v2_v1_diff, dashes = [5,5])
-    plt.legend(["timer 1", "event 1", "event 2", "module 1 inhibition unit", "module 1 output switch","timer 2", "module 2 output switch","module 2 inhibition unit"], loc=0)
+    plt.legend(["event 1", "event 2", "timer 1", "timer 2"], loc=0)
     plt.ylabel("activation")
     plt.xlabel("steps")
-    plt.title("All timers before learning")
+    plt.title("Timer behavior multiple trials")
     plt.grid('on')
     plt.show()
         

@@ -93,32 +93,32 @@ event2[0][round(events["pCA"]/dt)] = 1
 
 
 stretch = 1
-ramp_bias = 0.05
+ramp_bias = 0.5
 
-weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.1,  2,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     .55,  2,   -1,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
+weights = np.array([[2,     0,  0,   -2,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
+                    [.1,    1,  0,   -2,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [0,     .6,  2,   -2,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],
                      
                     [0,     0,  1,    0,      2,  0,  0,-1],
-                    [0,     0,  0,    0,     .09, 2,  0,-1],
-                    [0,     0,  0,    0,      0,  .55,  2, -1],
+                    [0,     0,  0,    0,     .09, 1,  0,-1],
+                    [0,     0,  0,    0,      0,  .6,  2, -1],
                     [0,     0,  0,    0,      0,  0,  1, 2]])         
                          
  
-beta = 1.17
+beta = 1.2
 inhibition_unit_bias = 1.4
 third_unit_beta = 1.1
 lmbd = 4
 v_hist = np.array([np.zeros(weights.shape[0])]).T 
 v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
-noise = 0.01
+noise = 0.0
 steps = 0 
 tau = 1
 delta_A = 0
 l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T   
 #l = np.full([ weights.shape[0] ], lmbd).T  
-interval_1_slope = weights[1][1]
+interval_1_slope = 1
 bias = np.array([[beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias]]).T 
  
 v = np.array([np.zeros(weights.shape[0])]).T 
@@ -150,7 +150,7 @@ for i in range (0, data1.size):
         early_1 = True
         if i < round(events["pBA"]/dt):
             # We're still in the interval, so we keep updating
-            drift = (weights[1][0] - bias[1])
+            drift = (weights[1][0] - bias[1]) + .5
             d_A = (- (drift ** 2)/z) * dt
             weights[1][0] = weights[1][0] + d_A       
         else:
@@ -165,7 +165,7 @@ for i in range (0, data1.size):
         z = net_in[0][-1]
         z = .9
         Vt = net_in[1][-1]
-        drift = (weights[1][0] - bias[1])
+        drift = (weights[1][0] - bias[1]) + .5
         d_A = drift * ((z-Vt)/Vt)
         weights[1][0] = weights[1][0] + d_A
     
@@ -173,7 +173,7 @@ for i in range (0, data1.size):
         early_2 = True
         if i < round(events["pCA"]/dt):
             # We're still in the interval, so we keep updating
-            drift = (weights[5][4] - bias[5])
+            drift = (weights[5][4] - bias[5]) + .5
             d_A = (- (drift ** 2)/z) * dt
             weights[5][4] = weights[5][4] + d_A       
         else:
@@ -188,7 +188,7 @@ for i in range (0, data1.size):
         z = net_in[5][-1]
         z = .9
         Vt = net_in[5][-1]
-        drift = (weights[5][4] - bias[5])
+        drift = (weights[5][4] - bias[5]) + .5
         d_A = drift * ((z-Vt)/Vt)
         weights[5][4] = weights[5][4] + d_A
        
@@ -263,27 +263,27 @@ plt.grid('on')
 plt.show()
 
 def multiple_trials(n=5, s = 1, noise = 0):
-    ramp_bias = 0.05
+    ramp_bias = 0.5
     dt = .1
     stretch_factor = s
     total_duration = round(300 / stretch_factor)
     weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                        [0.08,  2,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                        [0.08,  1,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
                         [0,     .55,  2,   -1,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                         [0,     0,  1,    2,      0,  0,  0,  0],
                          
                         [0,     0,  1,    0,      2,  0,  0,-1],
-                        [0,     0,  0,    0,     .08, 2,  0,-1],
+                        [0,     0,  0,    0,     .08, 1,  0,-1],
                         [0,     0,  0,    0,      0,  .55,  2, -1],
                         [0,     0,  0,    0,      0,  0,  1, 2]]) 
     
     stretch_weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                        [0.08,  2,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                        [0.08,  1,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
                         [0,     .55,  2,   -1,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                         [0,     0,  1,    2,      0,  0,  0,  0],
                          
                         [0,     0,  1,    0,      2,  0,  0,-1],
-                        [0,     0,  0,    0,     .08, 2,  0,-1],
+                        [0,     0,  0,    0,     .08, 1,  0,-1],
                         [0,     0,  0,    0,      0,  .55,  2, -1],
                         [0,     0,  0,    0,      0,  0,  1, 2]]) 
     plt.figure()
@@ -303,7 +303,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
         event2[0][round(events["pCA"] / stretch_factor /dt)] = 1      
                                  
          
-        beta = 1.17
+        beta = 1.2
         inhibition_unit_bias = 1.4
         lmbd = 4
         v_hist = np.array([np.zeros(weights.shape[0])]).T 
@@ -344,11 +344,11 @@ def multiple_trials(n=5, s = 1, noise = 0):
                 if i < round(events["pBA"]/dt):
                     # We're still in the interval, so we keep updating
                     if not stretched:
-                        drift = (weights[1][0] - bias[1])
+                        drift = (weights[1][0] - bias[1]) + 0.5
                         d_A = (- (drift ** 2)/z) * dt
                         weights[1][0] = weights[1][0] + d_A  
                     else:
-                        drift = (ramp_bias + stretch_factor * (stretch_weights[1][0] - ramp_bias)) - ramp_bias
+                        drift = (ramp_bias + stretch_factor * (stretch_weights[1][0] - ramp_bias)) - ramp_bias + 0.5
                         d_A = (- (drift ** 2)/z) * dt
                         stretch_weights[1][0] = stretch_weights[1][0] + d_A  
                 else:
@@ -362,7 +362,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
                 z = .8
                 Vt = net_in[1][-1]
                 if not stretched:
-                    drift = (weights[1][0] - bias[1])
+                    drift = (weights[1][0] - bias[1]) + 0.5
                     d_A = drift * ((z-Vt)/Vt)
                     weights[1][0] = weights[1][0] + d_A
                 else:
@@ -376,12 +376,12 @@ def multiple_trials(n=5, s = 1, noise = 0):
                 if i < round(events["pCA"]/dt):
                     if not stretched:
                         # We're still in the interval, so we keep updating
-                        drift = (weights[5][4] - bias[5])
+                        drift = (weights[5][4] - bias[5]) + 0.5
                         d_A = (- (drift ** 2)/z) * dt
                         weights[5][4] = weights[5][4] + d_A      
                     else: 
                          # We're still in the interval, so we keep updating
-                        drift = stretch_weights[5][4] - bias[5]
+                        drift = stretch_weights[5][4] - bias[5] + 0.5
                         d_A = (- (drift ** 2)/z) * dt
                         stretch_weights[5][4] = ramp_bias + stretch_factor * (stretch_weights[5][4] - ramp_bias) + d_A
                 else:
@@ -395,7 +395,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
                 z = .8
                 Vt = net_in[5][-1]
                 if not stretched:
-                    drift = (ramp_bias + stretch_factor * (stretch_weights[5][4] - ramp_bias) - ramp_bias)
+                    drift = weights[5][4] - ramp_bias + 0.5
                     d_A = drift * ((z-Vt)/Vt)
                     weights[5][4] = weights[5][4] + d_A
                 else:

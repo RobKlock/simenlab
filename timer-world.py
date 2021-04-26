@@ -359,7 +359,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
                 # Do the late update
                 timer_learn_1 = False
                 z = net_in[0][-1]
-                z = .8
+                z = .9
                 Vt = net_in[1][-1]
                 if not stretched:
                     drift = (weights[1][0] - bias[1])
@@ -392,14 +392,14 @@ def multiple_trials(n=5, s = 1, noise = 0):
                 # Do the late update
                 timer_learn_2 = False
                 z = net_in[5][-1]
-                z = .8
+                z = .9
                 Vt = net_in[5][-1]
                 if not stretched:
                     drift = (ramp_bias + stretch_factor * (stretch_weights[5][4] - ramp_bias) - ramp_bias)
                     d_A = drift * ((z-Vt)/Vt)
                     weights[5][4] = weights[5][4] + d_A
                 else:
-                    drift = (ramp_bias + stretch_factor * (stretch_weights[5][4] - ramp_bias)) - ramp_bias
+                    drift = stretch_weights[5][4] - bias[5]
                     d_A = drift * ((z-Vt)/Vt)
                     stretch_weights[5][4] = stretch_weights[5][4] + d_A
         plt.plot(activation_plot_xvals, event1[0], 'k', alpha = .6)

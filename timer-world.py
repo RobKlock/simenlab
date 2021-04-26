@@ -266,7 +266,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
     ramp_bias = 0.05
     dt = .1
     stretch_factor = s
-    total_duration = 300 / stretch_factor
+    total_duration = round(300 / stretch_factor)
     weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
                         [0.08,  2,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
                         [0,     .55,  2,   -1,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
@@ -338,6 +338,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
             v_hist = np.concatenate((v_hist,v), axis=1)
             
             z = .8
+            ''' Module 1 Learning Rules '''
             if (v[1] >= z) and timer_learn_1 == True:
                 early_1 = True
                 if i < round(events["pBA"]/dt):
@@ -347,7 +348,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
                         d_A = (- (drift ** 2)/z) * dt
                         weights[1][0] = weights[1][0] + d_A  
                     else:
-                        drift = ramp_bias + stretch_factor * (0.08 - ramp_bias) - ramp_bias
+                        drift = ramp_bias + stretch_factor * (stretch_weights[1][0] - ramp_bias) - ramp_bias
                         d_A = (- (drift ** 2)/z) * dt
                         stretch_weights[1][0] = ramp_bias + stretch_factor * (stretch_weights[1][0] - ramp_bias) + d_A  
                 else:
@@ -358,17 +359,18 @@ def multiple_trials(n=5, s = 1, noise = 0):
                 # Do the late update
                 timer_learn_1 = False
                 z = net_in[0][-1]
-                z = .9
+                z = .8
                 Vt = net_in[1][-1]
                 if not stretched:
                     drift = (weights[1][0] - bias[1])
                     d_A = drift * ((z-Vt)/Vt)
                     weights[1][0] = weights[1][0] + d_A
                 else:
-                    drift = (stretch_weights[1][0] - bias[1])
+                    drift = (ramp_bias + stretch_factor * (stretch_weights[1][0] - ramp_bias)) - ramp_bias
                     d_A = drift * ((z-Vt)/Vt)
                     stretch_weights[1][0] = stretch_weights[1][0] + d_A
             
+            ''' Module 2 Learning Rules '''
             if (v[5] >= z) and timer_learn_2 == True:
                 early_2 = True
                 if i < round(events["pCA"]/dt):
@@ -390,14 +392,14 @@ def multiple_trials(n=5, s = 1, noise = 0):
                 # Do the late update
                 timer_learn_2 = False
                 z = net_in[5][-1]
-                z = .9
+                z = .8
                 Vt = net_in[5][-1]
                 if not stretched:
-                    drift = (weights[5][4] - bias[5])
+                    drift = (ramp_bias + stretch_factor * (stretch_weights[5][4] - ramp_bias) - ramp_bias)
                     d_A = drift * ((z-Vt)/Vt)
                     weights[5][4] = weights[5][4] + d_A
                 else:
-                    drift = stretch_weights[5][4] - bias[5]
+                    drift = (ramp_bias + stretch_factor * (stretch_weights[5][4] - ramp_bias)) - ramp_bias
                     d_A = drift * ((z-Vt)/Vt)
                     stretch_weights[5][4] = stretch_weights[5][4] + d_A
         plt.plot(activation_plot_xvals, event1[0], 'k', alpha = .6)

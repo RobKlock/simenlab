@@ -74,8 +74,8 @@ pCB = np.random.normal(100, 10, 1)
 pBC = np.random.normal(100, 10, 1)
 
 events = {
-        "pBA": np.random.normal(50, 10, 1)[0],
-        "pCA": np.random.normal(200, 10, 1)[0],
+        "pBA": np.random.normal(50, 5, 1)[0],
+        "pCA": np.random.normal(100, 5, 1)[0],
         "pCB": np.random.normal(),
         "pBC": np.random.normal()}
    
@@ -101,8 +101,8 @@ weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0],     # 1->1, 2->1, 
                     [0,     0,  1,    2,      0,  0,  0,  0],
                      
                     [0,     0,  1,    0,      2,  0,  0,-1],
-                    [0,     0,  0,    0,     .085, 2,  0,-1],
-                    [0,     0,  0,    0,      0,  .6,  2, -1],
+                    [0,     0,  0,    0,     .09, 2,  0,-1],
+                    [0,     0,  0,    0,      0,  .55,  2, -1],
                     [0,     0,  0,    0,      0,  0,  1, 2]])         
                          
  
@@ -112,7 +112,7 @@ third_unit_beta = 1.1
 lmbd = 4
 v_hist = np.array([np.zeros(weights.shape[0])]).T 
 v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
-noise = 0.0
+noise = 0.01
 steps = 0 
 tau = 1
 delta_A = 0
@@ -126,10 +126,11 @@ net_in = np.zeros(weights.shape[0])
 net_in_test = np.zeros(weights.shape[0])
 timer_learn_1 = True  
 timer_learn_2 = True  
-early = False
+early_1 = False
+early_2 = False
 for i in range (0, data1.size):
     A_1 = 1/weights[1][0]
-    A_2 = 1/weights[6][4]
+    A_2 = 1/weights[5][4]
     
     net_in = weights @ v      
     # Transfer functions
@@ -146,8 +147,7 @@ for i in range (0, data1.size):
     
     z = .8
     if (v[1] >= z) and timer_learn_1 == True:
-        early = True
-        print("early")
+        early_1 = True
         if i < round(events["pBA"]/dt):
             # We're still in the interval, so we keep updating
             drift = (weights[1][0] - bias[1])
@@ -155,29 +155,43 @@ for i in range (0, data1.size):
             weights[1][0] = weights[1][0] + d_A       
         else:
             timer_learn_1 = False
-           
-    
-    
-    if (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early):
-        
+          
+    if (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
         # If we hit our target late
         # Do the late update
         timer_learn_1 = False
         Sn = weights[1][0]
         B = bias[1]
         z = net_in[0][-1]
-        # z = 1 <- Rivest has this for notation sake in their paper
         z = .9
         Vt = net_in[1][-1]
         drift = (weights[1][0] - bias[1])
         d_A = drift * ((z-Vt)/Vt)
-        
         weights[1][0] = weights[1][0] + d_A
-        # The threshold on ramp-up values is C
-        # The input weight to the ramp is w
-        # The bias of the ramp unit is \beta
-        # Thus the drift imposed by the weight is \epsilon = w - \beta
-        # learning_rate * (W_end - beta) * (C - Cn) / Cn) <- Prof Simen's
+    
+    if (v[5] >= z) and timer_learn_2 == True:
+        early_2 = True
+        if i < round(events["pCA"]/dt):
+            # We're still in the interval, so we keep updating
+            drift = (weights[5][4] - bias[5])
+            d_A = (- (drift ** 2)/z) * dt
+            weights[5][4] = weights[5][4] + d_A       
+        else:
+            timer_learn_2 = False
+          
+    if (i > round(events["pCA"]/dt)) and (timer_learn_2 == True) and (not early_2):
+        # If we hit our target late
+        # Do the late update
+        timer_learn_2 = False
+        Sn = weights[5][4]
+        B = bias[5]
+        z = net_in[5][-1]
+        z = .9
+        Vt = net_in[5][-1]
+        drift = (weights[5][4] - bias[5])
+        d_A = drift * ((z-Vt)/Vt)
+        weights[5][4] = weights[5][4] + d_A
+       
 plt.figure()
 activation_plot_xvals = np.arange(0, total_duration, dt)
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
@@ -247,5 +261,123 @@ plt.xlabel("steps")
 plt.title("All timers after learning")
 plt.grid('on')
 plt.show()
+
+def multiple_trials(n=5):
+    ramp_bias = 0.05
+    dt = .1
+    total_duration = 300    
+    weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
+                        [.1,  2,  0,   -1,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                        [0,     .55,  2,   -1,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
+                        [0,     0,  1,    2,      0,  0,  0,  0],
+                         
+                        [0,     0,  1,    0,      2,  0,  0,-1],
+                        [0,     0,  0,    0,     .09, 2,  0,-1],
+                        [0,     0,  0,    0,      0,  .55,  2, -1],
+                        [0,     0,  0,    0,      0,  0,  1, 2]])  
+    plt.figure()
+    activation_plot_xvals = np.arange(0, total_duration, dt)
+    for i in range(n):
+        events = {
+        "pBA": np.random.normal(50, 5, 1)[0],
+        "pCA": np.random.normal(100, 5, 1)[0],
+        "pCB": np.random.normal(),
+        "pBC": np.random.normal()}
+        ''' Establish Events '''
+        data1 = np.zeros((1,round(total_duration/dt)))
+        data1[0][0:round(10/dt)] = 1
+        event1 = np.zeros((1,round(total_duration/dt)))
+        event1[0][round(events["pBA"]/dt)] = 1
+        event2 = np.zeros((1,round(total_duration/dt)))
+        event2[0][round(events["pCA"]/dt)] = 1      
+                                 
+         
+        beta = 1.17
+        inhibition_unit_bias = 1.4
+        lmbd = 4
+        v_hist = np.array([np.zeros(weights.shape[0])]).T 
+        noise = 0.01
+        tau = 1
+        l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T   
+        #l = np.full([ weights.shape[0] ], lmbd).T  
+        interval_1_slope = weights[1][1]
+        bias = np.array([[beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias]]).T 
+         
+        v = np.array([np.zeros(weights.shape[0])]).T 
+        net_in = np.zeros(weights.shape[0])
+        timer_learn_1 = True  
+        timer_learn_2 = True  
+        early_1 = False
+        early_2 = False
+        for i in range (0, data1.size):     
+            net_in = weights @ v      
+            # Transfer functions
+            net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
+            net_in[1] = piecewise_linear(net_in[1], interval_1_slope, bias[1])
+            net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
+            
+            net_in[5] = piecewise_linear(net_in[5], interval_1_slope, bias[5])
+            net_in[6:9] = sigmoid(l[6:9], net_in[6:9], bias[6:9])
+        
+            dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
+            v = v + dv            
+            v_hist = np.concatenate((v_hist,v), axis=1)
+            
+            z = .8
+            if (v[1] >= z) and timer_learn_1 == True:
+                early_1 = True
+                if i < round(events["pBA"]/dt):
+                    # We're still in the interval, so we keep updating
+                    drift = (weights[1][0] - bias[1])
+                    d_A = (- (drift ** 2)/z) * dt
+                    weights[1][0] = weights[1][0] + d_A       
+                else:
+                    timer_learn_1 = False
+                  
+            if (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
+                # If we hit our target late
+                # Do the late update
+                timer_learn_1 = False
+                z = net_in[0][-1]
+                z = .9
+                Vt = net_in[1][-1]
+                drift = (weights[1][0] - bias[1])
+                d_A = drift * ((z-Vt)/Vt)
+                weights[1][0] = weights[1][0] + d_A
+            
+            if (v[5] >= z) and timer_learn_2 == True:
+                early_2 = True
+                if i < round(events["pCA"]/dt):
+                    # We're still in the interval, so we keep updating
+                    drift = (weights[5][4] - bias[5])
+                    d_A = (- (drift ** 2)/z) * dt
+                    weights[5][4] = weights[5][4] + d_A       
+                else:
+                    timer_learn_2 = False
+                  
+            if (i > round(events["pCA"]/dt)) and (timer_learn_2 == True) and (not early_2):
+                # If we hit our target late
+                # Do the late update
+                timer_learn_2 = False
+                z = net_in[5][-1]
+                z = .9
+                Vt = net_in[5][-1]
+                drift = (weights[5][4] - bias[5])
+                d_A = drift * ((z-Vt)/Vt)
+                weights[5][4] = weights[5][4] + d_A
+        plt.plot(activation_plot_xvals, event1[0], 'k')
+        plt.plot(activation_plot_xvals, event2[0], 'k')      
+        plt.plot(activation_plot_xvals, v_hist[1,0:-1], 'b', dashes = [2,2]) 
+        plt.plot(activation_plot_xvals, v_hist[5,0:-1], 'r', dashes = [2,2]) 
+        plt.ylim([0,1])
+        #plt.plot(v2_v1_diff, dashes = [5,5])
+    plt.legend(["timer 1", "event 1", "event 2", "module 1 inhibition unit", "module 1 output switch","timer 2", "module 2 output switch","module 2 inhibition unit"], loc=0)
+    plt.ylabel("activation")
+    plt.xlabel("steps")
+    plt.title("All timers before learning")
+    plt.grid('on')
+    plt.show()
+        
+
 
     

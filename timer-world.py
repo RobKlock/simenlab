@@ -45,21 +45,21 @@ def state(unit_index, weights, v):
 def energy(weights, v):
     return (-1/2) * v.T * weights * v
 
-def piecewise_linear(v, cutoff, bias):
+def piecewise_linear(v, bias):
     if ((v - (bias)) < 0):
         return 0
-    elif ((v - (bias) >= 0) and (v - (bias) < cutoff)):
-        return (v - (bias)) / cutoff
+    elif ((v - (bias) >= 0) and (v - (bias) < 1)):
+        return (v - (bias))
     else:
         return 1
     
-def graph_pl(v, cutoff, bias):
+def graph_pl(v, bias):
     f = np.zeros(v.size)
     for i in range (0, v.size):
         if (v[i] - (bias) < 0):
             f[i] = 0
-        elif (v[i] - (bias) >= 0) and (v[i] - (bias) < cutoff):
-            f[i] = ((v[i] - (bias)) / cutoff)
+        elif (v[i] - (bias) >= 0) and (v[i] - (bias) < 1):
+            f[i] = ((v[i] - (bias)))
         else:
             f[i] = 1
     return f
@@ -85,7 +85,7 @@ dt = .1
 total_duration = 300
 ''' Establish Events '''
 data1 = np.zeros((1,round(total_duration/dt)))
-data1[0][0:round(10/dt)] = 1
+data1[0][0:round(2/dt)] = 1
 event1 = np.zeros((1,round(total_duration/dt)))
 event1[0][round(events["pBA"]/dt)] = 1
 event2 = np.zeros((1,round(total_duration/dt)))
@@ -95,13 +95,13 @@ event2[0][round(events["pCA"]/dt)] = 1
 stretch = 1
 ramp_bias = 0.5
 
-weights = np.array([[2,     0,  0,   -2,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.1,    1,  0,   -2,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     .6,  2,   -2,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
+weights = np.array([[2,     0,  0,   -.5,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
+                    [.55,    1,  0,   -.5,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [0,     .49,  2,   -.5,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],
                      
-                    [0,     0,  1,    0,      2,  0,  0,-1],
-                    [0,     0,  0,    0,     .09, 1,  0,-1],
+                    [0,     0,  0,    0,      0,  0,  0,-1],
+                    [0,     0,  0,    0,     .4, 1,  0,-1],
                     [0,     0,  0,    0,      0,  .6,  2, -1],
                     [0,     0,  0,    0,      0,  0,  1, 2]])         
                          
@@ -135,10 +135,10 @@ for i in range (0, data1.size):
     net_in = weights @ v      
     # Transfer functions
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
-    net_in[1] = piecewise_linear(net_in[1], interval_1_slope, bias[1])
+    net_in[1] = piecewise_linear(net_in[1], bias[1])
     net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
     
-    net_in[5] = piecewise_linear(net_in[5], interval_1_slope, bias[5])
+    net_in[5] = piecewise_linear(net_in[5], bias[5])
     net_in[6:9] = sigmoid(l[6:9], net_in[6:9], bias[6:9])
 
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
@@ -146,52 +146,63 @@ for i in range (0, data1.size):
     v_hist = np.concatenate((v_hist,v), axis=1)
     
     z = .8
-    if (v[1] >= z) and timer_learn_1 == True:
-        early_1 = True
-        if i < round(events["pBA"]/dt):
-            # We're still in the interval, so we keep updating
-            drift = (weights[1][0] - bias[1]) + .5
-            d_A = (- (drift ** 2)/z) * dt
-            weights[1][0] = weights[1][0] + d_A       
-        else:
-            timer_learn_1 = False
-          
-    if (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
-        # If we hit our target late
-        # Do the late update
-        timer_learn_1 = False
-        Sn = weights[1][0]
-        B = bias[1]
-        z = net_in[0][-1]
-        z = .9
-        Vt = net_in[1][-1]
-        drift = (weights[1][0] - bias[1]) + .5
-        d_A = drift * ((z-Vt)/Vt)
-        weights[1][0] = weights[1][0] + d_A
-    
-    if (v[5] >= z) and timer_learn_2 == True:
-        early_2 = True
-        if i < round(events["pCA"]/dt):
-            # We're still in the interval, so we keep updating
-            drift = (weights[5][4] - bias[5]) + .5
-            d_A = (- (drift ** 2)/z) * dt
-            weights[5][4] = weights[5][4] + d_A       
-        else:
-            timer_learn_2 = False
-          
-    if (i > round(events["pCA"]/dt)) and (timer_learn_2 == True) and (not early_2):
-        # If we hit our target late
-        # Do the late update
-        timer_learn_2 = False
-        Sn = weights[5][4]
-        B = bias[5]
-        z = net_in[5][-1]
-        z = .9
-        Vt = net_in[5][-1]
-        drift = (weights[5][4] - bias[5]) + .5
-        d_A = drift * ((z-Vt)/Vt)
-        weights[5][4] = weights[5][4] + d_A
-       
+#    if (v[1] >= z) and timer_learn_1 == True:
+#        early_1 = True
+#        if i < round(events["pBA"]/dt):
+#            # We're still in the interval, so we keep updating
+#            drift = (weights[1][0] - bias[1]) + .5
+#            d_A = (- (drift ** 2)/z) * dt
+#            weights[1][0] = weights[1][0] + d_A       
+#        else:
+#            timer_learn_1 = False
+#          
+#    if (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
+#        # If we hit our target late
+#        # Do the late update
+#        timer_learn_1 = False
+#        Sn = weights[1][0]
+#        B = bias[1]
+#        z = net_in[0][-1]
+#        z = .9
+#        Vt = net_in[1][-1]
+#        drift = (weights[1][0] - bias[1]) + .5
+#        d_A = drift * ((z-Vt)/Vt)
+#        weights[1][0] = weights[1][0] + d_A
+#    
+#    if (v[5] >= z) and timer_learn_2 == True:
+#        early_2 = True
+#        if i < round(events["pCA"]/dt):
+#            # We're still in the interval, so we keep updating
+#            drift = (weights[5][4] - bias[5]) + .5
+#            d_A = (- (drift ** 2)/z) * dt
+#            weights[5][4] = weights[5][4] + d_A       
+#        else:
+#            timer_learn_2 = False
+#          
+#    if (i > round(events["pCA"]/dt)) and (timer_learn_2 == True) and (not early_2):
+#        # If we hit our target late
+#        # Do the late update
+#        timer_learn_2 = False
+#        Sn = weights[5][4]
+#        B = bias[5]
+#        z = net_in[5][-1]
+#        z = .9
+#        Vt = net_in[5][-1]
+#        drift = (weights[5][4] - bias[5]) + .5
+#        d_A = drift * ((z-Vt)/Vt)
+#        weights[5][4] = weights[5][4] + d_A
+x_axis_vals = np.arange(-2, 3, dt)
+plt.figure()
+plt.plot(x_axis_vals, graph_pl(x_axis_vals, bias[1]))
+x1 = [0, 3]
+y2 = [0, 1/weights[1,1] * 3]
+plt.plot(x1,y2, label = "strength of unit 2")
+plt.ylim([-.1,1.1])
+plt.legend([ "piecewise linear", "strength of unit 2"], loc = 0)
+plt.title("activation of RAMP Unit against piecewise linear")
+plt.grid('on')
+plt.show()
+
 plt.figure()
 activation_plot_xvals = np.arange(0, total_duration, dt)
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
@@ -234,10 +245,10 @@ for i in range (0, data1.size):
     net_in = weights @ v      
     # Transfer functions
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
-    net_in[1] = piecewise_linear(net_in[1], interval_1_slope, bias[1])
+    net_in[1] = piecewise_linear(net_in[1], bias[1])
     net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
     
-    net_in[5] = piecewise_linear(net_in[5], interval_1_slope, bias[5])
+    net_in[5] = piecewise_linear(net_in[5], bias[5])
     net_in[6:9] = sigmoid(l[6:9], net_in[6:9], bias[6:9])
 
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
@@ -327,10 +338,10 @@ def multiple_trials(n=5, s = 1, noise = 0):
 
             # Transfer functions
             net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
-            net_in[1] = piecewise_linear(net_in[1], interval_1_slope, bias[1])
+            net_in[1] = piecewise_linear(net_in[1], bias[1])
             net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
             
-            net_in[5] = piecewise_linear(net_in[5], interval_1_slope, bias[5])
+            net_in[5] = piecewise_linear(net_in[5], bias[5])
             net_in[6:9] = sigmoid(l[6:9], net_in[6:9], bias[6:9])
         
             dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random

@@ -46,9 +46,9 @@ def energy(weights, v):
     return (-1/2) * v.T * weights * v
 
 def piecewise_linear(v, bias):
-    if ((v - (bias)) < 0):
+    if ((v - (bias)) <= 0):
         return 0
-    elif ((v - (bias) >= 0) and (v - (bias) < 1)):
+    elif ((v - (bias) > 0) and (v - (bias) < 1)):
         return (v - (bias))
     else:
         return 1
@@ -85,7 +85,7 @@ dt = .1
 total_duration = 300
 ''' Establish Events '''
 data1 = np.zeros((1,round(total_duration/dt)))
-data1[0][0:round(2/dt)] = 1
+data1[0][0:round(4/dt)] = 1
 event1 = np.zeros((1,round(total_duration/dt)))
 event1[0][round(events["pBA"]/dt)] = 1
 event2 = np.zeros((1,round(total_duration/dt)))
@@ -96,9 +96,9 @@ stretch = 1
 ramp_bias = 0.5
 
 weights = np.array([[2,     0,  0,   -.5,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.55,    1,  0,   -.5,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     .49,  2,   -.5,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
-                    [0,     0,  1,    2,      0,  0,  0,  0],
+                    [.56,   2,  0,   -.5,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [0,     0,  2,   -.5,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
+                    [0,     0,  0,    2,      0,  0,  0,  0],
                      
                     [0,     0,  0,    0,      0,  0,  0,-1],
                     [0,     0,  0,    0,     .4, 1,  0,-1],
@@ -110,9 +110,12 @@ beta = 1.2
 inhibition_unit_bias = 1.4
 third_unit_beta = 1.1
 lmbd = 4
+v = np.array([np.zeros(weights.shape[0])]).T 
+v_test = np.array([np.zeros(weights.shape[0])]).T 
 v_hist = np.array([np.zeros(weights.shape[0])]).T 
 v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
-noise = 0.0
+net_in = np.zeros(weights.shape[0])
+noise = 0.00
 steps = 0 
 tau = 1
 delta_A = 0
@@ -121,17 +124,13 @@ l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T
 interval_1_slope = 1
 bias = np.array([[beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias]]).T 
  
-v = np.array([np.zeros(weights.shape[0])]).T 
-net_in = np.zeros(weights.shape[0])
 net_in_test = np.zeros(weights.shape[0])
 timer_learn_1 = True  
 timer_learn_2 = True  
 early_1 = False
 early_2 = False
+SN1 = 0
 for i in range (0, data1.size):
-    A_1 = 1/weights[1][0]
-    A_2 = 1/weights[5][4]
-    
     net_in = weights @ v      
     # Transfer functions
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
@@ -146,51 +145,40 @@ for i in range (0, data1.size):
     v_hist = np.concatenate((v_hist,v), axis=1)
     
     z = .8
-#    if (v[1] >= z) and timer_learn_1 == True:
-#        early_1 = True
-#        if i < round(events["pBA"]/dt):
-#            # We're still in the interval, so we keep updating
-#            drift = (weights[1][0] - bias[1]) + .5
-#            d_A = (- (drift ** 2)/z) * dt
-#            weights[1][0] = weights[1][0] + d_A       
-#        else:
-#            timer_learn_1 = False
-#          
+    SN = weights[1][0]
+    if (v[1] > z) and timer_learn_1 == True:
+        early_1 = True
+        if i < round(events["pBA"]/dt):
+            
+            # We're still in the interval, so we keep updating
+            drift = (SN - ramp_bias) + .5
+            d_A = (- (drift ** 2)/z) * dt
+            SN = SN + d_A
+            print(SN)
+        else:
+            weights[1][0] = SN1
+            timer_learn_1 = False
+##          
 #    if (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
+#        print(v)
+#        print(i)
 #        # If we hit our target late
 #        # Do the late update
-#        timer_learn_1 = False
+#        print("old weights", weights[1][0])
+#        print("goal: .559")
 #        Sn = weights[1][0]
-#        B = bias[1]
-#        z = net_in[0][-1]
-#        z = .9
-#        Vt = net_in[1][-1]
-#        drift = (weights[1][0] - bias[1]) + .5
-#        d_A = drift * ((z-Vt)/Vt)
+#        B = ramp_bias
+#        Vt = v[1][-1]
+#        print("VT: ", Vt)
+#        dS = (Sn - B + 0.5) * ((z - Vt)/Vt)
+#        print(dS)
+##        drift = Sn - B + .5
+##        d_A = drift * ((z-Vt)/Vt)
+#        weights[1][0] = weights[1][0] + dS
+#        timer_learn_1 = False
 #        weights[1][0] = weights[1][0] + d_A
-#    
-#    if (v[5] >= z) and timer_learn_2 == True:
-#        early_2 = True
-#        if i < round(events["pCA"]/dt):
-#            # We're still in the interval, so we keep updating
-#            drift = (weights[5][4] - bias[5]) + .5
-#            d_A = (- (drift ** 2)/z) * dt
-#            weights[5][4] = weights[5][4] + d_A       
-#        else:
-#            timer_learn_2 = False
-#          
-#    if (i > round(events["pCA"]/dt)) and (timer_learn_2 == True) and (not early_2):
-#        # If we hit our target late
-#        # Do the late update
-#        timer_learn_2 = False
-#        Sn = weights[5][4]
-#        B = bias[5]
-#        z = net_in[5][-1]
-#        z = .9
-#        Vt = net_in[5][-1]
-#        drift = (weights[5][4] - bias[5]) + .5
-#        d_A = drift * ((z-Vt)/Vt)
-#        weights[5][4] = weights[5][4] + d_A
+#        print("new weights", weights[1][0])
+
 x_axis_vals = np.arange(-2, 3, dt)
 plt.figure()
 plt.plot(x_axis_vals, graph_pl(x_axis_vals, bias[1]))
@@ -205,6 +193,7 @@ plt.show()
 
 plt.figure()
 activation_plot_xvals = np.arange(0, total_duration, dt)
+plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, event1[0])
 plt.plot(activation_plot_xvals, event2[0])
@@ -215,7 +204,7 @@ plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [2,2])
 plt.plot(activation_plot_xvals, v_hist[7,0:-1], dashes = [2,2])  
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["timer 1", "event 1", "event 2", "module 1 inhibition unit", "module 1 output switch","timer 2", "module 2 output switch","module 2 inhibition unit"], loc=0)
+plt.legend(["first unit", "timer 1", "event 1", "event 2", "module 1 inhibition unit", "module 1 output switch","timer 2", "module 2 output switch","module 2 inhibition unit"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("All timers before learning")
@@ -236,37 +225,38 @@ plt.legend(["strength of inh start", "strength of inh unit -10 event", "strength
 plt.title("activation of inhibition Unit against sigmoid")
 plt.grid('on')
 plt.show() 
-
-  
+        
+v = np.array([np.zeros(weights.shape[0])]).T 
+v_test = np.array([np.zeros(weights.shape[0])]).T 
+v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
+net_in_test = np.zeros(weights.shape[0])
+print(weights)
+print(SN1)
 for i in range (0, data1.size):
-    A_1 = 1/weights[1][0]
-    A_2 = 1/weights[5][4]
-    
-    net_in = weights @ v      
+    net_in_test = weights @ v_test      
     # Transfer functions
-    net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
-    net_in[1] = piecewise_linear(net_in[1], bias[1])
-    net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
+    net_in_test[0] = sigmoid(l[0], data1[0][i] + net_in_test[0], bias[0])    
+    net_in_test[1] = piecewise_linear(net_in_test[1], bias[1])
+    net_in_test[2:5] = sigmoid(l[2:5], net_in_test[2:5], bias[2:5])
     
-    net_in[5] = piecewise_linear(net_in[5], bias[5])
-    net_in[6:9] = sigmoid(l[6:9], net_in[6:9], bias[6:9])
+    net_in_test[5] = piecewise_linear(net_in_test[5], bias[5])
+    net_in_test[6:9] = sigmoid(l[6:9], net_in_test[6:9], bias[6:9])
 
-    dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
-    v = v + dv            
-    v_hist_test = np.concatenate((v_hist_test,v), axis=1)
-          
+    dv = (1/tau) * ((-v_test + net_in_test) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
+    v_test = v_test + dv            
+    v_hist_test = np.concatenate((v_hist_test,v_test), axis=1)
+    
 plt.figure()
 activation_plot_xvals = np.arange(0, total_duration, dt)
+plt.plot(activation_plot_xvals, v_hist_test[0,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist_test[1,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, event1[0])
 plt.plot(activation_plot_xvals, event2[0])
 plt.plot(activation_plot_xvals, v_hist_test[2,0:-1], dashes = [2,2]) 
-plt.plot(activation_plot_xvals, v_hist_test[5,0:-1], dashes = [1,1])
-plt.plot(activation_plot_xvals, v_hist_test[6,0:-1], dashes = [2,2]) 
-plt.plot(activation_plot_xvals, v_hist_test[7,0:-1], dashes = [2,2])  
+plt.plot(activation_plot_xvals, v_hist_test[4,0:-1], dashes = [1,1])
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["timer 1", "event 1", "event 2", "module 1 output switch","timer 2", "module 2 output switch","module 2 inhibition unit"], loc=0)
+plt.legend(["unit 1", "timer 1", "event 1", "event 2","output unit", "inhibition unit"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("All timers after learning")

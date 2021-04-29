@@ -96,19 +96,14 @@ event2[0][round(events["pCA"]/dt)] = 1
 stretch = 1
 ramp_bias = 1
 lmbd = 4
-weights = np.array([[2,     0,  0,   -.5,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.02,    2,  0,   -.5,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     0,  2,   -.5,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
-                    [0,     0,  0,    2,      0,  0,  0,  0],
-                     
-                    [0,     0,  0,    0,      0,  0,  0,-1],
-                    [0,     0,  0,    0,     .4, 1,  0,-1],
-                    [0,     0,  0,    0,      0,  .6,  2, -1],
-                    [0,     0,  0,    0,      0,  0,  1, 2]])         
+weights = np.array([[2,     0,  0,   0],         # 1->1, 2->1, 3->1 4->1
+                    [.8,    2,  0,   0],     # 1->2, 2->2, 3->2
+                    [0,     1,  2,   0],        # 1->3, 2->3, 3->3
+                    [0,     0,  1,    2]])               
                          
  
 beta = 1.2
-inhibition_unit_bias = 1.2
+inhibition_unit_bias = .5
 third_unit_beta = 1.1
 v = np.array([np.zeros(weights.shape[0])]).T 
 v_test = np.array([np.zeros(weights.shape[0])]).T 
@@ -131,10 +126,10 @@ early_1 = False
 early_2 = False
 SN1 = 0
 for i in range (0, data1.size):
-    z = .7
-    #if (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
-        # If we hit our target late
-        # Do the late update
+    z = 1.2
+#    if (i == round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
+##         If we hit our target late
+##         Do the late update
 #        print("old weights", weights[1][0])
 #        Sn = weights[1][0]
 #        B = ramp_bias
@@ -143,7 +138,6 @@ for i in range (0, data1.size):
 #        A = z - Vt
 #        drift = (Sn - B + .5)
 #        dS = drift * (A/Vt)
-#        print(dS)
 ##        drift = Sn - B + .5
 ##        d_A = drift * ((z-Vt)/Vt)
 #        weights[1][0] = weights[1][0]+ dS
@@ -153,17 +147,15 @@ for i in range (0, data1.size):
     # Transfer functions
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
     net_in[1] = sigmoid(l[1], net_in[1], bias[1])
-    net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
-    
-    net_in[5] = piecewise_linear(net_in[5], bias[5])
-    net_in[6:9] = sigmoid(l[6:9], net_in[6:9], bias[6:9])
+    net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])
 
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
     
-    if (v[1] > z) and timer_learn_1 == True:
+    if (v[1] > .8) and timer_learn_1 == True:
         early_1 = True
+        print('early')
         if i < round(events["pBA"]/dt):
             # We're still in the interval, so we keep updating
             drift = (weights[1][0] - ramp_bias) + .5
@@ -196,12 +188,9 @@ plt.plot(activation_plot_xvals, event1[0])
 plt.plot(activation_plot_xvals, event2[0])
 plt.plot(activation_plot_xvals, v_hist[3,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [2,2]) 
-plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
-plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [2,2]) 
-plt.plot(activation_plot_xvals, v_hist[7,0:-1], dashes = [2,2])  
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["first unit", "timer 1", "event 1", "event 2", "module 1 inhibition unit", "module 1 output switch","timer 2", "module 2 output switch","module 2 inhibition unit"], loc=0)
+plt.legend(["first unit", "timer 1", "event 1", "event 2", "module 1 inhibition unit", "module 1 output switch"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("All timers before learning")
@@ -235,10 +224,7 @@ for i in range (0, data1.size):
     # Transfer functions
     net_in_test[0] = sigmoid(l[0], data1[0][i] + net_in_test[0], bias[0])    
     net_in_test[1] = sigmoid(l[1], net_in_test[1], bias[1])
-    net_in_test[2:5] = sigmoid(l[2:5], net_in_test[2:5], bias[2:5])
-    
-    net_in_test[5] = piecewise_linear(net_in_test[5], bias[5])
-    net_in_test[6:9] = sigmoid(l[6:9], net_in_test[6:9], bias[6:9])
+    net_in_test[2:5] = sigmoid(l[2:4], net_in_test[2:4], bias[2:4])
 
     dv = (1/tau) * ((-v_test + net_in_test) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v_test = v_test + dv            
@@ -251,7 +237,6 @@ plt.plot(activation_plot_xvals, v_hist_test[1,0:-1], dashes = [2,2])
 plt.plot(activation_plot_xvals, event1[0])
 plt.plot(activation_plot_xvals, event2[0])
 plt.plot(activation_plot_xvals, v_hist_test[2,0:-1], dashes = [2,2]) 
-plt.plot(activation_plot_xvals, v_hist_test[4,0:-1], dashes = [1,1])
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
 plt.legend(["unit 1", "timer 1", "event 1", "event 2","output unit", "inhibition unit"], loc=0)

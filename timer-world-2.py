@@ -263,9 +263,9 @@ def multiple_trials(n=5, s = 1, noise = 0):
                         [0,     .5,  2,   -.5,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                         [0,     0,  1,    2,      0,  0,  0,  0],
                          
-                        [0,     0,  1,    0,      2,  0,  0,-1],
-                        [0,     0,  0,    0,     .08, 1,  0,-1],
-                        [0,     0,  0,    0,      0,  .55,  2, -1],
+                        [0,     0,  1,    0,      2,  0,  0,-.5],
+                        [0,     0,  0,    0,     .08, 1,  0,-.5],
+                        [0,     0,  0,    0,      0,  .5,  2, -.5],
                         [0,     0,  0,    0,      0,  0,  1, 2]]) 
     
     stretch_weights = np.array([[2,     0,  0,   -1,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
@@ -274,7 +274,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
                         [0,     0,  1,    2,      0,  0,  0,  0],
                          
                         [0,     0,  1,    0,      2,  0,  0,-1],
-                        [0,     0,  0,    0,     .08, 1,  0,-1],
+                        [0,     0,  0,    0,     .03, 1,  0,-1],
                         [0,     0,  0,    0,      0,  .55,  2, -1],
                         [0,     0,  0,    0,      0,  0,  1, 2]]) 
     plt.figure()
@@ -373,7 +373,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
                          # We're still in the interval, so we keep updating
                         drift = stretch_weights[5][4] - bias[5]
                         d_A = (- (drift ** 2)/z) * dt
-                        stretch_weights[5][4] = ramp_bias + stretch_factor * (stretch_weights[5][4] - ramp_bias) + d_A
+                        stretch_weights[5][4] = stretch_weights[5][4] + d_A  
                 else:
                     timer_learn_2 = False
                   

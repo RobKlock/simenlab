@@ -46,10 +46,10 @@ def energy(weights, v):
     return (-1/2) * v.T * weights * v
 
 def piecewise_linear(v, bias):
-    if ((v - (bias)) <= 0):
+    if ((v - (bias) + .5) <= 0):
         return 0
-    elif (((v - (bias))> 0) and ((v - (bias)) < 1)):
-        return ((v - (bias)))
+    elif (((v - (bias) + .5)> 0) and ((v - (bias) + .5) < 1)):
+        return ((v - (bias) + .5))
     else:
         return 1
     
@@ -93,10 +93,10 @@ event2[0][round(events["pCA"]/dt)] = 1
 
 
 stretch = 1
-ramp_bias = .05
+ramp_bias = 1
 lmbd = 4
 weights = np.array([[2,     0,  0,   -.5,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.1,    1,  0,   -.5,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [.8,    1,  0,   -.5,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
                     [0,     .5,  2,   -.5,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],
                      
@@ -136,7 +136,7 @@ for i in range (0, data1.size):
     net_in[1] = piecewise_linear(net_in[1], bias[1])
     net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])      
     net_in[5] = piecewise_linear(net_in[5], bias[5])
-    net_in[6:9] = sigmoid(l[6:9], net_in[6:9], bias[6:9])
+    net_in[6:8] = sigmoid(l[6:8], net_in[6:8], bias[6:8])
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
@@ -145,22 +145,24 @@ for i in range (0, data1.size):
                 early_1 = True
                 if i < round(events["pBA"]/dt):
                     # We're still in the interval, so we keep updating
-                    drift = (weights[1][0] - bias[1])
+                    # Drift for PL assuming a slope of 1
+                    drift = ((weights[1][0]) - bias[1] + .5) 
                     d_A = (- (drift ** 2)/z) * dt
                     weights[1][0] = weights[1][0] + d_A  
                 else:
                     timer_learn_1 = False
                     print(weights[1][0])
                     
-    if (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
+    if (v[1] > 0) and (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
 #         If we hit our target late
 #         Do the late update
-
         timer_learn_1 = False
-        z = .9
+        z = .99
         Vt = net_in[1][-1]
         
-        drift = (weights[1][0] - bias[1])
+        # drift = (weights[1][0] - bias[1] + .5)
+        # Experiment 
+        drift = ((weights[1][0] * v[0]) - bias[1] + .5)
         d_A = drift * ((z-Vt)/Vt)
         weights[1][0] = weights[1][0] + d_A
         print(weights[1][0])
@@ -330,7 +332,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
             net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
             
             net_in[5] = piecewise_linear(net_in[5], bias[5])
-            net_in[6:9] = sigmoid(l[6:9], net_in[6:9], bias[6:9])
+            net_in[6:8] = sigmoid(l[6:8], net_in[6:8], bias[6:8])
         
             dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
             v = v + dv            
@@ -344,7 +346,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
                 if i < round(events["pBA"]/dt):
                     # We're still in the interval, so we keep updating
                     if not stretched:
-                        drift = (weights[1][0] - bias[1])
+                        drift = (weights[1][0] - bias[1] + .5)
                         d_A = (- (drift ** 2)/z) * dt
                         weights[1][0] = weights[1][0] + d_A  
                     else:

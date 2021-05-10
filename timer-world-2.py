@@ -95,9 +95,9 @@ event2[0][round(events["pCA"]/dt)] = 1
 stretch = 1
 ramp_bias = 1
 lmbd = 4
-weights = np.array([[2,     0,  0,   -.5,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.8,    1,  0,   -.5,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     .5,  2,   -.5,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
+weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
+                    [.55,    1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [0,     .5,  2,   -.4,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],
                      
                     [0,     0,  0,    0,      0,  0,  0, -.5],
@@ -150,6 +150,7 @@ for i in range (0, data1.size):
                     d_A = (- (drift ** 2)/z) * dt
                     weights[1][0] = weights[1][0] + d_A  
                 else:
+                    print("early")
                     timer_learn_1 = False
                     print(weights[1][0])
                     
@@ -166,6 +167,7 @@ for i in range (0, data1.size):
         d_A = drift * ((z-Vt)/Vt)
         weights[1][0] = weights[1][0] + d_A
         print(weights[1][0])
+        print("late")
         print("new weights", weights[1][0])
 
 ###
@@ -187,15 +189,15 @@ activation_plot_xvals = np.arange(0, total_duration, dt)
 plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, event1[0])
-plt.plot(activation_plot_xvals, event2[0])
-plt.plot(activation_plot_xvals, v_hist[3,0:-1], dashes = [2,2]) 
+#plt.plot(activation_plot_xvals, event2[0])
 plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [2,2]) 
-plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
-plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [2,2]) 
-plt.plot(activation_plot_xvals, v_hist[7,0:-1], dashes = [2,2])  
+plt.plot(activation_plot_xvals, v_hist[3,0:-1], dashes = [2,2]) 
+#plt.plot(activation_plot_xvals, v_hist[5,0:-1], dashes = [1,1])
+#plt.plot(activation_plot_xvals, v_hist[6,0:-1], dashes = [2,2]) 
+#plt.plot(activation_plot_xvals, v_hist[7,0:-1], dashes = [2,2])  
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["first unit", "timer 1", "event 1", "event 2", "module 1 inhibition unit", "module 1 output switch","timer 2", "module 2 output switch","module 2 inhibition unit"], loc=0)
+plt.legend(["first unit", "timer 1", "event 1", "module 1 inhibition unit", "module 1 output switch"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("All timers before learning")
@@ -243,12 +245,12 @@ activation_plot_xvals = np.arange(0, total_duration, dt)
 plt.plot(activation_plot_xvals, v_hist_test[0,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist_test[1,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, event1[0])
-plt.plot(activation_plot_xvals, event2[0])
-plt.plot(activation_plot_xvals, v_hist_test[2,0:-1], dashes = [2,2]) 
-plt.plot(activation_plot_xvals, v_hist_test[4,0:-1], dashes = [1,1])
+# plt.plot(activation_plot_xvals, event2[0])
+plt.plot(activation_plot_xvals, v_hist_test[3,0:-1], dashes = [2,2]) 
+plt.plot(activation_plot_xvals, v_hist_test[2,0:-1], dashes = [1,1])
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["unit 1", "timer 1", "event 1", "event 2","output unit", "inhibition unit"], loc=0)
+plt.legend(["unit 1", "timer 1", "event 1", "output unit", "inhibition unit"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("steps")
 plt.title("All timers after learning")
@@ -266,17 +268,17 @@ def multiple_trials(n=5, s = 1, noise = 0):
                         [0,     0,  1,    2,      0,  0,  0,  0],
                          
                         [0,     0,  1,    0,      2,  0,  0,-.5],
-                        [0,     0,  0,    0,     .55, 1,  0,-.5],
+                        [0,     0,  0,    0,     .6, 1,  0,-.5],
                         [0,     0,  0,    0,      0,  .5,  2, -.5],
                         [0,     0,  0,    0,      0,  0,  1, 2]]) 
     
     stretch_weights =  np.array([[2,     0,  0,   -.5,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                        [0.55,  1,  0,   -.5,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                        [(ramp_bias + stretch * (.55 - ramp_bias)),  1,  0,   -.5,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
                         [0,     .5,  2,   -.5,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                         [0,     0,  1,    2,      0,  0,  0,  0],
                          
                         [0,     0,  1,    0,      2,  0,  0,-.5],
-                        [0,     0,  0,    0,     .55, 1,  0,-.5],
+                        [0,     0,  0,    0,     (ramp_bias + stretch * (.55 - ramp_bias)), 1,  0,-.5],
                         [0,     0,  0,    0,      0,  .5,  2, -.5],
                         [0,     0,  0,    0,      0,  0,  1, 2]]) 
     #np.array([[2,     0,  0,   -1,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
@@ -330,7 +332,6 @@ def multiple_trials(n=5, s = 1, noise = 0):
             net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
             net_in[1] = piecewise_linear(net_in[1], bias[1])
             net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
-            
             net_in[5] = piecewise_linear(net_in[5], bias[5])
             net_in[6:8] = sigmoid(l[6:8], net_in[6:8], bias[6:8])
         
@@ -342,7 +343,6 @@ def multiple_trials(n=5, s = 1, noise = 0):
             ''' Module 1 Learning Rules '''
             if (v[1] >= z) and timer_learn_1 == True:
                 early_1 = True
-                
                 if i < round(events["pBA"]/dt):
                     # We're still in the interval, so we keep updating
                     if not stretched:
@@ -350,9 +350,9 @@ def multiple_trials(n=5, s = 1, noise = 0):
                         d_A = (- (drift ** 2)/z) * dt
                         weights[1][0] = weights[1][0] + d_A  
                     else:
-                        drift = (ramp_bias + stretch_factor * (stretch_weights[1][0] - ramp_bias)) - ramp_bias
+                        drift = (weights[1][0] - bias[1] + .5)
                         d_A = (- (drift ** 2)/z) * dt
-                        stretch_weights[1][0] = stretch_weights[1][0] + d_A  
+                        weights[1][0] = weights[1][0] + d_A  
                 else:
                     timer_learn_1 = False
                   
@@ -369,9 +369,9 @@ def multiple_trials(n=5, s = 1, noise = 0):
                     d_A = drift * ((z-Vt)/Vt)
                     weights[1][0] = weights[1][0] + d_A
                 else:
-                    drift = ramp_bias + (stretch_factor * (stretch_weights[1][0] - ramp_bias + .5)) - ramp_bias
+                    drift = ((weights[1][0] * v[0]) - bias[1] + .5) 
                     d_A = drift * ((z-Vt)/Vt)
-                    stretch_weights[1][0] = (ramp_bias + (stretch_factor * (stretch_weights[1][0] - ramp_bias + .5))) + d_A
+                    weights[1][0] = weights[1][0] + d_A
             
             ''' Module 2 Learning Rules '''
             if (v[5] >= z) and timer_learn_2 == True:
@@ -383,10 +383,10 @@ def multiple_trials(n=5, s = 1, noise = 0):
                         d_A = (- (drift ** 2)/z) * dt
                         weights[5][4] = weights[5][4] + d_A      
                     else: 
-                         # We're still in the interval, so we keep updating
-                        drift = ramp_bias + (stretch_factor * (stretch_weights[5][4] - ramp_bias + .5)) - bias[5]
+                        # We're still in the interval, so we keep updating
+                        drift = (weights[5][4] - bias[5] + .5) 
                         d_A = (- (drift ** 2)/z) * dt
-                        stretch_weights[5][4] = stretch_weights[5][4] + d_A  
+                        weights[5][4] = weights[5][4] + d_A  
                 else:
                     timer_learn_2 = False
                   
@@ -402,9 +402,9 @@ def multiple_trials(n=5, s = 1, noise = 0):
                     d_A = drift * ((z-Vt)/Vt)
                     weights[5][4] = weights[5][4] + d_A
                 else:
-                    drift = ramp_bias + (stretch_factor * (stretch_weights[5][4] - ramp_bias + .5)) - ramp_bias
+                    drift = (weights[5][4] * v[4]) - ramp_bias + .5
                     d_A = drift * ((z-Vt)/Vt)
-                    stretch_weights[5][4] = (ramp_bias + (stretch_factor * (stretch_weights[5][4] - ramp_bias))) + d_A
+                    weights[5][4] = weights[5][4] + d_A
        
         plt.plot(activation_plot_xvals, event1[0], 'k', alpha = .6)
         plt.plot(activation_plot_xvals, event2[0], 'k', alpha = .6)      

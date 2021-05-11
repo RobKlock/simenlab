@@ -105,8 +105,8 @@ plt.figure()
 activation_plot_xvals = np.arange(0, total_duration, dt)
 for i in range(n):
     events = {
-    "pBA": np.random.normal(40, 0.1, 1)[0] / s,
-    "pCA": np.random.normal(100, 0.1, 1)[0] / s,
+    "pBA": np.random.normal(40, 20, 1)[0] / s,
+    "pCA": np.random.normal(100, 20, 1)[0] / s,
     "pCB": np.random.normal(),
     "pBC": np.random.normal()}
     ''' Establish Events '''

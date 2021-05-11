@@ -74,7 +74,7 @@ pCB = np.random.normal(100, 10, 1)
 pBC = np.random.normal(100, 10, 1)
 
 events = {
-        "pBA": np.random.normal(50, 5, 1)[0],
+        "pBA": np.random.normal(200, 5, 1)[0],
         "pCA": np.random.normal(100, 5, 1)[0],
         "pCB": np.random.normal(),
         "pBC": np.random.normal()}
@@ -98,7 +98,7 @@ lmbd = 4
 weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
                     [.7,    1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
                     [0,     .5,  2,   -.4,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
-                    [0,     0,  1,    2,      0,  0,  0,  0],
+                    [0,     0,  .2,    2,      0,  0,  0,  0],
                      
                     [0,     0,  0,    0,      0,  0,  0, -.5],
                     [0,     0,  0,    0,     .4, 1,  0, -.5],

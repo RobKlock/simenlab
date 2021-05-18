@@ -79,7 +79,7 @@ weights = np.array([[2,     0,  0,   -.5,      0,  0,  0,  0],     # 1->1, 2->1,
                     [0,     0,  1,    2,      0,  0,  0,  0],
                      
                     [0,     0,  1.1,    0,      2,  0,  0,-.5],
-                    [0,     0,  0,    0,     .549, 1,  0,-.5],
+                    [0,     0,  0,    0,     .55, 1,  0,-.5],
                     [0,     0,  0,    0,      0,  .5,  2, -.5],
                     [0,     0,  0,    0,      0,  0,  1, 2]]) 
 
@@ -105,8 +105,8 @@ plt.figure()
 activation_plot_xvals = np.arange(0, total_duration, dt)
 for i in range(n):
     events = {
-    "pBA": np.random.normal(40, 20, 1)[0] / s,
-    "pCA": np.random.normal(100, 20, 1)[0] / s,
+    "pBA": np.random.normal(60, 0, 1)[0] / s,
+    "pCA": np.random.normal(100, 0, 1)[0] / s,
     "pCB": np.random.normal(),
     "pBC": np.random.normal()}
     ''' Establish Events '''
@@ -227,9 +227,7 @@ for i in range(n):
         if (v[5] > 0) and (i > round(events["pCA"]/dt)) and (timer_learn_2 == True) and (not early_2):
     #         If we hit our target late
     #         Do the late updat
-            if not stretched:
-
-                
+            if not stretched:  
                 z = .99
                 Vt = net_in[5][-1]
                 #Vt = v[5]

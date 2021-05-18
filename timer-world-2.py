@@ -74,7 +74,7 @@ pCB = np.random.normal(100, 10, 1)
 pBC = np.random.normal(100, 10, 1)
 
 events = {
-        "pBA": np.random.normal(200, 5, 1)[0],
+        "pBA": np.random.normal(50, 5, 1)[0],
         "pCA": np.random.normal(100, 5, 1)[0],
         "pCB": np.random.normal(),
         "pBC": np.random.normal()}
@@ -96,9 +96,9 @@ stretch = 1
 ramp_bias = 1
 lmbd = 4
 weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.7,    1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     .5,  2,   -.4,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
-                    [0,     0,  .2,    2,      0,  0,  0,  0],
+                    [.57,    1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [0,     .5, 2,   -.4,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
+                    [0,     0,  1,    2,      0,  0,  0,  0],
                      
                     [0,     0,  0,    0,      0,  0,  0, -.5],
                     [0,     0,  0,    0,     .4, 1,  0, -.5],
@@ -140,20 +140,31 @@ for i in range (0, data1.size):
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
-    z = .99
+    z = .93
     """=== Early Timer Update Rules ==="""
-    if (v[1] >= z) and timer_learn_1 == True:
-                early_1 = True
-                if i < round(events["pBA"]/dt):
-                    # We're still in the interval, so we keep updating
-                    # Drift for PL assuming a slope of 1
-                    drift = ((weights[1][0]) - bias[1] + .5) 
-                    d_A = (- (drift ** 2)/z) * dt
-                    weights[1][0] = weights[1][0] + d_A  
-                else:
-                    print("early")
-                    timer_learn_1 = False
-                    print(weights[1][0])
+    early_threshold = .99
+    if timer_learn_1 and i < round(events["pBA"]/dt):
+        v[2] = 0
+    
+    if i == round(events["pBA"]/dt):
+        print("should stop here")
+    
+    if (v[1] >= early_threshold) and timer_learn_1 == True:
+        early_1 = True
+        if i < round(events["pBA"]/dt):
+            # We're still in the interval, so we keep updating
+            # Drift for PL assuming a slope of 1
+            drift = ((weights[1][0] * early_threshold) - bias[1] + .5) 
+            d_A = (- (drift ** 2)/z) * dt
+            weights[1][0] = weights[1][0] + d_A  
+            # print("i: ", i, "weight: ",weights[1][0])
+        else:
+            print("early")
+            timer_learn_1 = False
+            print("else: ",weights[1][0])               
+#    if i < round(events["pBA"]/dt):
+#        timer_learn_1 = False
+    #print("i: ", i, "weight: ",weights[1][0])         
     """=== Late Timer Update Rules ==="""                
     if (v[1] > 0) and (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
 #         If we hit our target late
@@ -170,7 +181,6 @@ for i in range (0, data1.size):
         print(weights[1][0])
         print("late")
         print("new weights", weights[1][0])
-
 ###
 
 x_axis_vals = np.arange(-2, 3, dt)
@@ -226,7 +236,7 @@ v_hist_test = np.array([np.zeros(weights.shape[0])]).T
 net_in_test = np.zeros(weights.shape[0])
 data1 = np.zeros((1,round(total_duration/dt)))
 data1[0][0:round(4/dt)] = .95
-print(SN1)
+
 for i in range (0, data1.size):
     net_in_test = weights @ v_test      
     # Transfer functions

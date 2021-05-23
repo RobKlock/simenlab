@@ -12,7 +12,7 @@ import math
 import sys
 from scipy.integrate import odeint
 sys.path.append('/Users/robertklock/Documents/Class/Fall20/SimenLab/simenlab')
-SMALL_FLOAT = .0000000001
+SMALL_FLOAT = .000000001
 def plot_curves(bias, lambd = 4, slf_excitation = 2, v = 0):
     x_axis_vals = np.arange(-2, 3, dt)
     plt.plot(x_axis_vals, graph_sigmoid(lambd, x_axis_vals, bias - v))
@@ -81,14 +81,14 @@ pCB = np.random.normal(100, 10, 1)
 pBC = np.random.normal(100, 10, 1)
 
 events = {
-        "pBA": np.random.normal(160, 5, 1)[0],
+        "pBA": np.random.normal(100, 5, 1)[0],
         "pCA": np.random.normal(100, 5, 1)[0],
         "pCB": np.random.normal(),
         "pBC": np.random.normal()}
    
 # Setup our time series data, which is a series of zeros with two batches of 1's from
 # 20-30 and 50-60
-dt = .1
+dt = 0.1
 total_duration = 300
 ''' Establish Events '''
 data1 = np.zeros((1,round(total_duration/dt)))
@@ -97,13 +97,14 @@ event1[0][round(events["pBA"]/dt)] = 1
 data1[0][0:round(4/dt)] = 1
 event2 = np.zeros((1,round(total_duration/dt)))
 event2[0][round(events["pCA"]/dt)] = 1
-
+learning_start = 0
+#learning_range = [0,round(events["pBA"])/dt]
 
 stretch = 1
-ramp_bias = 1
+ramp_bias = 1.0
 lmbd = 4
 weights = np.array([[2,     0,  0,   -.4],         # 1->1, 2->1, 3->1 4->1
-                    [.50988,    1,  0,   -.4],      # 1->2, 2->2, 3->2
+                    [.6,    1,  0,   -.4],      # 1->2, 2->2, 3->2
                     [0,     .5, 2,   -.4],     #2->3, 3->3
                     [0,     0,  1,    2]])      
                      
@@ -139,7 +140,7 @@ for i in range (0, data1.size):
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
-    z = .99
+    z = 1 - SMALL_FLOAT
     """=== Early Timer Update Rules ==="""
     #early_threshold = 1
     if i < round(events["pBA"])/dt:
@@ -157,6 +158,7 @@ for i in range (0, data1.size):
         
         if (v[1] >= 1 - SMALL_FLOAT): 
             timer_learn_1 = True
+            learning_start = i
         
         if timer_learn_1:
         #if i < round(events["pBA"]/dt):
@@ -215,6 +217,7 @@ activation_plot_xvals = np.arange(0, total_duration, dt)
 plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[1,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, event1[0])
+plt.axvspan(10, round(events["pBA"]), alpha=.2, color='red')
 #plt.plot(activation_plot_xvals, event2[0])
 plt.plot(activation_plot_xvals, v_hist[2,0:-1], dashes = [2,2]) 
 plt.plot(activation_plot_xvals, v_hist[3,0:-1], dashes = [2,2]) 

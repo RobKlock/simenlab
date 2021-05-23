@@ -12,7 +12,7 @@ import math
 import sys
 from scipy.integrate import odeint
 sys.path.append('/Users/robertklock/Documents/Class/Fall20/SimenLab/simenlab')
-
+SMALL_FLOAT = .0000000001
 def plot_curves(bias, lambd = 4, slf_excitation = 2, v = 0):
     x_axis_vals = np.arange(-2, 3, dt)
     plt.plot(x_axis_vals, graph_sigmoid(lambd, x_axis_vals, bias - v))
@@ -68,11 +68,10 @@ def round_up(n, decimals=0):
     multiplier = 10 ** decimals
     return math.ceil(n * multiplier) / multiplier
 
-def model(y,t):
-    timer_weight = .6
-    timer_bias = .5
-    z = .9
-    A = (timer_weight - timer_bias + .5)
+def etr(z,t):
+    A = (.7 - .5 + .5) 
+    #z = .99999
+    # A = (timer_weight - timer_bias + .5)
     dAdt = -(A**2)/z
     return dAdt
 
@@ -104,7 +103,7 @@ stretch = 1
 ramp_bias = 1
 lmbd = 4
 weights = np.array([[2,     0,  0,   -.4],         # 1->1, 2->1, 3->1 4->1
-                    [.7,    1,  0,   -.4],      # 1->2, 2->2, 3->2
+                    [.50988,    1,  0,   -.4],      # 1->2, 2->2, 3->2
                     [0,     .5, 2,   -.4],     #2->3, 3->3
                     [0,     0,  1,    2]])      
                      
@@ -126,7 +125,7 @@ interval_1_slope = 1
 bias = np.array([[beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias]]).T 
  
 net_in_test = np.zeros(weights.shape[0])
-timer_learn_1 = True  
+timer_learn_1 = False  
 timer_learn_2 = True  
 early_1 = False
 early_2 = False
@@ -138,27 +137,35 @@ for i in range (0, data1.size):
     net_in[1] = piecewise_linear(net_in[1], bias[1])
     net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])      
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
-    v = v + dv
-    v[0] = 1            
+    v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
     z = .99
     """=== Early Timer Update Rules ==="""
     #early_threshold = 1
-    if timer_learn_1 and i < round(events["pBA"]/dt):
+    if i < round(events["pBA"])/dt:
         v[2] = 0
-    
-    if i == round(events["pBA"]/dt):
+        v[0] = 1  
+    if i == round(events["pBA"])/dt:
         print("should stop here")
-    
-    if i < round(events["pBA"]/dt):  #and timer_learn_1 == True:
+        print("early")
+        #timer_learn_1 = False
+        print("else: ",weights[1][0])    
+        print("event: ", events["pBA"])
+    # .50988 is about the target weight 
+    if i < round(events["pBA"])/dt:
         early_1 = True
-        if (v[1] >= 1):
+        
+        if (v[1] >= 1 - SMALL_FLOAT): 
+            timer_learn_1 = True
+        
+        if timer_learn_1:
         #if i < round(events["pBA"]/dt):
             # We're still in the interval, so we keep updating
             # Drift for PL assuming a slope of 1
             # A = Drift, z = threshold 
-            A = (weights[1][0] - bias[1] + .5)
+            A = (weights[1][0] - bias[1] + .5) 
             dA = (-((A**2)/z)) * dt
+            print("updating...")
             weights[1][0] = weights[1][0] + dA
             '''
             drift = ((weights[1][0]) - bias[1] + .5) 
@@ -167,9 +174,9 @@ for i in range (0, data1.size):
             '''
             # print("i: ", i, "weight: ",weights[1][0])
         else:
-            print("early")
-            #timer_learn_1 = False
-            print("else: ",weights[1][0])               
+            print("not in timer 1")
+            print("v1: ", v[1])
+            print("timer 1 learn: ", timer_learn_1)
 #    if i < round(events["pBA"]/dt):
 #        timer_learn_1 = False
     #print("i: ", i, "weight: ",weights[1][0])         
@@ -244,7 +251,7 @@ v_hist_test = np.array([np.zeros(weights.shape[0])]).T
 net_in_test = np.zeros(weights.shape[0])
 #data1 = np.zeros((1,round(total_duration/dt)))
 #data1[0][0:round(4/dt)] = .95
-
+print(weights)
 for i in range (0, data1.size):
     net_in_test = weights @ v_test      
     # Transfer functions

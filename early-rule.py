@@ -101,7 +101,7 @@ learning_start = 0
 #learning_range = [0,round(events["pBA"])/dt]
 
 stretch = 1
-ramp_bias = 1.0
+ramp_bias = .5
 lmbd = 4
 weights = np.array([[2,     0,  0,   -.4],         # 1->1, 2->1, 3->1 4->1
                     [.6,    1,  0,   -.4],      # 1->2, 2->2, 3->2
@@ -136,27 +136,31 @@ for i in range (0, data1.size):
     # Transfer functions
     net_in[0] = 1 #sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
     net_in[1] = piecewise_linear(net_in[1], bias[1])
+    #net_in[1] = sigmoid(l[1], net_in[1], bias[1])
     net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])      
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
+        
     v_hist = np.concatenate((v_hist,v), axis=1)
     z = 1 - SMALL_FLOAT
     """=== Early Timer Update Rules ==="""
     #early_threshold = 1
     if i < round(events["pBA"])/dt:
         v[2] = 0
-        v[0] = 1  
+        v[0] = 1 
+    '''
     if i == round(events["pBA"])/dt:
         print("should stop here")
         print("early")
         #timer_learn_1 = False
         print("else: ",weights[1][0])    
         print("event: ", events["pBA"])
+    '''
     # .50988 is about the target weight 
     if i < round(events["pBA"])/dt:
         early_1 = True
         
-        if (v[1] >= 1 - SMALL_FLOAT): 
+        if (v[1][0] >= z): 
             timer_learn_1 = True
             learning_start = i
         
@@ -166,7 +170,7 @@ for i in range (0, data1.size):
             # Drift for PL assuming a slope of 1
             # A = Drift, z = threshold 
             A = (weights[1][0] - bias[1] + .5) 
-            dA = (-((A**2)/z)) * dt
+            dA = (-((A**2)/z) * dt)
             print("updating...")
             weights[1][0] = weights[1][0] + dA
             '''
@@ -176,9 +180,11 @@ for i in range (0, data1.size):
             '''
             # print("i: ", i, "weight: ",weights[1][0])
         else:
+            '''
             print("not in timer 1")
             print("v1: ", v[1])
             print("timer 1 learn: ", timer_learn_1)
+            '''
 #    if i < round(events["pBA"]/dt):
 #        timer_learn_1 = False
     #print("i: ", i, "weight: ",weights[1][0])         
@@ -258,7 +264,8 @@ print(weights)
 for i in range (0, data1.size):
     net_in_test = weights @ v_test      
     # Transfer functions
-    net_in_test[0] = sigmoid(l[0], data1[0][i] + net_in_test[0], bias[0])    
+    net_in_test[0] = sigmoid(l[0], data1[0][i] + net_in_test[0], bias[0])  
+    #net_in_test[1] = sigmoid(l[1], net_in_test[1], bias[1])
     net_in_test[1] = piecewise_linear(net_in_test[1], bias[1])
     v_test[0] = 1
     net_in_test[2:4] = sigmoid(l[2:4], net_in_test[2:4], bias[2:4])

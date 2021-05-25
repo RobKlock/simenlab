@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue May 18 16:23:45 2021
-Single module to demonstrate and perfect the early timer update rule 
-@author: Rob Klock
+Created on Tue May 25 16:42:01 2021
+
+@author: robklock
 """
+
+# Early Timer Update Rule with new Drift calculation
 
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import sys
+import time
 from scipy.integrate import odeint
 sys.path.append('/Users/robertklock/Documents/Class/Fall20/SimenLab/simenlab')
 SMALL_FLOAT = .000000001
@@ -81,7 +84,7 @@ pCB = np.random.normal(100, 10, 1)
 pBC = np.random.normal(100, 10, 1)
 
 events = {
-        "pBA": np.random.normal(100, 0, 1)[0],
+        "pBA": np.random.normal(250, 0, 1)[0],
         "pCA": np.random.normal(100, 5, 1)[0],
         "pCB": np.random.normal(),
         "pBC": np.random.normal()}
@@ -104,7 +107,7 @@ learning_end = 0
 #learning_range = [0,round(events["pBA"])/dt]
 
 stretch = 1
-ramp_bias = 1.5
+ramp_bias = 1
 lmbd = 4
 weights = np.array([[2,     0,  0,   -.4],         # 1->1, 2->1, 3->1 4->1
                     [.6,    1,  0,   -.4],      # 1->2, 2->2, 3->2
@@ -118,7 +121,10 @@ v = np.array([np.zeros(weights.shape[0])]).T
 v_test = np.array([np.zeros(weights.shape[0])]).T 
 v_hist = np.array([np.zeros(weights.shape[0])]).T 
 v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
-net_in = np.zeros(weights.shape[0])
+
+net_in = np.array([np.zeros(weights.shape[0])]).T
+net_in_squashed = np.array([np.zeros(weights.shape[0])]).T
+net_in_hist = np.array(np.array([np.zeros(weights.shape[0])])).T
 noise = 0.00
 steps = 0 
 tau = 1
@@ -137,17 +143,20 @@ SN1 = 0
 numpy_z = np.ones([1])
 timer_input = np.zeros(weights.shape[0])
 for i in range (0, data1.size):
-    net_in = weights @ v      
+    net_in = weights @ v 
+    if i % 1000 == 0:
+        print("printing timer input at step: ", i, net_in[1])
     # Transfer functions
-    net_in[0] = 1 #sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
-    net_in[1] = piecewise_linear(net_in[1], bias[1])
+    net_in_squashed[0] = 1 #sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
+    net_in_squashed[1] = piecewise_linear(net_in[1], bias[1])
     #timer_input[i] = net_in[1] - bias[1] + .5
     #net_in[1] = sigmoid(l[1], net_in[1], bias[1])
-    net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])      
-    dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
+    net_in_squashed[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])      
+    dv = (1/tau) * ((-v + net_in_squashed) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv               
     v_hist = np.concatenate((v_hist,v), axis=1)
-    z = 1 - SMALL_FLOAT
+    net_in_hist = np.concatenate((net_in_hist, net_in), axis=1)
+    z = .99 #1 - SMALL_FLOAT
     """=== Early Timer Update Rules ==="""
     #early_threshold = 1
     # Record ramp slope for plotting
@@ -169,7 +178,11 @@ for i in range (0, data1.size):
         if (v[1][0] >= z): 
             timer_learn_1 = True
             learning_phase[0][i] = 1
-        
+        # 5/25 notes
+        # net in and weights * activation ought to be the same
+        # figure out how to debug effectively using pdb
+        # master pdb
+        # subtract input from itself from net_in
         if timer_learn_1:
             if learning_start == 0:
                 learning_start = i
@@ -177,11 +190,17 @@ for i in range (0, data1.size):
             # We're still in the interval, so we keep updating
             # Drift for PL assuming a slope of 1
             # A = Drift, z = threshold 
-            A = (weights[1][0] - bias[1] + .5) 
+            #A = (net_in[1] - bias[1] + .5) 
+            #A = (weights[1][0] * v[0] - bias[1] + .5)
+            A = (weights[1][0] * v[0] + (weights[1][3] * v[3]) - bias[1] + .5)
             dA = (-((A**2)/z) * dt)
             
-            print("updating...")
+            #print("updating...")
             weights[1][0] = weights[1][0] + dA
+            if weights[1][0] < 0:
+                weights[1][0] = 0
+                print(weights[1][0])
+                #input()
             '''
             drift = ((weights[1][0]) - bias[1] + .5) 
             d_A = (- (drift ** 2)/z) * dt
@@ -299,8 +318,11 @@ for i in range (0, data1.size):
 plt.figure()
 xvals = np.arange(0, total_duration, dt)
 plt.plot(xvals, ramp_slope[0])
+# plot net_in 1 - weights[1][0] over time 
+# plot weights[1][0]*v[0]
+#plt.plot(xvals, net_in_hist[1][0:-1], ramp_slope[0])
 plt.plot(xvals, event1[0])
-plt.plot(xvals, timer_input[0])
+#plt.plot(xvals, timer_input[0])
 # plt.plot(xvals, learning_start[0])
 plt.axvspan(learning_start*dt, round(events["pBA"]), alpha=.2, color='red')
 plt.ylim([0,1])

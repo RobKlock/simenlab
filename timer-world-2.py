@@ -96,7 +96,7 @@ stretch = 1
 ramp_bias = 1
 lmbd = 4
 weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.57,    1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [.6,    1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
                     [0,     .5, 2,   -.4,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],
                      
@@ -154,9 +154,10 @@ for i in range (0, data1.size):
         if i < round(events["pBA"]/dt):
             # We're still in the interval, so we keep updating
             # Drift for PL assuming a slope of 1
-            drift = ((weights[1][0] * early_threshold) - bias[1] + .5) 
-            d_A = (- (drift ** 2)/z) * dt
-            weights[1][0] = weights[1][0] + d_A  
+            A = (weights[1][0] * v[0] + (weights[1][3] * v[3]) - bias[1] + .5)
+            dA = (-((A**2)/z) * dt)
+            
+            weights[1][0] = weights[1][0] + dA  
             # print("i: ", i, "weight: ",weights[1][0])
         else:
             print("early")

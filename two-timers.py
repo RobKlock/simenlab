@@ -81,7 +81,7 @@ pBC = np.random.normal(100, 10, 1)
 
 events = {
         "pBA": np.random.normal(50, 5, 1)[0],
-        "pCA": np.random.normal(100, 5, 1)[0],
+        "pCA": np.random.normal(200, 5, 1)[0],
         "pCB": np.random.normal(),
         "pBC": np.random.normal()}
    
@@ -103,12 +103,12 @@ ramp_bias = 1
 lmbd = 4
 
 weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.55,    1,  0,   -.4,       0,  0,  0,  0],    # 1->2, 2->2, 3->2
+                    [.6,    1,  0,   -.4,       0,  0,  0,  0],    # 1->2, 2->2, 3->2
                     [0,     .5, 2,    0,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],      # 1->4, 2->4, 3->4
                      
                     [0,     0,  1,    0,      2,  0,  0, -.4],     # 1->5, 2->5, 3->5
-                    [0,     0,  0,    0,      1,  1,  0, -.4],
+                    [0,     0,  0,    0,      .6,  1,  0, -.4],
                     [0,     0,  0,    0,      0,  .5, 2, -.4],
                     [0,     0,  0,    0,      0,  0,  1,  2]])         
 
@@ -156,7 +156,7 @@ for i in range (0, data1.size):
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
     net_in[1] = piecewise_linear(net_in[1], bias[1])
     net_in[2] = sigmoid(l[2], net_in[2], bias[2])
-    net_in[2] = sigmoid(l[3], net_in[3], bias[3])
+    net_in[3] = sigmoid(l[3], net_in[3], bias[3])
     #net_in[2] = piecewise_linear(net_in[2], bias[2])
     #net_in[3] = piecewise_linear(net_in[3], bias[3])
     net_in[4] = sigmoid(l[4], net_in[4], bias[4])      
@@ -222,7 +222,7 @@ for i in range (0, data1.size):
             # Drift for PL assuming a slope of 1
             A = (weights[5][4] * v[4] + (weights[5][7] * v[7]) - bias[5] + .5)
             dA = (-((A**2)/z) * dt)
-    
+            print("timer 2 early")
             weights[5][4] = weights[5][4] + dA  
         else:
             print("early")
@@ -276,7 +276,7 @@ plt.legend(["first input unit", "timer 1", "event 1", "module 1 output switch", 
             "timer 2", "module 2 output switch", "module 2 inhibition unit"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("Time units")
-plt.title("Timer before learning")
+plt.title("Timers before learning")
 plt.grid('on')
 plt.show()
 
@@ -308,10 +308,10 @@ for i in range (0, data1.size):
     # Transfer functions
     net_in_test[0] = sigmoid(l[0], data1[0][i] + net_in_test[0], bias[0])    
     net_in_test[1] = piecewise_linear(net_in_test[1], bias[1])
-    net_in_test[2:4] = sigmoid(l[2:4], net_in_test[2:4], bias[2:4])
+    net_in_test[2:5] = sigmoid(l[2:5], net_in_test[2:5], bias[2:5])
     
     net_in_test[5] = piecewise_linear(net_in_test[5], bias[5])
-    net_in_test[6:7] = sigmoid(l[6:7], net_in_test[6:7], bias[6:7])
+    net_in_test[6:8] = sigmoid(l[6:8], net_in_test[6:8], bias[6:8])
 
     dv = (1/tau) * ((-v_test + net_in_test) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v_test = v_test + dv            
@@ -335,6 +335,6 @@ plt.legend(["first input unit", "timer 1", "event 1", "event 2", "module 1 outpu
             "timer 2", "module 2 output switch", "module 2 inhibition unit"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("Time Units")
-plt.title("Timer after learning")
+plt.title("Timers after learning")
 plt.grid('on')
 plt.show()

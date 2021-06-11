@@ -293,10 +293,11 @@ for i in range (0, data1.size):
     v[0] = 1
     net_in = weights @ v
     # Transfer functions
-    net_in[0] = 1 #sigmoid(l[0], data1[0][i] + net_in[0], bias[0])
+    net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])
     net_in[1] = piecewise_linear(net_in[1], bias[1])
     #net_in[1] = sigmoid(l[1], net_in[1], bias[1])
     net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])
+    #net_in[2:4] = piecewise_linear(net_in[2:4], bias[2:4])
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv
     v_hist_test = np.concatenate((v_hist_test,v), axis=1)

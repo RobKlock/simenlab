@@ -18,11 +18,13 @@ Output:
     
 Qs:
     What kinds of events?
+    
     What kinds of time between them?
         The duration of the first timer is the time between event A and event B
             B follows A with a probability density function 
             On any given trial, B may occur exactly a second after A
             but it could also occur subject to a probability function
+            
     How best to predict the distribution of an event?
         Timer A could have a population of ramps that have different weights
         Different ramps would hit threshold at different times 
@@ -56,4 +58,21 @@ For Friday, show several examples of the learning rules working and the a two-un
 learning
 
 The infinitude of the impossible
+"""
+
+"""
+Problems from Gabriele and Francois
+
+XOR in time
+music timers 
+what can you learn without having new questions to answer
+
+short-long interval
+need a time sequence or period detector that only goes off if its pattern
+is matched
+
+build a few patterns by hand and then decide whats needed to actually
+detect their structure
+hierarchy or perception
+inverse hierarchy of action
 """

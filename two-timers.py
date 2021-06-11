@@ -102,8 +102,8 @@ stretch = 1
 ramp_bias = 1
 lmbd = 4
 
-weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.6,    1,  0,   -.4,       0,  0,  0,  0],    # 1->2, 2->2, 3->2
+weights = np.array([[2,     0,  0,   -.45,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
+                    [.6,    1,  0,   -.45,       0,  0,  0,  0],    # 1->2, 2->2, 3->2
                     [0,     .5, 2,    0,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],      # 1->4, 2->4, 3->4
                      
@@ -222,7 +222,7 @@ for i in range (0, data1.size):
             # Drift for PL assuming a slope of 1
             A = (weights[5][4] * v[4] + (weights[5][7] * v[7]) - bias[5] + .5)
             dA = (-((A**2)/z) * dt)
-            print("timer 2 early")
+            #print("timer 2 early")
             weights[5][4] = weights[5][4] + dA  
         else:
             print("early")

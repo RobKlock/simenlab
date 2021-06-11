@@ -1,8 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Apr 30 22:23:39 2021
+Created on Fri Jun 11 12:37:51 2021
 
+@author: root
+"""
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Apr 30 22:23:39 2021
 @author: Robert Klock
 """
 
@@ -97,7 +103,7 @@ ramp_bias = 1
 lmbd = 4
 weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
                     [.7,    1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                    [0,     .5, 2,    0,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
+                    [0,     .5, 2,   -.4,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],
                      
                     [0,     0,  0,    0,      0,  0,  0, -.5],
@@ -107,18 +113,19 @@ weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1,
                          
  
 beta = 1.2
-inhibition_unit_bias = 1.25
+inhibition_unit_bias = 1.2
 third_unit_beta = 1.1
 v = np.array([np.zeros(weights.shape[0])]).T 
 v_test = np.array([np.zeros(weights.shape[0])]).T 
 v_hist = np.array([np.zeros(weights.shape[0])]).T 
 v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
 net_in = np.zeros(weights.shape[0])
-noise = 0.00
+noise = 0.0
 steps = 0 
 tau = 1
-delta_A = 0  
-l = np.full((weights.shape[0],1), lmbd) 
+delta_A = 0
+l = np.array([[lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd, lmbd]]).T   
+#l = np.full([ weights.shape[0] ], lmbd).T  
 interval_1_slope = 1
 bias = np.array([[beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias]]).T 
  
@@ -127,43 +134,41 @@ timer_learn_1 = True
 timer_learn_2 = True  
 early_1 = False
 early_2 = False
+SN1 = 0
 for i in range (0, data1.size):
     net_in = weights @ v      
     # Transfer functions
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
     net_in[1] = piecewise_linear(net_in[1], bias[1])
-    net_in[2] = sigmoid(l[2], net_in[2], bias[2])
-    #net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])    
-    net_in[3] = sigmoid(l[3], net_in[3], bias[3])
-    net_in[3] = sigmoid(l[4], net_in[4], bias[4])
+    net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])      
     net_in[5] = piecewise_linear(net_in[5], bias[5])
     net_in[6:8] = sigmoid(l[6:8], net_in[6:8], bias[6:8])
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
-    z = .99
-    
+    z = .93
     """=== Early Timer Update Rules ==="""
     early_threshold = .99
-    
-    # Force v3 to be off during learning
     if timer_learn_1 and i < round(events["pBA"]/dt):
         v[2] = 0
-
     
-    if (v[1] >= z) and timer_learn_1 == True:
+    if i == round(events["pBA"]/dt):
+        print("should stop here")
+    
+    if (v[1] >= early_threshold) and timer_learn_1 == True:
         early_1 = True
         if i < round(events["pBA"]/dt):
             # We're still in the interval, so we keep updating
             # Drift for PL assuming a slope of 1
             A = (weights[1][0] * v[0] + (weights[1][3] * v[3]) - bias[1] + .5)
             dA = (-((A**2)/z) * dt)
-    
+            
             weights[1][0] = weights[1][0] + dA  
+            # print("i: ", i, "weight: ",weights[1][0])
         else:
-            #print("early")
+            print("early")
             timer_learn_1 = False
-            #print("else: ",weights[1][0])               
+            print("else: ",weights[1][0])               
 #    if i < round(events["pBA"]/dt):
 #        timer_learn_1 = False
     #print("i: ", i, "weight: ",weights[1][0])         
@@ -180,9 +185,9 @@ for i in range (0, data1.size):
         drift = ((weights[1][0] * v[0]) - bias[1] + .5)
         d_A = drift * ((z-Vt)/Vt)
         weights[1][0] = weights[1][0] + d_A
-        #print(weights[1][0])
-        #print("late")
-        #print("new weights", weights[1][0])
+        print(weights[1][0])
+        print("late")
+        print("new weights", weights[1][0])
 ###
 
 x_axis_vals = np.arange(-2, 3, dt)
@@ -239,7 +244,6 @@ net_in_test = np.zeros(weights.shape[0])
 data1 = np.zeros((1,round(total_duration/dt)))
 data1[0][0:round(4/dt)] = .95
 
-# Test the results of the learning rule 
 for i in range (0, data1.size):
     net_in_test = weights @ v_test      
     # Transfer functions
@@ -270,19 +274,18 @@ plt.xlabel("Time Units")
 plt.title("Timer after learning")
 plt.grid('on')
 plt.show()
-
 def multiple_trials(n=5, s = 1, noise = 0):
     ramp_bias = 1
     dt = .1
     stretch_factor = s
     total_duration = round(300 / stretch_factor)
-    weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                        [0.7,  1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
-                        [0,     .5,  2,   -.4,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
+    weights = np.array([[2,     0,  0,   -.5,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
+                        [0.55,  1,  0,   -.5,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                        [0,     .5,  2,   -.5,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                         [0,     0,  1,    2,      0,  0,  0,  0],
                          
                         [0,     0,  1,    0,      2,  0,  0,-.5],
-                        [0,     0,  0,    0,     .7, 1,  0,-.5],
+                        [0,     0,  0,    0,     .6, 1,  0,-.5],
                         [0,     0,  0,    0,      0,  .5,  2, -.5],
                         [0,     0,  0,    0,      0,  0,  1, 2]]) 
     
@@ -338,12 +341,12 @@ def multiple_trials(n=5, s = 1, noise = 0):
         early_1 = False
         early_2 = False
         stretched = False if s == 1 else True
-        for j in range (0, data1.size):   
+        for i in range (0, data1.size):   
 
             net_in = weights @ v if not stretched else stretch_weights @ v  
 
             # Transfer functions
-            net_in[0] = sigmoid(l[0], data1[0][j] + net_in[0], bias[0])    
+            net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
             net_in[1] = piecewise_linear(net_in[1], bias[1])
             net_in[2:5] = sigmoid(l[2:5], net_in[2:5], bias[2:5])
             net_in[5] = piecewise_linear(net_in[5], bias[5])
@@ -352,34 +355,28 @@ def multiple_trials(n=5, s = 1, noise = 0):
             dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
             v = v + dv            
             v_hist = np.concatenate((v_hist,v), axis=1)
-            v[4:] = 0
+            
             z = .99
-            ''' Module 1 
-                Early Update Rule '''
+            ''' Module 1 Learning Rules '''
             if (v[1] >= z) and timer_learn_1 == True:
                 early_1 = True
-                if j < round(events["pBA"]/dt):
-                    # We're early
+                if i < round(events["pBA"]/dt):
+                    # We're still in the interval, so we keep updating
                     if not stretched:
-                        print("early update multiple trials no stretch")
-                        A = (weights[1][0] * v[0] + (weights[1][3] * v[3]) - bias[1] + .5)
-                        dA = (-((A**2)/z) * dt)
-                        weights[1][0] = weights[1][0] + dA  
-                        
+                        drift = (weights[1][0] - bias[1] + .5)
+                        d_A = (- (drift ** 2)/z) * dt
+                        weights[1][0] = weights[1][0] + d_A  
                     else:
-                        print("early update multiple trials")
                         drift = ((ramp_bias + stretch * (stretch_weights[1][0] - ramp_bias)) - bias[1] + .5)
                         d_A = (- (drift ** 2)/z) * dt
                         stretch_weights[1][0] = stretch_weights[1][0] + d_A  
                 else:
                     timer_learn_1 = False
-            
-            ''' Module 1 
-                Late Update Rule '''
-            if (net_in[1][-1] > 0) and (j > round(events["pBA"]/dt/s)) and (timer_learn_1 == True) and (not early_1):
+                  
+            if (net_in[1][-1] > 0) and (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
                 # If we hit our target late
                 # Do the late update
-                
+        
                 timer_learn_1 = False
                 z = net_in[0][-1]
                 z = .99
@@ -393,17 +390,15 @@ def multiple_trials(n=5, s = 1, noise = 0):
                     d_A = drift * ((z-Vt)/Vt)
                     stretch_weights[1][0] = stretch_weights[1][0] + d_A
             
-            ''' Module 2
-                Early Update Rule 
+            ''' Module 2 Learning Rules '''
             if (v[5] >= z) and timer_learn_2 == True:
                 early_2 = True
-                if i < round(events["pCA"]/dt / s):
+                if i < round(events["pCA"]/dt):
                     if not stretched:
                         # We're still in the interval, so we keep updating
-                        A = (weights[5][4] * v[4] + (weights[4][5] * v[5]) - bias[5] + .5)
-                        dA = (-((A**2)/z) * dt)
-                        weights[5][4] = weights[5][4] + dA    
-                        
+                        drift = (weights[5][4] - bias[5] + .5) 
+                        d_A = (- (drift ** 2)/z) * dt
+                        weights[5][4] = weights[5][4] + d_A      
                     else: 
                         # We're still in the interval, so we keep updating
                         drift = (weights[5][4] - bias[5] + .5) 
@@ -411,9 +406,7 @@ def multiple_trials(n=5, s = 1, noise = 0):
                         weights[5][4] = weights[5][4] + d_A  
                 else:
                     timer_learn_2 = False
-                    
-             Module 2 
-                Late Update Rule 
+                  
             if (v[5] > 0) and (i > round(events["pCA"]/dt)) and (timer_learn_2 == True) and (not early_2):
                 # If we hit our target late
                 # Do the late update
@@ -429,14 +422,15 @@ def multiple_trials(n=5, s = 1, noise = 0):
                     drift = (weights[5][4] * v[4]) - ramp_bias + .5
                     d_A = drift * ((z-Vt)/Vt)
                     weights[5][4] = weights[5][4] + d_A
-                    '''
        
         plt.plot(activation_plot_xvals, event1[0], 'k', alpha = .6)
         plt.plot(activation_plot_xvals, event2[0], 'k', alpha = .6)      
         plt.plot(activation_plot_xvals, v_hist[1,0:-1], 'b', dashes = [2,2]) 
         plt.plot(activation_plot_xvals, v_hist[5,0:-1], 'r', dashes = [2,2]) 
         plt.ylim([0,1])
-     
+        plt.show()
+        print("")
+        
         #plt.plot(v2_v1_diff, dashes = [5,5])
     plt.legend(["event 1", "event 2", "timer 1", "timer 2"], loc=0)
     plt.ylabel("activation")
@@ -444,5 +438,3 @@ def multiple_trials(n=5, s = 1, noise = 0):
     plt.title("Timer behavior multiple trials")
     plt.grid('on')
     plt.show()
-
-

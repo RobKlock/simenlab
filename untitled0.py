@@ -5,6 +5,11 @@ Created on Thu Jun 10 20:22:26 2021
 
 @author: Robert Klock
 Demonstration of two timers utilizing one-shot update rules
+
+One thing to keep in mind:
+    If you're trying initialize timer weights to make a timer late, you have
+    to keep them above a certain threshold (about .55) or else the timer
+    won't be able to turn on at all
 """
 
 import numpy as np
@@ -98,14 +103,14 @@ ramp_bias = 1
 lmbd = 4
 
 weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.7,    1,  0,   -.4,       0,  0,  0,  0],    # 1->2, 2->2, 3->2
-                    [0,     .5, 2,   -.4,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
+                    [.55,    1,  0,   -.4,       0,  0,  0,  0],    # 1->2, 2->2, 3->2
+                    [0,     .5, 2,    0,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],      # 1->4, 2->4, 3->4
                      
-                    [0,     0,  1,    0,      2,  0,  0, -.5],     # 1->5, 2->5, 3->5
-                    [0,     0,  0,    0,     .6, 1,  0, -.5],
-                    [0,     0,  0,    0,      0,  .5,  2, -.5],
-                    [0,     0,  0,    0,      0,  0,  1, 2]])         
+                    [0,     0,  1,    0,      2,  0,  0, -.4],     # 1->5, 2->5, 3->5
+                    [0,     0,  0,    0,      1,  1,  0, -.4],
+                    [0,     0,  0,    0,      0,  .5, 2, -.4],
+                    [0,     0,  0,    0,      0,  0,  1,  2]])         
 
 '''weights for three timers
 weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0,   0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
@@ -152,14 +157,14 @@ for i in range (0, data1.size):
     net_in[1] = piecewise_linear(net_in[1], bias[1])
     net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])      
     net_in[5] = piecewise_linear(net_in[5], bias[5])
-    net_in[6:8] = sigmoid(l[6:8], net_in[6:8], bias[6:8])
+    net_in[6:8] = sigmoid(l[6:7], net_in[6:7], bias[6:7])
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
-    z = .99
-    
+    z = .999
+    """ MODULE 1 """
     """=== Early Timer Update Rules ==="""
-    early_threshold = .99
+    early_threshold = .999
     
     # Force v3 to be off during learning
     if timer_learn_1 and i < round(events["pBA"]/dt):
@@ -178,19 +183,17 @@ for i in range (0, data1.size):
         else:
             print("early")
             timer_learn_1 = False
+            v[2] = 1
             print("else: ",weights[1][0])               
-#    if i < round(events["pBA"]/dt):
-#        timer_learn_1 = False
-    #print("i: ", i, "weight: ",weights[1][0])         
+   
     """=== Late Timer Update Rules ==="""                
     if (v[1] > 0) and (i > round(events["pBA"]/dt)) and (timer_learn_1 == True) and (not early_1):
-#         If we hit our target late
-#         Do the late update
+
         timer_learn_1 = False
-        z = .99
+        z = .999
         Vt = net_in[1][-1]
         v[2] = 1
-        # drift = (weights[1][0] - bias[1] + .5)
+
         """=== LOOK HERE! Timer Update Rules ==="""
         drift = ((weights[1][0] * v[0]) - bias[1] + .5)
         d_A = drift * ((z-Vt)/Vt)
@@ -198,7 +201,44 @@ for i in range (0, data1.size):
         print(weights[1][0])
         print("late")
         print("new weights", weights[1][0])
-###
+        
+    """ MODULE 2 """
+    """=== Early Timer Update Rules ==="""
+    # Force mod 2 output unit to be off during learning
+    if timer_learn_2 and i < round(events["pCA"]/dt):
+        v[6] = 0
+
+    
+    if (v[5] >= z) and timer_learn_2 == True:
+        early_2 = True
+        if i < round(events["pCA"]/dt):
+            # We're still in the interval, so we keep updating
+            # Drift for PL assuming a slope of 1
+            A = (weights[5][4] * v[4] + (weights[5][7] * v[7]) - bias[5] + .5)
+            dA = (-((A**2)/z) * dt)
+    
+            weights[5][4] = weights[5][4] + dA  
+        else:
+            print("early")
+            timer_learn_2 = False
+            print("else: ", weights[5][4])               
+   
+    """=== Late Timer Update Rules ==="""                
+    if (v[5] > 0) and (i > round(events["pCA"]/dt)) and (timer_learn_2 == True) and (not early_2):
+
+        timer_learn_2 = False
+        z = .999
+        Vt = net_in[5][-1]
+        v[6] = 1
+
+        """=== LOOK HERE! Timer Update Rules ==="""
+        drift = ((weights[5][4] * v[4]) - bias[5] + .5)
+        d_A = drift * ((z-Vt)/Vt)
+        weights[5][4] = weights[5][4] + d_A
+        print(weights[5][4])
+        print("late module 2")
+        print("new weights", weights[5][4])
+
 
 x_axis_vals = np.arange(-2, 3, dt)
 plt.figure()
@@ -262,10 +302,10 @@ for i in range (0, data1.size):
     # Transfer functions
     net_in_test[0] = sigmoid(l[0], data1[0][i] + net_in_test[0], bias[0])    
     net_in_test[1] = piecewise_linear(net_in_test[1], bias[1])
-    net_in_test[2:5] = sigmoid(l[2:5], net_in_test[2:5], bias[2:5])
+    net_in_test[2:4] = sigmoid(l[2:4], net_in_test[2:4], bias[2:4])
     
     net_in_test[5] = piecewise_linear(net_in_test[5], bias[5])
-    net_in_test[6:8] = sigmoid(l[6:8], net_in_test[6:8], bias[6:8])
+    net_in_test[6:7] = sigmoid(l[6:7], net_in_test[6:7], bias[6:7])
 
     dv = (1/tau) * ((-v_test + net_in_test) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v_test = v_test + dv            
@@ -285,7 +325,7 @@ plt.plot(activation_plot_xvals, v_hist_test[6,0:-1], dashes = [2,2])
 plt.plot(activation_plot_xvals, v_hist_test[7,0:-1], dashes = [2,2]) 
 plt.ylim([0,1])
 #plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(["first input unit", "timer 1", "event 1", "module 1 output switch",  "module 1 inhibition unit", "second input unit",
+plt.legend(["first input unit", "timer 1", "event 1", "event 2", "module 1 output switch",  "module 1 inhibition unit", "second input unit",
             "timer 2", "module 2 output switch", "module 2 inhibition unit"], loc=0)
 plt.ylabel("activation")
 plt.xlabel("Time Units")

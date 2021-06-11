@@ -155,9 +155,12 @@ for i in range (0, data1.size):
     # Transfer functions
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
     net_in[1] = piecewise_linear(net_in[1], bias[1])
-    net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])      
+    net_in[2] = piecewise_linear(net_in[2], bias[2])
+    net_in[3] = piecewise_linear(net_in[3], bias[3])
+    net_in[4] = sigmoid(l[4], net_in[4], bias[4])      
     net_in[5] = piecewise_linear(net_in[5], bias[5])
-    net_in[6:8] = sigmoid(l[6:7], net_in[6:7], bias[6:7])
+    net_in[6] = sigmoid(l[6], net_in[6], bias[6])
+    net_in[7] = sigmoid(l[7], net_in[7], bias[7])
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
@@ -169,6 +172,7 @@ for i in range (0, data1.size):
     # Force v3 to be off during learning
     if timer_learn_1 and i < round(events["pBA"]/dt):
         v[2] = 0
+        v[4] = 0
 
     
     if (v[1] >= z) and timer_learn_1 == True:
@@ -201,11 +205,11 @@ for i in range (0, data1.size):
         print(weights[1][0])
         print("late")
         print("new weights", weights[1][0])
-        
+    
     """ MODULE 2 """
     """=== Early Timer Update Rules ==="""
     # Force mod 2 output unit to be off during learning
-    if timer_learn_2 and i < round(events["pCA"]/dt):
+    if timer_learn_2 and i < round(events["pCA"]/dt) and v[2] > .92 :
         v[6] = 0
 
     

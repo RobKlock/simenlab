@@ -76,3 +76,31 @@ detect their structure
 hierarchy or perception
 inverse hierarchy of action
 """
+
+"""
+Generate a sequence of events, an alphabet of symbols
+Probabilities of each event following each other. Matrix of events:
+        A        B              C
+    A        PDE for B|A   PDE for C_t|A_0
+    B PDE A|B    
+    C
+
+Deal with a world where things are very predictable (B always occurs after A)
+or not predictable (exponential)
+See iPad notes for probability stuff
+Can have a perceptual module that uses backprop to decide which events are best
+to keep track of/pay attention to/learn
+"""
+
+import sys
+sys.path.append(".")
+from timer_module import TimerModule as TM
+
+# Timer Event:
+
+newTimer = TM()
+
+timer_weight = newTimer.getTimerWeight()
+
+print(timer_weight)
+

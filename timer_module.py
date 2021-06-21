@@ -32,10 +32,12 @@ class TimerModule:
         if not isinstance(timerModules, list):
             raise TypeError('Timer modules should be in a list')
         else:
+            module_count = len(timerModules)
+            weights = np.kron(np.eye(module_count), np.ones((4,4)))
             idx = (0,1)
-            for i in range (0, len(timerModules)):
-                t = np.kron(np.eye(4), np.ones((4,4)))
-                print(t)
-                t[0+(4*i):0+(4*(i+1)), 0+(4*i):0+(4*(i+1))] = np.array([[2,2,2,2],[2,2,2,2],[2,2,2,2],[2,2,2,2]])
-                print(t)
+            for i in range (0, module_count): 
+                # t = np.kron(np.eye(module_count), np.ones((4,4)))
+               
+                weights[0+(4*i):0+(4*(i+1)), 0+(4*i):0+(4*(i+1))] = timerModules[i] #np.array([[2,2,2,2],[2,2,2,2],[2,2,2,2],[2,2,2,2]])
+                print(weights)
                 # for j in range (0, len(timerModules)):

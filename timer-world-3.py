@@ -93,14 +93,20 @@ to keep track of/pay attention to/learn
 """
 
 import sys
+import numpy as np
 sys.path.append(".")
 from timer_module import TimerModule as TM
+ZEROS_BLOCK = np.zeros((4,4))
+MODULE_COUNT = 0
 
-# Timer Event:
-
-newTimer = TM()
-
-timer_weight = newTimer.getTimerWeight()
-
+# Timer EventZ
+TM1 = TM()
+TM2 = TM(4)
+timers = [TM1.timerBlock(), TM2.timerBlock()]
+TM.buildWeightMarix(timers)
+weights = np.block([[TM1.timerBlock(), ZEROS_BLOCK],
+                    [ZEROS_BLOCK, TM2.timerBlock()]])
+timer_weight = TM2.timerWeight()
+print(TM1.timerBlock())
 print(timer_weight)
 

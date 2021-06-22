@@ -28,7 +28,7 @@ class TimerModule:
     def timerBlock(self):
         return self.block
     
-    def buildWeightMarix(timerModules):
+    def buildWeightMatrix(timerModules):
         if not isinstance(timerModules, list):
             raise TypeError('Timer modules should be in a list')
         else:
@@ -40,4 +40,22 @@ class TimerModule:
                
                 weights[0+(4*i):0+(4*(i+1)), 0+(4*i):0+(4*(i+1))] = timerModules[i] #np.array([[2,2,2,2],[2,2,2,2],[2,2,2,2],[2,2,2,2]])
                 print(weights)
+                # for j in range (0, len(timerModules)):
+                 
+    def buildWeightMatrixFromModules(timerModules):
+        if not isinstance(timerModules, list):
+            raise TypeError('Timer modules should be in a list')
+        else:
+            module_count = len(timerModules)
+            weights = np.kron(np.eye(module_count), np.ones((4,4)))
+            idx = (0,1)
+            for i in range (0, module_count): 
+                # t = np.kron(np.eye(module_count), np.ones((4,4)))
+               
+                weights[0+(4*i):0+(4*(i+1)), 0+(4*i):0+(4*(i+1))] = timerModules[i].timerBlock() #np.array([[2,2,2,2],[2,2,2,2],[2,2,2,2],[2,2,2,2]])
+                # we only add connecting weight between modules if there are more than 1
+                # and we only do it n-1 times
+                if (module_count - i > 1):
+                    weights[4+(4*i), 2+(4*i)] = 1
+        return weights
                 # for j in range (0, len(timerModules)):

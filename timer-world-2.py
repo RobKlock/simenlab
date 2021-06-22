@@ -135,7 +135,7 @@ for i in range (0, data1.size):
     net_in[2] = sigmoid(l[2], net_in[2], bias[2])
     #net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])    
     net_in[3] = sigmoid(l[3], net_in[3], bias[3])
-    net_in[3] = sigmoid(l[4], net_in[4], bias[4])
+    net_in[4] = sigmoid(l[4], net_in[4], bias[4])
     net_in[5] = piecewise_linear(net_in[5], bias[5])
     net_in[6:8] = sigmoid(l[6:8], net_in[6:8], bias[6:8])
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random

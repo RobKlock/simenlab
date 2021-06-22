@@ -90,6 +90,13 @@ or not predictable (exponential)
 See iPad notes for probability stuff
 Can have a perceptual module that uses backprop to decide which events are best
 to keep track of/pay attention to/learn
+
+Questions for 6/22
+Do we just start a timer at the beginning of time that learns until the first event happens,
+then start again?
+
+Theres much more complexity for rewriting this dynamically, like having all arrays
+grow accordingly
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -153,52 +160,72 @@ def round_up(n, decimals=0):
     multiplier = 10 ** decimals
     return math.ceil(n * multiplier) / multiplier
 
+def build_new_weights(modules):
+    module_count = len(modules)
+    print("modcount: ", module_count)
+    
 ZEROS_BLOCK = np.zeros((4,4))
 MODULE_COUNT = 0
 
 # Timer EventZ
 TM1 = TM(.7)
+MODULE_COUNT += 1
 TM2 = TM(.7)
+MODULE_COUNT += 1
 timers = [TM1.timerBlock(), TM2.timerBlock()]
-TM.buildWeightMarix(timers)
+TM.buildWeightMatrix(timers)
 weights = np.block([[TM1.timerBlock(), ZEROS_BLOCK],
                     [ZEROS_BLOCK, TM2.timerBlock()]])
+
+zs = np.repeat(ZEROS_BLOCK, MODULE_COUNT, axis=1)
+weights2 = np.vstack((weights,np.array([[9,9,9,9,9,9,9,9]])))
 timer_weight = TM2.timerWeight()
 print(TM1.timerBlock())
 print(timer_weight)
+modules = list()
+modules.append(TM1)
+modules.append(TM2)
+print(TM.buildWeightMatrixFromModules(modules))
 
+for i in range(0,4):
+    modules.append(TM())
+f = TM.buildWeightMatrixFromModules(modules)
 events = {
         "pBA": np.random.normal(100, 5, 1)[0],
         "pCA": np.random.normal(200, 5, 1)[0],
         "pCB": np.random.normal(300, 5, 1)[0],
         "pBC": np.random.normal(400, 5, 1)[0]}
 
-'''
-OLD CODE
-'''
-# Setup our time series data, which is a series of zeros with two batches of 1's from
-# 20-30 and 50-60
+
+
+    
+# OLD CODE
+
 dt = .1
 total_duration = 300
-''' Establish Events '''
+stretch = 1
+ramp_bias = 1
+lmbd = 4    
+beta = 1.2
+inhibition_unit_bias = 1.25
+third_unit_beta = 1.1
+
 data1 = np.zeros((1,round(total_duration/dt)))
 data1[0][0:round(4/dt)] = 1
+event_arr = np.zeros((1, round(total_duration/dt)))
+event_arr[0][round(events["pBA"]/dt)] = 1
+event_arr[0][round(events["pCA"]/dt)] = 1
+
 event1 = np.zeros((1,round(total_duration/dt)))
 event1[0][round(events["pBA"]/dt)] = 1
 event2 = np.zeros((1,round(total_duration/dt)))
 event2[0][round(events["pCA"]/dt)] = 1
-
-stretch = 1
-ramp_bias = 1
-lmbd = 4    
                          
-beta = 1.2
-inhibition_unit_bias = 1.25
-third_unit_beta = 1.1
 v = np.array([np.zeros(weights.shape[0])]).T 
 v_test = np.array([np.zeros(weights.shape[0])]).T 
 v_hist = np.array([np.zeros(weights.shape[0])]).T 
 v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
+
 net_in = np.zeros(weights.shape[0])
 noise = 0.00
 steps = 0 
@@ -214,6 +241,7 @@ timer_learn_2 = True
 early_1 = False
 early_2 = False
 for i in range (0, data1.size):
+    
     net_in = weights @ v      
     # Transfer functions
     net_in[0] = sigmoid(l[0], data1[0][i] + net_in[0], bias[0])    
@@ -221,7 +249,7 @@ for i in range (0, data1.size):
     net_in[2] = sigmoid(l[2], net_in[2], bias[2])
     #net_in[2:4] = sigmoid(l[2:4], net_in[2:4], bias[2:4])    
     net_in[3] = sigmoid(l[3], net_in[3], bias[3])
-    net_in[3] = sigmoid(l[4], net_in[4], bias[4])
+    net_in[4] = sigmoid(l[4], net_in[4], bias[4])
     net_in[5] = piecewise_linear(net_in[5], bias[5])
     net_in[6:8] = sigmoid(l[6:8], net_in[6:8], bias[6:8])
     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
@@ -323,7 +351,7 @@ v_test = np.array([np.zeros(weights.shape[0])]).T
 v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
 net_in_test = np.zeros(weights.shape[0])
 data1 = np.zeros((1,round(total_duration/dt)))
-data1[0][0:round(4/dt)] = .95
+data1[0][0:round(4/dt)] = 1
 
 # Test the results of the learning rule 
 for i in range (0, data1.size):

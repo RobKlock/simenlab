@@ -28,7 +28,7 @@ class TimerModule:
     def timerBlock(self):
         return self.block
     
-    def buildWeightMatrix(timerModules):
+    def buildWeightMatrixFromWeights(timerModules):
         if not isinstance(timerModules, list):
             raise TypeError('Timer modules should be in a list')
         else:
@@ -59,3 +59,17 @@ class TimerModule:
                     weights[4+(4*i), 2+(4*i)] = 1
         return weights
                 # for j in range (0, len(timerModules)):
+    
+    def updateV(v):
+        # Expands v for a single additional module
+        new_v = np.vstack((v,[[0], [0], [0], [0]]))
+        return new_v
+    
+    def updateVHist(v_hist):
+        # Expands v_hist for a single additional module
+        history = v_hist[0].size
+        prior_activity = np.array([np.zeros(history)])
+        
+        return np.concatenate((v_hist, prior_activity), axis=0)
+        
+                

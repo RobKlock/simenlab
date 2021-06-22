@@ -97,6 +97,8 @@ then start again?
 
 Theres much more complexity for rewriting this dynamically, like having all arrays
 grow accordingly
+
+Making stuff like v_hist grow dyanmically will be tricky
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -173,20 +175,19 @@ MODULE_COUNT += 1
 TM2 = TM(.7)
 MODULE_COUNT += 1
 timers = [TM1.timerBlock(), TM2.timerBlock()]
-TM.buildWeightMatrix(timers)
+TM.buildWeightMatrixFromWeights(timers)
 weights = np.block([[TM1.timerBlock(), ZEROS_BLOCK],
                     [ZEROS_BLOCK, TM2.timerBlock()]])
 
 zs = np.repeat(ZEROS_BLOCK, MODULE_COUNT, axis=1)
 weights2 = np.vstack((weights,np.array([[9,9,9,9,9,9,9,9]])))
 timer_weight = TM2.timerWeight()
-print(TM1.timerBlock())
-print(timer_weight)
+#print(TM1.timerBlock())
+#print(timer_weight)
 modules = list()
 modules.append(TM1)
 modules.append(TM2)
-print(TM.buildWeightMatrixFromModules(modules))
-
+#print(TM.buildWeightMatrixFromModules(modules))
 for i in range(0,4):
     modules.append(TM())
 f = TM.buildWeightMatrixFromModules(modules)
@@ -222,8 +223,10 @@ event2 = np.zeros((1,round(total_duration/dt)))
 event2[0][round(events["pCA"]/dt)] = 1
                          
 v = np.array([np.zeros(weights.shape[0])]).T 
+print(TM.updateV(v))
 v_test = np.array([np.zeros(weights.shape[0])]).T 
 v_hist = np.array([np.zeros(weights.shape[0])]).T 
+print(TM.updateVHist(v_hist))
 v_hist_test = np.array([np.zeros(weights.shape[0])]).T 
 
 net_in = np.zeros(weights.shape[0])
@@ -256,7 +259,8 @@ for i in range (0, data1.size):
     v = v + dv            
     v_hist = np.concatenate((v_hist,v), axis=1)
     z = .99
-    
+    if i == 10:
+        print(TM.updateVHist(v_hist))
     """=== Early Timer Update Rules ==="""
     early_threshold = .99
     

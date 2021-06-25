@@ -11,6 +11,7 @@ import numpy as np
 
 class TimerModule:
     ZEROS_BLOCK = np.zeros((4,4))
+    BIAS_BLOCK = np.array([1.2, 1, 1.2, 1.25])
     def __init__(self,timer_weight = 1):
         self.timer_weight=timer_weight
         block = np.array([[2, 0, 0, -.4],
@@ -71,5 +72,14 @@ class TimerModule:
         prior_activity = np.array([np.zeros(history)])
         
         return np.concatenate((v_hist, prior_activity), axis=0)
-        
+    
+    def updateL(l, lmbd):
+        # Expands l for a single additional module
+        add_l = np.full((4,1), lmbd)
+        return np.concatenate((l, np.array(add_l)))
+    
+    def updateBias(b):
+        add_b = b[:4]
+        return np.concatenate((b, add_b))
+    # swd updateBias(bias)
                 

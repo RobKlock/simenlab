@@ -94,6 +94,9 @@ to keep track of/pay attention to/learn
 Questions for 6/22
 Do we just start a timer at the beginning of time that learns until the first event happens,
 then start again?
+    - The beginning of the sequence is the first event, so a timer goes off
+Start to make unique switches for common sequences 
+
 
 Theres much more complexity for rewriting this dynamically, like having all arrays
 grow accordingly
@@ -235,6 +238,7 @@ steps = 0
 tau = 1
 delta_A = 0  
 l = np.full((weights.shape[0],1), lmbd) 
+print(TM.updateL(l, lmbd))
 interval_1_slope = 1
 bias = np.array([[beta, ramp_bias, beta, inhibition_unit_bias, beta, ramp_bias, beta, inhibition_unit_bias]]).T 
  

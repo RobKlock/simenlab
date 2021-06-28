@@ -95,7 +95,7 @@ class TimerModule:
         print(variance)
         sigma = math.sqrt(variance)
         x = np.linspace(mu - 3*sigma, mu + 3*sigma, 100)
-        big_grid = np.arange(-10,30,delta)
+        big_grid = np.arange(-5,60,delta)
         large_x = np.linspace(-1, 50,100)
         
         norm1 = stats.norm(mu, sigma)
@@ -106,12 +106,16 @@ class TimerModule:
         print("Integral over norm1 pdf: "+str(np.trapz(pdf1, large_x)))
         print("Sum of norm1 pmf2: "+str(sum(pmf1)))
         
-        norm2 = stats.norm(mu + 10, sigma)
+        norm2 = stats.norm(np.random.randint(10,20), sigma)
         plt.plot(x, norm2.pdf(large_x))
         pdf2 = norm2.pdf(large_x) 
         pmf2 = norm2.pdf(big_grid) * delta
         print("Integral over norm2 pdf: "+str(np.trapz(pdf2, large_x)))
         print("Sum of norm2 pmf2: "+str(sum(pmf2))+"\n")
+        
+        print("Integral over sum pdf: "+str(np.trapz(pdf1+pdf2, large_x)))
+        print("Integral over normed sum pdf: "+str(np.trapz((pdf1+pdf2)/2, large_x)))
+
         
         #plt.plot(x, stats.norm.pdf(x, mu + 10, sigma))
         #plt.plot(x, stats.expon.pdf(x, 8, sigma))
@@ -131,7 +135,7 @@ class TimerModule:
         conv_pdf = conv_pmf/delta
         print("Integration of convoluted pdf: " + str(np.trapz(conv_pdf, big_grid)))
         
-        
+        plt.figure()
         plt.plot(big_grid,pdf1, label='Uniform')
         plt.plot(big_grid,pdf2, label='Gaussian')
         plt.plot(big_grid,conv_pdf, label='Sum')

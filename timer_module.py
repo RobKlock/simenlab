@@ -8,8 +8,13 @@ Created on Tue Jun 15 13:14:22 2021
 Class defining a timer module
 """
 import numpy as np
+import matplotlib.pyplot as plt
+import math
+import scipy.stats as stats
+from scipy import signal
 
 class TimerModule:
+    
     ZEROS_BLOCK = np.zeros((4,4))
     BIAS_BLOCK = np.array([1.2, 1, 1.2, 1.25])
     def __init__(self,timer_weight = 1):
@@ -81,5 +86,56 @@ class TimerModule:
     def updateBias(b):
         add_b = b[:4]
         return np.concatenate((b, add_b))
-    # swd updateBias(bias)
+   
+    def getProbabilities(event_count):
+        delta = 1e-4
+        mu = np.random.randint(10,20)
+        print(mu)
+        variance = np.random.randint(5, 10)
+        print(variance)
+        sigma = math.sqrt(variance)
+        x = np.linspace(mu - 3*sigma, mu + 3*sigma, 100)
+        big_grid = np.arange(-10,30,delta)
+        large_x = np.linspace(-1, 50,100)
+        
+        norm1 = stats.norm(mu, sigma)
+        plt.plot(x, norm1.pdf(large_x))
+        pdf1 = norm1.pdf(large_x)
+        # Define a discretized probability mass function to convolude later on 
+        pmf1 = norm1.pdf(big_grid)*delta
+        print("Integral over norm1 pdf: "+str(np.trapz(pdf1, large_x)))
+        print("Sum of norm1 pmf2: "+str(sum(pmf1)))
+        
+        norm2 = stats.norm(mu + 10, sigma)
+        plt.plot(x, norm2.pdf(large_x))
+        pdf2 = norm2.pdf(large_x) 
+        pmf2 = norm2.pdf(big_grid) * delta
+        print("Integral over norm2 pdf: "+str(np.trapz(pdf2, large_x)))
+        print("Sum of norm2 pmf2: "+str(sum(pmf2))+"\n")
+        
+        #plt.plot(x, stats.norm.pdf(x, mu + 10, sigma))
+        #plt.plot(x, stats.expon.pdf(x, 8, sigma))
+        plt.figure()
+        plt.plot(large_x, (stats.norm.pdf(large_x, mu, sigma) + stats.norm.pdf(large_x, mu + 10, sigma)) / 2)
+        plt.show()
+        
+        conv_pdf = signal.fftconvolve(pdf1,pdf2,'same')
+        print("Integral over convoluted pdf: "+str(np.trapz(conv_pdf, large_x)))
+        
+        
+        conv_pmf = signal.fftconvolve(pmf1,pmf2,'same')
+        print("Sum of convoluted pmf: "+str(sum(conv_pmf)))
+        
+        pdf1 = pmf1/delta
+        pdf2 = pmf2/delta
+        conv_pdf = conv_pmf/delta
+        print("Integration of convoluted pdf: " + str(np.trapz(conv_pdf, big_grid)))
+        
+        
+        plt.plot(big_grid,pdf1, label='Uniform')
+        plt.plot(big_grid,pdf2, label='Gaussian')
+        plt.plot(big_grid,conv_pdf, label='Sum')
+        plt.legend(loc='best'), plt.suptitle('PDFs')
+        plt.show()
+        
                 

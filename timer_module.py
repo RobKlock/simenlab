@@ -90,6 +90,7 @@ class TimerModule:
     def getProbabilities(event_count):
         delta = 1e-4
         mu = np.random.randint(10,20)
+        mu2 = np.random.randint(10,20)
         print(mu)
         variance = np.random.randint(5, 10)
         print(variance)
@@ -98,7 +99,8 @@ class TimerModule:
         big_grid = np.arange(-5,60,delta)
         large_x = np.linspace(-1, 50,100)
         
-        norm1 = stats.norm(mu, sigma)
+        norm1 = stats.norm(mu, 8)
+        cdf1 = stats.norm.cdf(large_x, mu, sigma)
         plt.plot(x, norm1.pdf(large_x))
         pdf1 = norm1.pdf(large_x)
         # Define a discretized probability mass function to convolude later on 
@@ -106,7 +108,8 @@ class TimerModule:
         print("Integral over norm1 pdf: "+str(np.trapz(pdf1, large_x)))
         print("Sum of norm1 pmf2: "+str(sum(pmf1)))
         
-        norm2 = stats.norm(np.random.randint(10,20), sigma)
+        norm2 = stats.norm(mu2, sigma)
+        cdf2 = stats.norm.cdf(large_x, mu2, sigma)
         plt.plot(x, norm2.pdf(large_x))
         pdf2 = norm2.pdf(large_x) 
         pmf2 = norm2.pdf(big_grid) * delta
@@ -115,7 +118,23 @@ class TimerModule:
         
         print("Integral over sum pdf: "+str(np.trapz(pdf1+pdf2, large_x)))
         print("Integral over normed sum pdf: "+str(np.trapz((pdf1+pdf2)/2, large_x)))
-
+        summed_pdf = (pdf1+pdf2)/2
+        summed_cdf = stats.norm.cdf(pdf1) # calculate the cdf - also discrete
+        
+        plt.figure("cdfs")
+        # plot the cdf
+        plt.plot(large_x, cdf1)
+        plt.show()
+        
+        plt.figure("cdf2")
+        # plot the cdf
+        plt.plot(large_x, cdf2)
+        plt.show()
+        
+        plt.figure("cdf sum")
+        # plot the cdf
+        plt.plot(large_x, (cdf1 + cdf2)/2)
+        plt.show()
         
         #plt.plot(x, stats.norm.pdf(x, mu + 10, sigma))
         #plt.plot(x, stats.expon.pdf(x, 8, sigma))

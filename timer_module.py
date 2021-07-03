@@ -9,9 +9,10 @@ Class defining a timer module
 """
 import numpy as np
 import matplotlib.pyplot as plt
-import math
+from math import *
 import scipy.stats as stats
 from scipy import signal
+from scipy.optimize import minimize 
 
 class TimerModule:
     
@@ -86,7 +87,17 @@ class TimerModule:
     def updateBias(b):
         add_b = b[:4]
         return np.concatenate((b, add_b))
-   
+ 
+    def generate_sample(x,mu,sigma,y):
+        x_start = .5
+        
+        CDF = lambda x: (1/2)*(1 + erf((x - mu)/(sigma*(sqrt(2)))))
+        func = lambda x: (CDF(x) - y)**2
+
+        result = minimize(func, x_start)
+        print(result.x)
+        print(result.fun)
+    
     def getProbabilities(event_count):
         delta = 1e-4
         mu = np.random.randint(10,20)

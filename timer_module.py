@@ -164,7 +164,7 @@ class TimerModule:
         pdf1 = pmf1/delta
         pdf2 = pmf2/delta
         conv_pdf = conv_pmf/delta
-        print("Integration of convoluted pdf: " + str(np.trapz(conv_pdf, big_grid)))
+        #print("Integration of convoluted pdf: "   str(np.trapz(conv_pdf, big_grid)))
         
         plt.figure()
         plt.plot(big_grid,pdf1, label='Uniform')
@@ -184,11 +184,7 @@ class TimerModule:
  
         Algorithm:
             1) Generate a uniform rand, y
-            2) Minimize the difference over x between y and normcdf(x)
-                 i) Make a function handle for a function that computes
-                    y - normcdf(x)
-                ii) y will be a constant that is fed in
-                iii) I guess I will use fminsearch as my first minimization program
+            2) Use PPF to draw inverse sample from CDF
         """
         
        # data = np.zeros((num_samples,1))
@@ -198,7 +194,7 @@ class TimerModule:
         # Mixture distribution weights
         loc1 = np.random.randint(10,20)
         loc2 = np.random.randint(10,20)
-        print(loc1)
+        #print(loc1)
         scale1 = math.sqrt(np.random.randint(5, 10))
         scale2 = math.sqrt(np.random.randint(5, 10))
         x1_rand = np.random.normal(loc1, scale1, 1000)
@@ -206,29 +202,57 @@ class TimerModule:
         plt.hist(x1_rand, bins=20)
         plt.xlabel('X')
         plt.ylabel('Norm1')
-        
+        plt.title('Normal Distribution 1')
+                  
         plt.figure()
         plt.hist(x2_rand, bins=20)
         plt.xlabel('X')
         plt.ylabel('Norm2')
+        plt.title('Normal Distribution 2')
         
+        # Refit loc and scales for distributions
         loc, scale = stats.norm.fit(x1_rand)
+        loc2, scale2 = stats.norm.fit(x2_rand)
         
         # Linearly spaced values of x
         x = np.linspace(start = 0, stop = 30, num = 100)
         
-        # PDF for x
+        # PDF for dist1
         pdf1 = stats.norm.pdf(x, loc=loc, scale=scale)
         plt.figure()
         # Plot
         plt.plot(x, pdf1, color='black')
         plt.xlabel('X')
         plt.ylabel('PDF1')
+        plt.title('PDF for Distribution 1')
+        
+        # PDF for dist2
+        pdf2 = stats.norm.pdf(x, loc=loc2, scale=scale2)
+        plt.figure()
+        # Plot
+        plt.plot(x, pdf2, color='black')
+        plt.xlabel('X')
+        plt.ylabel('PDF2')
+        plt.title('PDF for Distribution 2')
+        
+        # Wsum PDF
+        sum_pdf = (0.8 * pdf1) + (0.2 * pdf2)
+        plt.figure()
+        # Plot
+        plt.plot(x, sum_pdf, color='black')
+        plt.xlabel('X')
+        plt.ylabel('sum_pdf')
+        plt.title('PDF for sum_pdf')
+
+    #10000 samples should look more like the PPF
+    # Solvers vs minimizers
         
         # CDFs
         cdf1 = stats.norm.cdf(x, loc=loc, scale=scale)
+        cdf2 = stats.norm.cdf(x, loc=loc2, scale=scale2)
         # Use the CDF inverse to calculate the likelihood of that value or less
         cdf_at_10 = stats.norm.cdf(10, loc=loc, scale=scale)
+        cdf2_at_10 = stats.norm.cdf(10, loc=loc2, scale=scale2)
         
         
         plt.figure()
@@ -238,22 +262,70 @@ class TimerModule:
         plt.hlines(cdf_at_10, -5, 10, linestyle=':')
         plt.xlabel('X')
         plt.ylabel('CDF1 = P(x<=X)')
+        plt.title('CDF for Distribution 1')
+        
+        plt.figure()
+        # Plot
+        plt.plot(x, cdf2, color='black')
+        plt.vlines(10, 0, cdf2_at_10, linestyle=':')
+        plt.hlines(cdf2_at_10, -5, 10, linestyle=':')
+        plt.xlabel('X')
+        plt.ylabel('CDF2 = P(x<=X)')
+        plt.title('CDF for Distribution 2')
+        
+        plt.figure()
+        # Plot
+        sum_cdf = (0.8 * cdf1) + (0.2 * cdf2)
+        plt.plot(x, sum_cdf, color='black')
+        #plt.vlines(10, 0, cdf2_at_10, linestyle=':')
+        #plt.hlines(cdf2_at_10, -5, 10, linestyle=':')
+        plt.xlabel('X')
+        plt.ylabel('Sum CDF')
+        plt.title('CDF SUM')
         
         # Percent point function
         # instead of minimizing, we could just use ppf?
         cdf1_ = np.linspace(start=0, stop=1, num=10000)
+        cdf2_ = np.linspace(start=0, stop=1, num=10000)
         x_ = stats.norm.ppf(cdf1_, loc=loc, scale=scale)
+        x2_ = stats.norm.ppf(cdf2_, loc=loc2, scale=scale2)
+        sum_ppf_ = (0.8 * x_) + (.2 * x2_)
         
         plt.figure()
         # Plot
-        plt.plot(x_, cdf1_, color='black')
+        plt.plot(cdf1_, x_, color='black')
         random_sample = np.random.rand()
         cdf1_inv_sample = stats.norm.ppf(random_sample, loc=loc, scale=scale)
-        plt.vlines(cdf1_inv_sample, 0, random_sample, linestyle=':')
-        plt.hlines(random_sample, -5, cdf1_inv_sample, linestyle=':')
+        cdf_min = stats.norm.ppf(0.001, loc=loc, scale=scale)
+        #print(random_sample)
+        #print(cdf1_inv_sample)
+        plt.vlines(random_sample, cdf_min, cdf1_inv_sample, linestyle=':')
+        plt.hlines(cdf1_inv_sample, 0, random_sample, linestyle=':')
         plt.xlabel('X')
         plt.ylabel('PPF1')
+        plt.title('PPF for Distribution 1')
         
+        plt.figure()
+        # Plot
+        plt.plot(cdf1_, sum_ppf_, color='black')
+        random_sample2 = np.random.rand()
+        cdf_sum_inv_sample = (0.8 * stats.norm.ppf(random_sample2, loc=loc, scale=scale)) + (0.2 * stats.norm.ppf(random_sample2, loc=loc2, scale=scale2))
+        print(random_sample2)
+        print(cdf_sum_inv_sample)
+        plt.vlines(random_sample2, 0, cdf_sum_inv_sample, linestyle=':')
+        plt.hlines(cdf_sum_inv_sample, 0, random_sample2, linestyle=':')
+        plt.xlabel('X')
+        plt.ylabel('PPFs')
+        plt.title('Weighted Sum PPF')
+        
+        ten_thousand_samples = np.random.rand(1000)
+        plt.figure()
+        for sample in ten_thousand_samples:
+            plt.plot((0.8 * stats.norm.ppf(sample, loc=loc, scale=scale)) + (0.2 * stats.norm.ppf(sample, loc=loc2, scale=scale2)), sample, 'b.')
+        
+        plt.xlabel('X')
+        plt.ylabel('Y')
+        plt.title('Inverse of samples')
         
         #cdf1 = stats.norm.cdf(num_samples, mu, sigma)
         #pdf1 = norm1.pdf(x)

@@ -102,6 +102,9 @@ Theres much more complexity for rewriting this dynamically, like having all arra
 grow accordingly
 
 Making stuff like v_hist grow dyanmically will be tricky
+
+Initialize events from distribution at the beginning of world
+
 """
 import numpy as np
 import matplotlib.pyplot as plt

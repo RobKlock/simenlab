@@ -173,7 +173,7 @@ class TimerModule:
         plt.legend(loc='best'), plt.suptitle('PDFs')
         plt.show()
         
-    def getSamples(num_samples = 100):
+    def getSamples(num_samples = 1):
         """
         A function that generates random times from a probability 
         distribution that is the weighted sum of exponentials and Gaussians.
@@ -191,25 +191,81 @@ class TimerModule:
                 iii) I guess I will use fminsearch as my first minimization program
         """
         
-        data = np.zeros((num_samples,1))
-        y = np.random.rand(num_samples,1)
-        x = np.linspace(norm.ppf(0.01),
-                        norm.ppf(0.99), 100)
+       # data = np.zeros((num_samples,1))
+       # y = np.random.rand(num_samples,1)
+       
+    
         # Mixture distribution weights
-        mu = np.random.randint(10,20)
-        mu2 = np.random.randint(10,20)
-        print(mu)
-        sigma = math.sqrt(np.random.randint(5, 10))
-        norm1 = stats.norm(mu, sigma)
-        norm2 = stats.norm(mu2, sigma)
-        cdf1 = stats.norm.cdf(num_samples, mu, sigma)
-        pdf1 = norm1.pdf(x)
+        loc1 = np.random.randint(10,20)
+        loc2 = np.random.randint(10,20)
+        print(loc1)
+        scale1 = math.sqrt(np.random.randint(5, 10))
+        scale2 = math.sqrt(np.random.randint(5, 10))
+        x1_rand = np.random.normal(loc1, scale1, 1000)
+        x2_rand = np.random.normal(loc2, scale2, 1000)
+        plt.hist(x1_rand, bins=20)
+        plt.xlabel('X')
+        plt.ylabel('Norm1')
+        
+        plt.figure()
+        plt.hist(x2_rand, bins=20)
+        plt.xlabel('X')
+        plt.ylabel('Norm2')
+        
+        loc, scale = stats.norm.fit(x1_rand)
+        
+        # Linearly spaced values of x
+        x = np.linspace(start = 0, stop = 30, num = 100)
+        
+        # PDF for x
+        pdf1 = stats.norm.pdf(x, loc=loc, scale=scale)
+        plt.figure()
+        # Plot
+        plt.plot(x, pdf1, color='black')
+        plt.xlabel('X')
+        plt.ylabel('PDF1')
+        
+        # CDFs
+        cdf1 = stats.norm.cdf(x, loc=loc, scale=scale)
+        # Use the CDF inverse to calculate the likelihood of that value or less
+        cdf_at_10 = stats.norm.cdf(10, loc=loc, scale=scale)
+        
+        
+        plt.figure()
+        # Plot
+        plt.plot(x, cdf1, color='black')
+        plt.vlines(10, 0, cdf_at_10, linestyle=':')
+        plt.hlines(cdf_at_10, -5, 10, linestyle=':')
+        plt.xlabel('X')
+        plt.ylabel('CDF1 = P(x<=X)')
+        
+        # Percent point function
+        # instead of minimizing, we could just use ppf?
+        cdf1_ = np.linspace(start=0, stop=1, num=10000)
+        x_ = stats.norm.ppf(cdf1_, loc=loc, scale=scale)
+        
+        plt.figure()
+        # Plot
+        plt.plot(x_, cdf1_, color='black')
+        random_sample = np.random.rand()
+        cdf1_inv_sample = stats.norm.ppf(random_sample, loc=loc, scale=scale)
+        plt.vlines(cdf1_inv_sample, 0, random_sample, linestyle=':')
+        plt.hlines(random_sample, -5, cdf1_inv_sample, linestyle=':')
+        plt.xlabel('X')
+        plt.ylabel('PPF1')
+        
+        
+        #cdf1 = stats.norm.cdf(num_samples, mu, sigma)
+        #pdf1 = norm1.pdf(x)
        # plt.plot(x, pdf1)
-        plt.plot(x, norm1.pdf(x))
-        plt.plot(x, norm.cdf(x))
+        #plt.plot(x, norm1.pdf(x))
+        #plt.plot(x, norm.cdf(x))
         #plt.plot(x, norm1)
     
-        cdf2 = stats.norm.cdf(x, mu2, sigma)
+        
+
+                        
+        #cdf2 = stats.norm.cdf(x, mu2, sigma)
         #plt.plot(x, cdf2)
         w1 = 0.2; 
         w2 = 0.8;

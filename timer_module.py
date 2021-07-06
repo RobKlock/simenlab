@@ -9,10 +9,11 @@ Class defining a timer module
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from math import *
+import math
 import scipy.stats as stats
 from scipy import signal
 from scipy.optimize import minimize 
+from scipy.stats import norm
 
 class TimerModule:
     
@@ -172,4 +173,53 @@ class TimerModule:
         plt.legend(loc='best'), plt.suptitle('PDFs')
         plt.show()
         
+    def getSamples(num_samples = 100):
+        """
+        A function that generates random times from a probability 
+        distribution that is the weighted sum of exponentials and Gaussians.
+
+        To get a random sample from just one normal distribution, one can 
+        sample a uniform random variable, then take the result, and take the
+        inverse of the Gaussian cdf of that value. 
+ 
+        Algorithm:
+            1) Generate a uniform rand, y
+            2) Minimize the difference over x between y and normcdf(x)
+                 i) Make a function handle for a function that computes
+                    y - normcdf(x)
+                ii) y will be a constant that is fed in
+                iii) I guess I will use fminsearch as my first minimization program
+        """
+        
+        data = np.zeros((num_samples,1))
+        y = np.random.rand(num_samples,1)
+        x = np.linspace(norm.ppf(0.01),
+                        norm.ppf(0.99), 100)
+        # Mixture distribution weights
+        mu = np.random.randint(10,20)
+        mu2 = np.random.randint(10,20)
+        print(mu)
+        sigma = math.sqrt(np.random.randint(5, 10))
+        norm1 = stats.norm(mu, sigma)
+        norm2 = stats.norm(mu2, sigma)
+        cdf1 = stats.norm.cdf(num_samples, mu, sigma)
+        pdf1 = norm1.pdf(x)
+       # plt.plot(x, pdf1)
+        plt.plot(x, norm1.pdf(x))
+        plt.plot(x, norm.cdf(x))
+        #plt.plot(x, norm1)
+    
+        cdf2 = stats.norm.cdf(x, mu2, sigma)
+        #plt.plot(x, cdf2)
+        w1 = 0.2; 
+        w2 = 0.8;
+        
+        #dist = (w1 * norm1) + (w2 * norm2)
+        #plt.plot((w1 * norm1(num_samples)) + (w2 * norm2(num_samples)), title="dist")
+        # difference = y - (w1*norm.cdf(x,0,1) + w2*norm.cdf(x,3,0.1))^2 
+      
+       #for i in range(1,num_samples):
+        #    difference = y[i] - (w1*norm.cdf(x,0,1) + w2*norm.cdf(x,3,0.1))^2 
+            
+
                 

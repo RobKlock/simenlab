@@ -189,11 +189,14 @@ class TimerModule:
         
        # data = np.zeros((num_samples,1))
        # y = np.random.rand(num_samples,1)
-       
+       #weights for disribution
+        w1 = 0.5
+        w2 = 0.5
+        
     
         # Mixture distribution weights
-        loc1 = np.random.randint(10,20)
-        loc2 = np.random.randint(10,20)
+        loc1 = np.random.randint(10,25)
+        loc2 = np.random.randint(10,25)
         #print(loc1)
         scale1 = math.sqrt(np.random.randint(5, 10))
         scale2 = math.sqrt(np.random.randint(5, 10))
@@ -215,7 +218,7 @@ class TimerModule:
         loc2, scale2 = stats.norm.fit(x2_rand)
         
         # Linearly spaced values of x
-        x = np.linspace(start = 0, stop = 30, num = 100)
+        x = np.linspace(start = 0, stop = 30, num = 800)
         
         # PDF for dist1
         pdf1 = stats.norm.pdf(x, loc=loc, scale=scale)
@@ -236,7 +239,7 @@ class TimerModule:
         plt.title('PDF for Distribution 2')
         
         # Wsum PDF
-        sum_pdf = (0.8 * pdf1) + (0.2 * pdf2)
+        sum_pdf = (w1 * pdf1) + (w2 * pdf2)
         plt.figure()
         # Plot
         plt.plot(x, sum_pdf, color='black')
@@ -273,9 +276,13 @@ class TimerModule:
         plt.ylabel('CDF2 = P(x<=X)')
         plt.title('CDF for Distribution 2')
         
+        #fun = lambda y: y - ((w1 * stats.norm.cdf(x, loc=loc, scale=scale)) + (w2 * stats.norm.cdf(x, loc=loc2, scale=scale2)))
+        #res = minimize(fun, [.5], method='Nelder-Mead', tol=1e-6)
+        #print(res)
+        
         plt.figure()
         # Plot
-        sum_cdf = (0.8 * cdf1) + (0.2 * cdf2)
+        sum_cdf = (w1 * cdf1) + (w2 * cdf2)
         plt.plot(x, sum_cdf, color='black')
         #plt.vlines(10, 0, cdf2_at_10, linestyle=':')
         #plt.hlines(cdf2_at_10, -5, 10, linestyle=':')
@@ -289,8 +296,8 @@ class TimerModule:
         cdf2_ = np.linspace(start=0, stop=1, num=10000)
         x_ = stats.norm.ppf(cdf1_, loc=loc, scale=scale)
         x2_ = stats.norm.ppf(cdf2_, loc=loc2, scale=scale2)
-        sum_ppf_ = (0.8 * x_) + (.2 * x2_)
-        
+        sum_ppf_ = (w1 * x_) + (w2 * x2_)
+    
         plt.figure()
         # Plot
         plt.plot(cdf1_, x_, color='black')
@@ -309,7 +316,7 @@ class TimerModule:
         # Plot
         plt.plot(cdf1_, sum_ppf_, color='black')
         random_sample2 = np.random.rand()
-        cdf_sum_inv_sample = (0.8 * stats.norm.ppf(random_sample2, loc=loc, scale=scale)) + (0.2 * stats.norm.ppf(random_sample2, loc=loc2, scale=scale2))
+        cdf_sum_inv_sample = (w1 * stats.norm.ppf(random_sample2, loc=loc, scale=scale)) + (w2 * stats.norm.ppf(random_sample2, loc=loc2, scale=scale2))
         print(random_sample2)
         print(cdf_sum_inv_sample)
         plt.vlines(random_sample2, 0, cdf_sum_inv_sample, linestyle=':')
@@ -318,15 +325,47 @@ class TimerModule:
         plt.ylabel('PPFs')
         plt.title('Weighted Sum PPF')
         
-        ten_thousand_samples = np.random.rand(1000)
+        samples = np.zeros(800)
+        ten_thousand_samples = np.random.rand(800)
         plt.figure()
+        s_index = 0
+        
         for sample in ten_thousand_samples:
-            plt.plot((0.8 * stats.norm.ppf(sample, loc=loc, scale=scale)) + (0.2 * stats.norm.ppf(sample, loc=loc2, scale=scale2)), sample, 'b.')
+            val = (w1 * stats.norm.ppf(sample, loc=loc, scale=scale)) + (w2 * stats.norm.ppf(sample, loc=loc2, scale=scale2))
+            samples[s_index] = val
+            plt.plot(val, sample, 'b.')
+            s_index = s_index + 1
+            
         
         plt.xlabel('X')
         plt.ylabel('Y')
-        plt.title('Inverse of samples')
+        plt.title('Inverse of samples')    
         
+        textstr = '\n'.join((
+            r'$\mu_1=%.2f$' % (loc1,),
+            r'$\sigma_1=%.2f$' % (scale1, ),
+            r'$\mu_2=%.2f$' % (loc2,),
+            r'$\sigma_2=%.2f$' % (scale2, ),
+            r'$w_1=%.2f$' % (w1,),
+            r'$w_2=%.2f$' % (w2, ),
+            'n=800'))
+        ax1 = plt.subplot(311)
+        ax1.set_title('Random PPF Samples Histogram')
+        ax1.hist(samples, bins = 40, range=[0,30])
+        ax2 = plt.subplot(312)
+        ax2.set_title('Weighted Distribution Sum PDF')
+        ax2.plot(x, sum_pdf, color='black')
+        ax3 = plt.subplot(313)
+        ax3.set_title('Weighted CDF')
+        ax3.plot(x, sum_cdf, color='black')
+        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+
+        # place a text box in upper left in axes coords
+        ax1.text(0.05, 0.95, textstr, transform=ax1.transAxes, fontsize=10,
+                verticalalignment='top', bbox=props)
+                          
+   
+                
         #cdf1 = stats.norm.cdf(num_samples, mu, sigma)
         #pdf1 = norm1.pdf(x)
        # plt.plot(x, pdf1)
@@ -339,9 +378,7 @@ class TimerModule:
                         
         #cdf2 = stats.norm.cdf(x, mu2, sigma)
         #plt.plot(x, cdf2)
-        w1 = 0.2; 
-        w2 = 0.8;
-        
+       
         #dist = (w1 * norm1) + (w2 * norm2)
         #plt.plot((w1 * norm1(num_samples)) + (w2 * norm2(num_samples)), title="dist")
         # difference = y - (w1*norm.cdf(x,0,1) + w2*norm.cdf(x,3,0.1))^2 

@@ -9,7 +9,7 @@ There are quite a few different programs here. They all contain machine learning
 | File  | Description |
 | ------------- |:-------------:|
 | NeuronLatch.py      | I implemented the model shown on page 726 of the paper "A symbolic/subsymbolic interface protocol for cognitive modeling" by Simen and Polk (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2919065/). The two neurons together behave as a threshold latch. Their behavior is dictated by equation (28) in the aformentioned paper.   |
-| timer-world      | Files related to ongoing research with Simen (Oberlin) and Rivest (Royal Military College of Canada).     |
+| timer-world      | High-level probabalistic and constructive time-interval learning algorithm at the neural network level.     |
 
 
 

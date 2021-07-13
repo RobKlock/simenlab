@@ -14,6 +14,74 @@ import scipy.stats as stats
 from scipy import signal
 from scipy.optimize import minimize 
 from scipy.stats import norm
+"""
+Scikit-Learn has useful Gaussian Mixture for probabilities 
+Be careful because they probably have two models: one for fitting
+and another for generating samples.
+
+Alternatively:
+    3 components with different weights
+        Flip a coin proportional to those weights 
+        and draw a random sample from those individual 
+        distributions. This works for just Gaussian mixtures
+        
+        Weighted sum of their CDFs. Then you can just pull from
+        the CDF. If its less than the weight you draw from that sample
+        
+        N components of exponentials and Gaussians. 
+        Normal variable, find out which weight range it falls into
+        Then just draw a sample from the distribution that falls in line with
+    
+    https://pytorch.org/docs/stable/distributions.html?highlight=mixture#torch.distributions.mixture_same_family.MixtureSameFamily
+    
+    Package would roll the dice for you, give a number, and 
+    draw the sample. Since we want to combine exponentials and normals,
+    its better to build out from scratch but is still relatively simple
+    
+Initializing Timers:
+    
+    Semi-Markov Model
+    Get a Stimulus Event 
+        Assume that event is the mean of the distribution
+        Update the mean with new samples 
+    Then get another Stimulus and another Event
+        Repeat from previous stimulus
+    
+    For new stimulus, calculate the likelihood of it belonging
+    to each distribution and update the running average of the mean
+    
+    If its really off, create a new distribution
+    Need some bias to avoid overfitting. Bias has 
+    two components: one to keep track of distribution and 
+    another to keep track of speed
+    
+    Default timer to capture new events and update to 
+    record new events and probabilities 
+    
+    Keep track of variability to fit standard deviation
+    
+    First, choose a family
+    
+    Need to define and assign distribution families
+    
+    
+    Dont want to record everything or else youll just overfit
+    
+    Neural networks currently tend to just learn every frame of video or all data
+    instead of learning a timer interval to expect an event
+    
+    DDMs have good properties: they are speed adaptable through bias,
+    can represent means and standard deviations with them.
+    
+    Model is:
+        As soon as a stimulus occurs, I start multiple potential timers. When the event occurs,
+        I store information about which ramp was closest. Or you could allocate 5 timers for each event
+        and adjust their fan to represent the event's standard deviation
+    
+    Rivest will write down a basic rule to use
+    Events A and B and their independent to get started
+    
+"""
 
 class TimerModule:
     
@@ -172,7 +240,13 @@ class TimerModule:
         plt.plot(big_grid,conv_pdf, label='Sum')
         plt.legend(loc='best'), plt.suptitle('PDFs')
         plt.show()
-        
+    
+    def objective_fxn(x):
+        x1 = x[0]
+        x2 = x[1]
+        return x1**2 + x1
+
+    
     def getSamples(num_samples = 1):
         """
         A function that generates random times from a probability 
@@ -183,8 +257,17 @@ class TimerModule:
         inverse of the Gaussian cdf of that value. 
  
         Algorithm:
-            1) Generate a uniform rand, y
-            2) Use PPF to draw inverse sample from CDF
+           2 distributions with different weights
+           Flip a coin proportional to those weights 
+           and draw a random sample from those individual 
+           distributions. This works for just Gaussian mixtures
+        
+            Weighted sum of their CDFs. Then you can just pull from
+            the CDF. If its less than the weight you draw from that sample
+        
+            N components of exponentials and Gaussians. 
+            Normal variable, find out which weight range it falls into
+            Then just draw a sample from the distribution that falls in line with
         """
         
        # data = np.zeros((num_samples,1))
@@ -192,14 +275,22 @@ class TimerModule:
        #weights for disribution
         w1 = 0.5
         w2 = 0.5
+        dice_roll =  np.random.rand()
         
-    
-        # Mixture distribution weights
         loc1 = np.random.randint(10,25)
         loc2 = np.random.randint(10,25)
-        #print(loc1)
+        
         scale1 = math.sqrt(np.random.randint(5, 10))
         scale2 = math.sqrt(np.random.randint(5, 10))
+        if dice_roll <= w1:
+            # roll is lte w1, pull from dist 1
+            sample = np.random.normal(loc1, scale1, num_samples)
+        else:
+            # roll is gt w1, pull from dist 2 
+            sample = np.random.normal(loc2, scale2, num_samples)
+        return sample
+        # Mixture distribution weights
+        
         x1_rand = np.random.normal(loc1, scale1, 1000)
         x2_rand = np.random.normal(loc2, scale2, 1000)
         plt.hist(x1_rand, bins=20)
@@ -276,8 +367,8 @@ class TimerModule:
         plt.ylabel('CDF2 = P(x<=X)')
         plt.title('CDF for Distribution 2')
         
-        #fun = lambda y: y - ((w1 * stats.norm.cdf(x, loc=loc, scale=scale)) + (w2 * stats.norm.cdf(x, loc=loc2, scale=scale2)))
-        #res = minimize(fun, [.5], method='Nelder-Mead', tol=1e-6)
+        #fun = lambda x: (((w1 * stats.norm.cdf(x, loc=loc, scale=scale)) + (w2 * stats.norm.cdf(x, loc=loc2, scale=scale2)))-x)**2
+        #res = minimize(fun, [.5,.7], method='Nelder-Mead', tol=1e-6)
         #print(res)
         
         plt.figure()
@@ -341,6 +432,7 @@ class TimerModule:
         plt.ylabel('Y')
         plt.title('Inverse of samples')    
         
+        '''
         textstr = '\n'.join((
             r'$\mu_1=%.2f$' % (loc1,),
             r'$\sigma_1=%.2f$' % (scale1, ),
@@ -364,8 +456,8 @@ class TimerModule:
         ax1.text(0.05, 0.95, textstr, transform=ax1.transAxes, fontsize=10,
                 verticalalignment='top', bbox=props)
                           
-   
-                
+        '''
+plt.hist(TimerModule.getSamples(1000), bins=40, color='black')
         #cdf1 = stats.norm.cdf(num_samples, mu, sigma)
         #pdf1 = norm1.pdf(x)
        # plt.plot(x, pdf1)

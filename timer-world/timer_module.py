@@ -282,6 +282,7 @@ class TimerModule:
         
         scale1 = math.sqrt(np.random.randint(5, 10))
         scale2 = math.sqrt(np.random.randint(5, 10))
+        # need to make it work for each individual sample  
         if dice_roll <= w1:
             # roll is lte w1, pull from dist 1
             sample = np.random.normal(loc1, scale1, num_samples)
@@ -289,6 +290,14 @@ class TimerModule:
             # roll is gt w1, pull from dist 2 
             sample = np.random.normal(loc2, scale2, num_samples)
         return sample
+    
+        # instead of a for loop, do num_samples from each dist and select a proportional amount
+        # from each 
+        
+        # want to be able to see exponentials as well, or N gaussians and K exponenetials, each with their
+        # own parameters, and automatically generate from there 
+        
+        
         # Mixture distribution weights
         
         x1_rand = np.random.normal(loc1, scale1, 1000)
@@ -478,5 +487,14 @@ plt.hist(TimerModule.getSamples(1000), bins=40, color='black')
        #for i in range(1,num_samples):
         #    difference = y[i] - (w1*norm.cdf(x,0,1) + w2*norm.cdf(x,3,0.1))^2 
             
+'''
+if something unusual happens, i release some timers 
+if you repeat the stimulus, you can look it up in memory to see when it last happened
+once thats implemented, start buildig out some heuristics or biases
+sum of squares of error of timers. If they exceed some level you make 
+some decisions about garbage collection
 
+each ramp has a weight that gets updated/garbage collected depending on its 
+error  
+'''
                 

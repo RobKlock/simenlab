@@ -247,7 +247,7 @@ class TimerModule:
         return x1**2 + x1
 
     
-    def getSamples(num_samples = 1):
+    def getSamples(num_samples = 1, num_normal = 2, num_exp = 0, num_dists = 2):
         """
         A function that generates random times from a probability 
         distribution that is the weighted sum of exponentials and Gaussians.
@@ -269,7 +269,20 @@ class TimerModule:
             Normal variable, find out which weight range it falls into
             Then just draw a sample from the distribution that falls in line with
         """
-        
+        if num_normal + num_exp != num_dists:
+            suggested_method = f'getSamples({num_samples}, {num_normal}, {num_exp}, {num_normal + num_exp})'
+            raise ValueError(f"num_normal and num_exp must sum to num_dists! Did you mean {suggested_method}?")
+        weights_probs = np.random.rand(num_dists - 1) 
+        weights_probs = np.append(weights_probs, 0)
+        weights_probs = np.append(weights_probs, 1)
+        weights_probs = np.sort(weights_probs)
+        print(weights_probs)
+        print(weights_probs.size)
+        weights = np.zeros(num_dists)
+        for i in range (0, (weights_probs.size - 1)):
+            weights[i]=(weights_probs[i + 1] - weights_probs[i])
+        print(weights_probs)
+        print(weights)
        # data = np.zeros((num_samples,1))
        # y = np.random.rand(num_samples,1)
        #weights for disribution
@@ -281,11 +294,12 @@ class TimerModule:
         samples = []
         scale1 = math.sqrt(np.random.randint(5, 10))
         scale2 = math.sqrt(np.random.randint(5, 10))
-        # need to make it work for each individual sample  
+        
         for dice_roll in dice_rolls:
             if dice_roll <= w1:
                 # roll is lte w1, pull from dist 1
-                sample = np.random.normal(loc1, scale1, 1)
+                sample = np.random.exponential(scale1, 1)
+                #sample = np.random.normal(loc1, scale1, 1)
                 samples.append(sample[0])
             else:
                 # roll is gt w1, pull from dist 2 
@@ -472,6 +486,7 @@ class TimerModule:
 # print(TimerModule.getSamples(2))
 # print(type(TimerModule.getSamples(2)))
 plt.hist(TimerModule.getSamples(1000), bins=40, color='black')
+#TimerModule.getSamples(1000, 1, 3)
         #cdf1 = stats.norm.cdf(num_samples, mu, sigma)
         #pdf1 = norm1.pdf(x)
        # plt.plot(x, pdf1)

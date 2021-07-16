@@ -273,23 +273,26 @@ class TimerModule:
        # data = np.zeros((num_samples,1))
        # y = np.random.rand(num_samples,1)
        #weights for disribution
-        w1 = 0.5
-        w2 = 0.5
-        dice_roll =  np.random.rand()
-        
-        loc1 = np.random.randint(10,25)
-        loc2 = np.random.randint(10,25)
-        
+        w1 = np.random.rand()
+        w2 = 1 - w1
+        dice_rolls =  np.random.rand(num_samples)
+        loc1 = np.random.randint(10,30)
+        loc2 = np.random.randint(10,30)
+        samples = []
         scale1 = math.sqrt(np.random.randint(5, 10))
         scale2 = math.sqrt(np.random.randint(5, 10))
         # need to make it work for each individual sample  
-        if dice_roll <= w1:
-            # roll is lte w1, pull from dist 1
-            sample = np.random.normal(loc1, scale1, num_samples)
-        else:
-            # roll is gt w1, pull from dist 2 
-            sample = np.random.normal(loc2, scale2, num_samples)
-        return sample
+        for dice_roll in dice_rolls:
+            if dice_roll <= w1:
+                # roll is lte w1, pull from dist 1
+                sample = np.random.normal(loc1, scale1, 1)
+                samples.append(sample[0])
+            else:
+                # roll is gt w1, pull from dist 2 
+                sample = np.random.normal(loc2, scale2, 1)
+                samples.append(sample[0])
+                
+        return np.asarray(samples)
     
         # instead of a for loop, do num_samples from each dist and select a proportional amount
         # from each 
@@ -466,6 +469,8 @@ class TimerModule:
                 verticalalignment='top', bbox=props)
                           
         '''
+# print(TimerModule.getSamples(2))
+# print(type(TimerModule.getSamples(2)))
 plt.hist(TimerModule.getSamples(1000), bins=40, color='black')
         #cdf1 = stats.norm.cdf(num_samples, mu, sigma)
         #pdf1 = norm1.pdf(x)

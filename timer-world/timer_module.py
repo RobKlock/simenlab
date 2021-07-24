@@ -262,9 +262,6 @@ class TimerModule:
            and draw a random sample from those individual 
            distributions. This works for just Gaussian mixtures
         
-            Weighted sum of their CDFs. Then you can just pull from
-            the CDF. If its less than the weight you draw from that sample
-        
             N components of exponentials and Gaussians. 
             Normal variable, find out which weight range it falls into
             Then just draw a sample from the distribution that falls in line with
@@ -272,40 +269,81 @@ class TimerModule:
         if num_normal + num_exp != num_dists:
             suggested_method = f'getSamples({num_samples}, {num_normal}, {num_exp}, {num_normal + num_exp})'
             raise ValueError(f"num_normal and num_exp must sum to num_dists! Did you mean {suggested_method}?")
+        # To get N random weights that sum to 1, add N-1 random numbers to an array
         weights_probs = np.random.rand(num_dists - 1) 
+        # Add 0 and 1 to that array
         weights_probs = np.append(weights_probs, 0)
         weights_probs = np.append(weights_probs, 1)
+        # Sort them
         weights_probs = np.sort(weights_probs)
         print(weights_probs)
         print(weights_probs.size)
         weights = np.zeros(num_dists)
+        # After establishing the weight array, iterate through the probabilities 
+        # and declare the Nth weight to be the difference between the entries at the N+1 and N-1
+        # indices of the probability array
         for i in range (0, (weights_probs.size - 1)):
             weights[i]=(weights_probs[i + 1] - weights_probs[i])
-        print(weights_probs)
-        print(weights)
-       # data = np.zeros((num_samples,1))
-       # y = np.random.rand(num_samples,1)
-       #weights for disribution
-        w1 = np.random.rand()
-        w2 = 1 - w1
-        dice_rolls =  np.random.rand(num_samples)
+        # Declare distribution types (1 is exp, 0 is normal)
+        dist_types = np.random.rand(num_dists)
+        # Declare num_dists centers and std deviations 
+        locs = []
+        scales = []
         loc1 = np.random.randint(10,30)
-        loc2 = np.random.randint(10,30)
-        samples = []
+        loc2 = np.random.randint(10,30) 
         scale1 = math.sqrt(np.random.randint(5, 10))
         scale2 = math.sqrt(np.random.randint(5, 10))
+            
+        # Establish our distributions and weights in the same loop
+        for i in range (0, num_dists):
+            # Round our dist_type entries
+            dist_types[i] = round(dist_types[i])
+            if (i < weights_probs.size - 1):
+                weights[i]=(weights_probs[i + 1] - weights_probs[i])    
+            locs.append(np.random.randint(10,30))
+            scales.append(math.sqrt(np.random.randint(5, 10)))
+        weights = np.sort(weights)
+        # print("locs and scales")
+        # print(locs)
+        # print(scales)
+        # print(dist_types)
+        # print("weights:", weights)
         
-        for dice_roll in dice_rolls:
-            if dice_roll <= w1:
-                # roll is lte w1, pull from dist 1
-                sample = np.random.exponential(scale1, 1)
-                #sample = np.random.normal(loc1, scale1, 1)
-                samples.append(sample[0])
-            else:
-                # roll is gt w1, pull from dist 2 
-                sample = np.random.normal(loc2, scale2, 1)
-                samples.append(sample[0])
+        # Roll a dice N times
+        samples = []
+        # Roll our dice N times
+        # I hate that this is O(N * D)
+        for i in range(0, num_samples):
+            dice_roll = np.random.rand(1)
+            # print("dice_roll:", dice_roll)
+            # Find which range it belongs in
+            for dist in range (0, num_dists):
+            
+                # Something in here is breaking 13:26 7/19
+                if (dice_roll < weights[dist]):
+                    # print("in if 319")
+                    # The roll falls into this weight, draw our sample
+                    if dist_types[dist] == 1:
+                        sample = np.random.exponential(scales[dist], 1)
+                    else:
+                        sample = np.random.normal(locs[dist], scales[dist], 1)
+                    # print(sample)
+                    samples.append(sample[0])
+                else:
+                    continue
                 
+                
+                
+            # if dice_roll <= w1:
+            #     # roll is lte w1, pull from dist 1
+            #     sample = np.random.exponential(scales[0], 1)
+            #     #sample = np.random.normal(loc1, scale1, 1)
+            #     samples.append(sample[0])
+            # else:
+            #     # roll is gt w1, pull from dist 2 
+            #     sample = np.random.normal(locs[1], scales[1], 1)
+            #     samples.append(sample[0])
+        # print("samples: ", samples)
         return np.asarray(samples)
     
         # instead of a for loop, do num_samples from each dist and select a proportional amount
@@ -485,7 +523,7 @@ class TimerModule:
         '''
 # print(TimerModule.getSamples(2))
 # print(type(TimerModule.getSamples(2)))
-plt.hist(TimerModule.getSamples(1000), bins=40, color='black')
+plt.hist(TimerModule.getSamples(num_samples=1000, num_normal=1, num_exp = 1, num_dists = 2), bins=40, color='black')
 #TimerModule.getSamples(1000, 1, 3)
         #cdf1 = stats.norm.cdf(num_samples, mu, sigma)
         #pdf1 = norm1.pdf(x)

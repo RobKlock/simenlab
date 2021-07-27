@@ -176,7 +176,7 @@ ZEROS_BLOCK = np.zeros((4,4))
 MODULE_COUNT = 0
 
 # Timer EventZ
-TM1 = TM(.7)
+TM1 = TM(.545)
 MODULE_COUNT += 1
 TM2 = TM(.7)
 MODULE_COUNT += 1

@@ -5,7 +5,7 @@ Created on Tue Jun 15 13:14:22 2021
 
 @author: Robert Klock
 
-Class defining a timer module
+Class defining a timer module and related useful methods
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -91,8 +91,8 @@ class TimerModule:
         self.timer_weight=timer_weight
         block = np.array([[2, 0, 0, -.4],
                           [self.timer_weight, 1, 0, -.4],
-                          [0, .5, 2, 0],
-                          [0, 0, 1, 2]])
+                          [0, .55, 2, 0],
+                          [0, 0, .9, 2]])
         self.block = block
     
     def timerWeight(self):
@@ -166,109 +166,18 @@ class TimerModule:
         result = minimize(func, x_start)
         print(result.x)
         print(result.fun)
-    
-    def getProbabilities(event_count):
-        delta = 1e-4
-        mu = np.random.randint(10,20)
-        mu2 = np.random.randint(10,20)
-        print(mu)
-        variance = np.random.randint(5, 10)
-        print(variance)
-        sigma = math.sqrt(variance)
-        x = np.linspace(mu - 3*sigma, mu + 3*sigma, 100)
-        big_grid = np.arange(-5,60,delta)
-        large_x = np.linspace(-1, 50,100)
-        
-        norm1 = stats.norm(mu, 8)
-        cdf1 = stats.norm.cdf(large_x, mu, sigma)
-        plt.plot(x, norm1.pdf(large_x))
-        pdf1 = norm1.pdf(large_x)
-        # Define a discretized probability mass function to convolude later on 
-        pmf1 = norm1.pdf(big_grid)*delta
-        print("Integral over norm1 pdf: "+str(np.trapz(pdf1, large_x)))
-        print("Sum of norm1 pmf2: "+str(sum(pmf1)))
-        
-        norm2 = stats.norm(mu2, sigma)
-        cdf2 = stats.norm.cdf(large_x, mu2, sigma)
-        plt.plot(x, norm2.pdf(large_x))
-        pdf2 = norm2.pdf(large_x) 
-        pmf2 = norm2.pdf(big_grid) * delta
-        print("Integral over norm2 pdf: "+str(np.trapz(pdf2, large_x)))
-        print("Sum of norm2 pmf2: "+str(sum(pmf2))+"\n")
-        
-        print("Integral over sum pdf: "+str(np.trapz(pdf1+pdf2, large_x)))
-        print("Integral over normed sum pdf: "+str(np.trapz((pdf1+pdf2)/2, large_x)))
-        summed_pdf = (pdf1+pdf2)/2
-        summed_cdf = stats.norm.cdf(pdf1) # calculate the cdf - also discrete
-        
-        plt.figure("cdfs")
-        # plot the cdf
-        plt.plot(large_x, cdf1)
-        plt.show()
-        
-        plt.figure("cdf2")
-        # plot the cdf
-        plt.plot(large_x, cdf2)
-        plt.show()
-        
-        plt.figure("cdf sum")
-        # plot the cdf
-        plt.plot(large_x, (cdf1 + cdf2)/2)
-        plt.show()
-        
-        #plt.plot(x, stats.norm.pdf(x, mu + 10, sigma))
-        #plt.plot(x, stats.expon.pdf(x, 8, sigma))
-        plt.figure()
-        plt.plot(large_x, (stats.norm.pdf(large_x, mu, sigma) + stats.norm.pdf(large_x, mu + 10, sigma)) / 2)
-        plt.show()
-        
-        conv_pdf = signal.fftconvolve(pdf1,pdf2,'same')
-        print("Integral over convoluted pdf: "+str(np.trapz(conv_pdf, large_x)))
-        
-        
-        conv_pmf = signal.fftconvolve(pmf1,pmf2,'same')
-        print("Sum of convoluted pmf: "+str(sum(conv_pmf)))
-        
-        pdf1 = pmf1/delta
-        pdf2 = pmf2/delta
-        conv_pdf = conv_pmf/delta
-        #print("Integration of convoluted pdf: "   str(np.trapz(conv_pdf, big_grid)))
-        
-        plt.figure()
-        plt.plot(big_grid,pdf1, label='Uniform')
-        plt.plot(big_grid,pdf2, label='Gaussian')
-        plt.plot(big_grid,conv_pdf, label='Sum')
-        plt.legend(loc='best'), plt.suptitle('PDFs')
-        plt.show()
-    
-    def objective_fxn(x):
-        x1 = x[0]
-        x2 = x[1]
-        return x1**2 + x1
 
     
     def getSamples(num_samples = 1, num_normal = 2, num_exp = 0, num_dists = 2):
         """
         A function that generates random times from a probability 
         distribution that is the weighted sum of exponentials and Gaussians.
-
-        To get a random sample from just one normal distribution, one can 
-        sample a uniform random variable, then take the result, and take the
-        inverse of the Gaussian cdf of that value. 
- 
-        Algorithm:
-           2 distributions with different weights
-           Flip a coin proportional to those weights 
-           and draw a random sample from those individual 
-           distributions. This works for just Gaussian mixtures
-        
-            N components of exponentials and Gaussians. 
-            Normal variable, find out which weight range it falls into
-            Then just draw a sample from the distribution that falls in line with
         """
+        # Gotta add better error handling
         if num_normal + num_exp != num_dists:
             suggested_method = f'getSamples({num_samples}, {num_normal}, {num_exp}, {num_normal + num_exp})'
             raise ValueError(f"num_normal and num_exp must sum to num_dists! Did you mean {suggested_method}?")
+        
         # To get N random weights that sum to 1, add N-1 random numbers to an array
         weights_probs = np.random.rand(num_dists - 1) 
         # Add 0 and 1 to that array
@@ -276,8 +185,6 @@ class TimerModule:
         weights_probs = np.append(weights_probs, 1)
         # Sort them
         weights_probs = np.sort(weights_probs)
-        print(weights_probs)
-        print(weights_probs.size)
         weights = np.zeros(num_dists)
         # After establishing the weight array, iterate through the probabilities 
         # and declare the Nth weight to be the difference between the entries at the N+1 and N-1
@@ -303,11 +210,6 @@ class TimerModule:
             locs.append(np.random.randint(10,30))
             scales.append(math.sqrt(np.random.randint(5, 10)))
         weights = np.sort(weights)
-        # print("locs and scales")
-        # print(locs)
-        # print(scales)
-        # print(dist_types)
-        # print("weights:", weights)
         
         # Roll a dice N times
         samples = []
@@ -315,235 +217,23 @@ class TimerModule:
         # I hate that this is O(N * D)
         for i in range(0, num_samples):
             dice_roll = np.random.rand(1)
-            # print("dice_roll:", dice_roll)
+        
             # Find which range it belongs in
             for dist in range (0, num_dists):
-            
-                # Something in here is breaking 13:26 7/19
                 if (dice_roll < weights[dist]):
-                    # print("in if 319")
                     # The roll falls into this weight, draw our sample
                     if dist_types[dist] == 1:
                         sample = np.random.exponential(scales[dist], 1)
                     else:
                         sample = np.random.normal(locs[dist], scales[dist], 1)
-                    # print(sample)
                     samples.append(sample[0])
                 else:
                     continue
-                
-                
-                
-            # if dice_roll <= w1:
-            #     # roll is lte w1, pull from dist 1
-            #     sample = np.random.exponential(scales[0], 1)
-            #     #sample = np.random.normal(loc1, scale1, 1)
-            #     samples.append(sample[0])
-            # else:
-            #     # roll is gt w1, pull from dist 2 
-            #     sample = np.random.normal(locs[1], scales[1], 1)
-            #     samples.append(sample[0])
-        # print("samples: ", samples)
         return np.asarray(samples)
-    
-        # instead of a for loop, do num_samples from each dist and select a proportional amount
-        # from each 
-        
-        # want to be able to see exponentials as well, or N gaussians and K exponenetials, each with their
-        # own parameters, and automatically generate from there 
-        
-        
-        # Mixture distribution weights
-        
-        x1_rand = np.random.normal(loc1, scale1, 1000)
-        x2_rand = np.random.normal(loc2, scale2, 1000)
-        plt.hist(x1_rand, bins=20)
-        plt.xlabel('X')
-        plt.ylabel('Norm1')
-        plt.title('Normal Distribution 1')
-                  
-        plt.figure()
-        plt.hist(x2_rand, bins=20)
-        plt.xlabel('X')
-        plt.ylabel('Norm2')
-        plt.title('Normal Distribution 2')
-        
-        # Refit loc and scales for distributions
-        loc, scale = stats.norm.fit(x1_rand)
-        loc2, scale2 = stats.norm.fit(x2_rand)
-        
-        # Linearly spaced values of x
-        x = np.linspace(start = 0, stop = 30, num = 800)
-        
-        # PDF for dist1
-        pdf1 = stats.norm.pdf(x, loc=loc, scale=scale)
-        plt.figure()
-        # Plot
-        plt.plot(x, pdf1, color='black')
-        plt.xlabel('X')
-        plt.ylabel('PDF1')
-        plt.title('PDF for Distribution 1')
-        
-        # PDF for dist2
-        pdf2 = stats.norm.pdf(x, loc=loc2, scale=scale2)
-        plt.figure()
-        # Plot
-        plt.plot(x, pdf2, color='black')
-        plt.xlabel('X')
-        plt.ylabel('PDF2')
-        plt.title('PDF for Distribution 2')
-        
-        # Wsum PDF
-        sum_pdf = (w1 * pdf1) + (w2 * pdf2)
-        plt.figure()
-        # Plot
-        plt.plot(x, sum_pdf, color='black')
-        plt.xlabel('X')
-        plt.ylabel('sum_pdf')
-        plt.title('PDF for sum_pdf')
 
-    #10000 samples should look more like the PPF
-    # Solvers vs minimizers
-        
-        # CDFs
-        cdf1 = stats.norm.cdf(x, loc=loc, scale=scale)
-        cdf2 = stats.norm.cdf(x, loc=loc2, scale=scale2)
-        # Use the CDF inverse to calculate the likelihood of that value or less
-        cdf_at_10 = stats.norm.cdf(10, loc=loc, scale=scale)
-        cdf2_at_10 = stats.norm.cdf(10, loc=loc2, scale=scale2)
-        
-        
-        plt.figure()
-        # Plot
-        plt.plot(x, cdf1, color='black')
-        plt.vlines(10, 0, cdf_at_10, linestyle=':')
-        plt.hlines(cdf_at_10, -5, 10, linestyle=':')
-        plt.xlabel('X')
-        plt.ylabel('CDF1 = P(x<=X)')
-        plt.title('CDF for Distribution 1')
-        
-        plt.figure()
-        # Plot
-        plt.plot(x, cdf2, color='black')
-        plt.vlines(10, 0, cdf2_at_10, linestyle=':')
-        plt.hlines(cdf2_at_10, -5, 10, linestyle=':')
-        plt.xlabel('X')
-        plt.ylabel('CDF2 = P(x<=X)')
-        plt.title('CDF for Distribution 2')
-        
-        #fun = lambda x: (((w1 * stats.norm.cdf(x, loc=loc, scale=scale)) + (w2 * stats.norm.cdf(x, loc=loc2, scale=scale2)))-x)**2
-        #res = minimize(fun, [.5,.7], method='Nelder-Mead', tol=1e-6)
-        #print(res)
-        
-        plt.figure()
-        # Plot
-        sum_cdf = (w1 * cdf1) + (w2 * cdf2)
-        plt.plot(x, sum_cdf, color='black')
-        #plt.vlines(10, 0, cdf2_at_10, linestyle=':')
-        #plt.hlines(cdf2_at_10, -5, 10, linestyle=':')
-        plt.xlabel('X')
-        plt.ylabel('Sum CDF')
-        plt.title('CDF SUM')
-        
-        # Percent point function
-        # instead of minimizing, we could just use ppf?
-        cdf1_ = np.linspace(start=0, stop=1, num=10000)
-        cdf2_ = np.linspace(start=0, stop=1, num=10000)
-        x_ = stats.norm.ppf(cdf1_, loc=loc, scale=scale)
-        x2_ = stats.norm.ppf(cdf2_, loc=loc2, scale=scale2)
-        sum_ppf_ = (w1 * x_) + (w2 * x2_)
-    
-        plt.figure()
-        # Plot
-        plt.plot(cdf1_, x_, color='black')
-        random_sample = np.random.rand()
-        cdf1_inv_sample = stats.norm.ppf(random_sample, loc=loc, scale=scale)
-        cdf_min = stats.norm.ppf(0.001, loc=loc, scale=scale)
-        #print(random_sample)
-        #print(cdf1_inv_sample)
-        plt.vlines(random_sample, cdf_min, cdf1_inv_sample, linestyle=':')
-        plt.hlines(cdf1_inv_sample, 0, random_sample, linestyle=':')
-        plt.xlabel('X')
-        plt.ylabel('PPF1')
-        plt.title('PPF for Distribution 1')
-        
-        plt.figure()
-        # Plot
-        plt.plot(cdf1_, sum_ppf_, color='black')
-        random_sample2 = np.random.rand()
-        cdf_sum_inv_sample = (w1 * stats.norm.ppf(random_sample2, loc=loc, scale=scale)) + (w2 * stats.norm.ppf(random_sample2, loc=loc2, scale=scale2))
-        print(random_sample2)
-        print(cdf_sum_inv_sample)
-        plt.vlines(random_sample2, 0, cdf_sum_inv_sample, linestyle=':')
-        plt.hlines(cdf_sum_inv_sample, 0, random_sample2, linestyle=':')
-        plt.xlabel('X')
-        plt.ylabel('PPFs')
-        plt.title('Weighted Sum PPF')
-        
-        samples = np.zeros(800)
-        ten_thousand_samples = np.random.rand(800)
-        plt.figure()
-        s_index = 0
-        
-        for sample in ten_thousand_samples:
-            val = (w1 * stats.norm.ppf(sample, loc=loc, scale=scale)) + (w2 * stats.norm.ppf(sample, loc=loc2, scale=scale2))
-            samples[s_index] = val
-            plt.plot(val, sample, 'b.')
-            s_index = s_index + 1
-            
-        
-        plt.xlabel('X')
-        plt.ylabel('Y')
-        plt.title('Inverse of samples')    
-        
-        '''
-        textstr = '\n'.join((
-            r'$\mu_1=%.2f$' % (loc1,),
-            r'$\sigma_1=%.2f$' % (scale1, ),
-            r'$\mu_2=%.2f$' % (loc2,),
-            r'$\sigma_2=%.2f$' % (scale2, ),
-            r'$w_1=%.2f$' % (w1,),
-            r'$w_2=%.2f$' % (w2, ),
-            'n=800'))
-        ax1 = plt.subplot(311)
-        ax1.set_title('Random PPF Samples Histogram')
-        ax1.hist(samples, bins = 40, range=[0,30])
-        ax2 = plt.subplot(312)
-        ax2.set_title('Weighted Distribution Sum PDF')
-        ax2.plot(x, sum_pdf, color='black')
-        ax3 = plt.subplot(313)
-        ax3.set_title('Weighted CDF')
-        ax3.plot(x, sum_cdf, color='black')
-        props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+# Useful visualization, just comment it out 
+# plt.hist(TimerModule.getSamples(num_samples=1000, num_normal=1, num_exp = 1, num_dists = 2), bins=40, color='black')
 
-        # place a text box in upper left in axes coords
-        ax1.text(0.05, 0.95, textstr, transform=ax1.transAxes, fontsize=10,
-                verticalalignment='top', bbox=props)
-                          
-        '''
-# print(TimerModule.getSamples(2))
-# print(type(TimerModule.getSamples(2)))
-plt.hist(TimerModule.getSamples(num_samples=1000, num_normal=1, num_exp = 1, num_dists = 2), bins=40, color='black')
-#TimerModule.getSamples(1000, 1, 3)
-        #cdf1 = stats.norm.cdf(num_samples, mu, sigma)
-        #pdf1 = norm1.pdf(x)
-       # plt.plot(x, pdf1)
-        #plt.plot(x, norm1.pdf(x))
-        #plt.plot(x, norm.cdf(x))
-        #plt.plot(x, norm1)
-    
-        
-
-                        
-        #cdf2 = stats.norm.cdf(x, mu2, sigma)
-        #plt.plot(x, cdf2)
-       
-        #dist = (w1 * norm1) + (w2 * norm2)
-        #plt.plot((w1 * norm1(num_samples)) + (w2 * norm2(num_samples)), title="dist")
-        # difference = y - (w1*norm.cdf(x,0,1) + w2*norm.cdf(x,3,0.1))^2 
-      
-       #for i in range(1,num_samples):
-        #    difference = y[i] - (w1*norm.cdf(x,0,1) + w2*norm.cdf(x,3,0.1))^2 
             
 '''
 if something unusual happens, i release some timers 

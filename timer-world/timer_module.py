@@ -185,7 +185,9 @@ class TimerModule:
         weights_probs = np.append(weights_probs, 1)
         # Sort them
         weights_probs = np.sort(weights_probs)
+        print("weights probs: ", weights_probs)
         weights = np.zeros(num_dists)
+        print("weights ", weights)
         # After establishing the weight array, iterate through the probabilities 
         # and declare the Nth weight to be the difference between the entries at the N+1 and N-1
         # indices of the probability array
@@ -210,7 +212,7 @@ class TimerModule:
             locs.append(np.random.randint(10,30))
             scales.append(math.sqrt(np.random.randint(5, 10)))
         weights = np.sort(weights)
-        
+        print(weights)
         # Roll a dice N times
         samples = []
         # Roll our dice N times
@@ -220,7 +222,7 @@ class TimerModule:
         
             # Find which range it belongs in
             for dist in range (0, num_dists):
-                if (dice_roll < weights[dist]):
+                if (dice_roll <= weights[dist]):
                     # The roll falls into this weight, draw our sample
                     if dist_types[dist] == 1:
                         sample = np.random.exponential(scales[dist], 1)

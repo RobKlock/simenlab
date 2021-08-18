@@ -20,7 +20,11 @@ print(TM.getSamples())
 
 def main(s0, T, num_events=3):
     # Establish Events
-    events = TM.getSamples(num_samples=num_events)
+    # Need to make a new TimerModule object and THEN call the method
+    timer1 = TM.new()
+    print(timer1.getSamples(num_samples=40))
+
+    events = TM.getSamples(num_samples=3)
     print(events)
     S_m = s0
     F_m = 0

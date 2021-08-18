@@ -157,22 +157,29 @@ class TimerModule:
         add_b = b[:4]
         return np.concatenate((b, add_b))
  
-    def generate_sample(x,mu,sigma,y):
-        x_start = .5
+    def generate_sample_from_parameters(n=1, normal_locs=None , normal_scales=None,
+                                        exponential_scales=None):
+        """
+        To be used with predefined distributions in the world. Pass in the distributions'
+        scales and centers, and get back N samples. Uses all matching samples and disregards
+        inequal argument length, 0 indexed. 
+        """
         
-        CDF = lambda x: (1/2)*(1 + erf((x - mu)/(sigma*(sqrt(2)))))
-        func = lambda x: (CDF(x) - y)**2
-
-        result = minimize(func, x_start)
-        print(result.x)
-        print(result.fun)
-
+        # Calculate number of total distributions
+        # Generate equal weights based on below algorithm
+        # Roll a dice
+        # Find which distribution to pull from
+        # Pull the sample 
+        
+        
+        return 1
     
     def getSamples(num_samples = 1, num_normal = 2, num_exp = 0, num_dists = 2):
         """
         A function that generates random times from a probability 
         distribution that is the weighted sum of exponentials and Gaussians.
         """
+        print("num samples on line 176", num_samples)
         # Gotta add better error handling
         if num_normal + num_exp != num_dists:
             suggested_method = f'getSamples({num_samples}, {num_normal}, {num_exp}, {num_normal + num_exp})'
@@ -191,51 +198,53 @@ class TimerModule:
         # After establishing the weight array, iterate through the probabilities 
         # and declare the Nth weight to be the difference between the entries at the N+1 and N-1
         # indices of the probability array
-        for i in range (0, (weights_probs.size - 1)):
+        for i in range (0, weights.size):
             weights[i]=(weights_probs[i + 1] - weights_probs[i])
+        
+        weights = np.sort(weights)
+        print("weights ", weights)
         # Declare distribution types (1 is exp, 0 is normal)
-        dist_types = np.random.rand(num_dists)
+        if num_normal == 0:
+            dist_types = np.ones(num_dists)
+        elif num_exp == 0:
+            dist_types = np.zeros(num_dists)
+        else:
+            dist_types = np.concatenate((np.ones(num_exp), np.zeros(num_normal)), axis=None)
+        print("dt: ", dist_types)
         # Declare num_dists centers and std deviations 
         locs = []
         scales = []
-        loc1 = np.random.randint(10,30)
-        loc2 = np.random.randint(10,30) 
-        scale1 = math.sqrt(np.random.randint(5, 10))
-        scale2 = math.sqrt(np.random.randint(5, 10))
             
         # Establish our distributions and weights in the same loop
         for i in range (0, num_dists):
-            # Round our dist_type entries
-            dist_types[i] = round(dist_types[i])
-            if (i < weights_probs.size - 1):
-                weights[i]=(weights_probs[i + 1] - weights_probs[i])    
             locs.append(np.random.randint(10,30))
             scales.append(math.sqrt(np.random.randint(5, 10)))
-        weights = np.sort(weights)
-        print(weights)
+       
         # Roll a dice N times
-        samples = []
-        # Roll our dice N times
+        samples = np.zeros(num_samples)
+                # Roll our dice N times
         # I hate that this is O(N * D)
         for i in range(0, num_samples):
             dice_roll = np.random.rand(1)
-        
+
             # Find which range it belongs in
-            for dist in range (0, num_dists):
-                if (dice_roll <= weights[dist]):
+            for dist_index in range (0, num_dists):
+                if (dice_roll < weights_probs[dist_index + 1]):
                     # The roll falls into this weight, draw our sample
-                    if dist_types[dist] == 1:
-                        sample = np.random.exponential(scales[dist], 1)
+                    if dist_types[dist_index] == 1:
+                        sample = np.random.exponential(scales[dist_index], 1)
+                        samples[i] = sample
+                    
                     else:
-                        sample = np.random.normal(locs[dist], scales[dist], 1)
-                    samples.append(sample[0])
-                else:
-                    continue
+                        sample = np.random.normal(locs[dist_index], scales[dist_index], 1)
+                        samples[i] = sample
+                    break
+                
         return np.asarray(samples)
-
 # Useful visualization, just comment it out 
-# plt.hist(TimerModule.getSamples(num_samples=1000, num_normal=1, num_exp = 1, num_dists = 2), bins=40, color='black')
-
+plt.hist(TimerModule.getSamples(num_samples=1000, num_normal=0, num_exp = 1, num_dists = 1), bins=40, color='black')
+# print(TimerModule.getSamples(num_samples=100, num_normal=3, num_exp = 0, num_dists = 3))
+      
             
 '''
 if something unusual happens, i release some timers 

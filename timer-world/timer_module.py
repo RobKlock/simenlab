@@ -174,12 +174,13 @@ class TimerModule:
         
         return 1
     
-    def getSamples(num_samples = 1, num_normal = 2, num_exp = 0, num_dists = 2):
+    def getSamples(num_samples = 1, num_normal = 2, num_exp = 0, num_dists = 2, ret_params = False):
         """
         A function that generates random times from a probability 
-        distribution that is the weighted sum of exponentials and Gaussians.
+        distribution that is the weighted sum of exponentials and Gaussians. Returns the parameters 
+        of the distribution in a seperate array if ret_params is True
         """
-        print("num samples on line 176", num_samples)
+        # print("num samples on line 176", num_samples)
         # Gotta add better error handling
         if num_normal + num_exp != num_dists:
             suggested_method = f'getSamples({num_samples}, {num_normal}, {num_exp}, {num_normal + num_exp})'
@@ -192,9 +193,9 @@ class TimerModule:
         weights_probs = np.append(weights_probs, 1)
         # Sort them
         weights_probs = np.sort(weights_probs)
-        print("weights probs: ", weights_probs)
+        # print("weights probs: ", weights_probs)
         weights = np.zeros(num_dists)
-        print("weights ", weights)
+        # print("weights ", weights)
         # After establishing the weight array, iterate through the probabilities 
         # and declare the Nth weight to be the difference between the entries at the N+1 and N-1
         # indices of the probability array
@@ -202,7 +203,7 @@ class TimerModule:
             weights[i]=(weights_probs[i + 1] - weights_probs[i])
         
         weights = np.sort(weights)
-        print("weights ", weights)
+        # print("weights ", weights)
         # Declare distribution types (1 is exp, 0 is normal)
         if num_normal == 0:
             dist_types = np.ones(num_dists)
@@ -210,7 +211,7 @@ class TimerModule:
             dist_types = np.zeros(num_dists)
         else:
             dist_types = np.concatenate((np.ones(num_exp), np.zeros(num_normal)), axis=None)
-        print("dt: ", dist_types)
+        # print("dt: ", dist_types)
         # Declare num_dists centers and std deviations 
         locs = []
         scales = []
@@ -242,7 +243,7 @@ class TimerModule:
                 
         return np.asarray(samples)
 # Useful visualization, just comment it out 
-plt.hist(TimerModule.getSamples(num_samples=1000, num_normal=0, num_exp = 1, num_dists = 1), bins=40, color='black')
+# plt.hist(TimerModule.getSamples(num_samples=1000, num_normal=0, num_exp = 1, num_dists = 1), bins=40, color='black')
 # print(TimerModule.getSamples(num_samples=100, num_normal=3, num_exp = 0, num_dists = 3))
       
             

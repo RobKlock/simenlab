@@ -59,6 +59,27 @@ def lateUpdateRule(vt, v0, timer_weight, z = .99, bias = 1):
     ret_weight = timer_weight + d_A
     return ret_weight
     
+def earlyUpdateRule(vt, v0, timer_weight, z = .99, bias = 1):
+    """
+    Parameters
+    ----------
+    v0: activation of IN unit
+    z: desired activation, threshold
+    Vt: timer unit activation
+    bias: bias of timer unit
+    timer_weight: the weight of the timer
+
+    Returns 
+    -------
+    The corrected timer weight for the associated event
+
+    """
+    
+    """=== LOOK HERE! Timer Update Rules ==="""
+    drift = ((timer_weight * v0) - bias + .5)
+    d_A = drift * ((vt-z)/vt)
+    ret_weight = timer_weight - d_A
+    return ret_weight
     
 # def main(s0, T=1000, dt = 1, num_events=2):
 s0 = 0
@@ -106,7 +127,7 @@ F_m = 0
    # lambda = 
 # main(0, 1000)
 
-print(lateUpdateRule(.7568782144478108,.93529597,.5454102736653041))
+print(earlyUpdateRule(.7568782144478108,.93529597,.5454102736653041))
 
 """ Unfortunately I dont think this code is relevant anymore, but I'm including
 it down here in case it becomes relevant again 

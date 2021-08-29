@@ -35,7 +35,30 @@ def getSampleFromParameters(params):
     else:
         return np.exponential(params[1], 1)
 
-def earlyUpdateRule()
+# def earlyUpdateRule()
+
+def lateUpdateRule(vt, v0, timer_weight, z = .99, bias = 1):
+    """
+    Parameters
+    ----------
+    v0: activation of IN unit
+    z: desired activation, threshold
+    Vt: timer unit activation
+    bias: bias of timer unit
+    timer_weight: the weight of the timer
+
+    Returns 
+    -------
+    The corrected timer weight for the associated event
+
+    """
+    
+    """=== LOOK HERE! Timer Update Rules ==="""
+    drift = ((timer_weight * v0) - bias + .5)
+    d_A = drift * ((z-vt)/vt)
+    ret_weight = timer_weight + d_A
+    return ret_weight
+    
     
 # def main(s0, T=1000, dt = 1, num_events=2):
 s0 = 0
@@ -47,7 +70,7 @@ num_events = 2
 P_AB = [np.random.randint(20,30), np.random.randint(10,15), 0]
 P_BA = [np.random.randint(20,30), np.random.randint(10,15), 0]
 
-print(getSampleFromParameters(P_AB))
+# print(getSampleFromParameters(P_AB))
 timer_module_1 = TM()
 timer_module_2 = TM()
 
@@ -82,6 +105,8 @@ F_m = 0
    # mu = (1-alpha) * mu + alpha(tau)
    # lambda = 
 # main(0, 1000)
+
+print(lateUpdateRule(.7568782144478108,.93529597,.5454102736653041))
 
 """ Unfortunately I dont think this code is relevant anymore, but I'm including
 it down here in case it becomes relevant again 

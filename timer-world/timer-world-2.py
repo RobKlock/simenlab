@@ -96,7 +96,7 @@ stretch = 1
 ramp_bias = 1
 lmbd = 4
 weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.7,    1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [.5485272872630207,    1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
                     [0,     .5, 2,    0,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],
                      
@@ -174,6 +174,8 @@ for i in range (0, data1.size):
         timer_learn_1 = False
         z = .99
         Vt = net_in[1][-1]
+        print("Vt in late update: ", Vt)
+        print("V[0] in late update: ", v[0])
         v[2] = 1
         # drift = (weights[1][0] - bias[1] + .5)
         """=== LOOK HERE! Timer Update Rules ==="""

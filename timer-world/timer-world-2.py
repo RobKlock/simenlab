@@ -87,7 +87,8 @@ total_duration = 300
 data1 = np.zeros((1,round(total_duration/dt)))
 data1[0][0:round(4/dt)] = 1
 event1 = np.zeros((1,round(total_duration/dt)))
-event1[0][round(events["pBA"]/dt)] = 1
+event1[0][round(100/dt)] = 1
+# event1[0][round(events["pBA"]/dt)] = 1
 event2 = np.zeros((1,round(total_duration/dt)))
 event2[0][round(events["pCA"]/dt)] = 1
 
@@ -96,7 +97,7 @@ stretch = 1
 ramp_bias = 1
 lmbd = 4
 weights = np.array([[2,     0,  0,   -.4,      0,  0,  0,  0],     # 1->1, 2->1, 3->1 4->1
-                    [.5485272872630207,    1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
+                    [.546,    1,  0,   -.4,       0,  0,  0,  0],      # 1->2, 2->2, 3->2
                     [0,     .5, 2,    0,      0,  0,  0,  0],     # 1->3, 2->3, 3->3
                     [0,     0,  1,    2,      0,  0,  0,  0],
                      
@@ -158,8 +159,10 @@ for i in range (0, data1.size):
             # Drift for PL assuming a slope of 1
             A = (weights[1][0] * v[0] + (weights[1][3] * v[3]) - bias[1] + .5)
             dA = (-((A**2)/z) * dt)
-    
+            Vt = net_in[1][-1]
             weights[1][0] = weights[1][0] + dA  
+            print("Vt in early update: ", Vt)
+            print("V[0] in early update: ", v[0])
         else:
             #print("early")
             timer_learn_1 = False

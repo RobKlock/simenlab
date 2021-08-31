@@ -80,16 +80,25 @@ def earlyUpdateRule(vt, v0, timer_weight, z = .99, bias = 1):
     d_A = drift * ((vt-z)/vt)
     ret_weight = timer_weight - d_A
     return ret_weight
-    
-# def main(s0, T=1000, dt = 1, num_events=2):
-s0 = 0
-T = 100
-dt = .1 
-num_events = 2
 
+def activationAtIntervalEnd(weight, interval_length):
+    drift = ((weight * 1) - 1 + .5)
+    height = drift * interval_length
+    return float(height)
+    
+
+# def main(s0, T=1000, dt = 1, num_events=2):
+    
 # Establish two probability distributions for P(A|B) and P(B|A)
 P_AB = [np.random.randint(20,30), np.random.randint(10,15), 0]
 P_BA = [np.random.randint(20,30), np.random.randint(10,15), 0]
+
+s0 = 0
+T = 50
+dt = .1 
+num_events = 2
+event_at = np.random.normal(P_AB[0], P_AB[1], 1)
+
 
 # print(getSampleFromParameters(P_AB))
 timer_module_1 = TM()
@@ -100,6 +109,11 @@ timer_weight_2 = timer_module_2.block
 
 # Loop through A, B, and C 
 # Each is relative to the other 
+# Once the event is pulled, calculate the early or late update rule 
+# based on what the timer would have activated at (its current weight) and update
+# accordingly 
+
+
 # Learn to predict the sequences 
 # Focus on getting te timers to record the correct event 
 # Then the fun stuff comes with what do with the collected data
@@ -126,8 +140,44 @@ F_m = 0
    # mu = (1-alpha) * mu + alpha(tau)
    # lambda = 
 # main(0, 1000)
+print(timer_module_1.timer_weight)
+print(lateUpdateRule(.6125108542232209, .93529597, 0.5437127738909469))
+print(activationAtIntervalEnd(0.546, 10))
+timer_value = activationAtIntervalEnd(0.51, event_at)
+                                     
+plt.figure()
+activation_plot_xvals = np.arange(0, T, dt)
+plt.plot([event_at], [timer_value], 'ro')
+plt.plot([0,event_at], [0, timer_value])
+#plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
+plt.vlines(event_at, 0,1)
+plt.ylim([0,1])
+plt.xlim([0,T])
+#plt.plot(v2_v1_diff, dashes = [5,5])
+plt.legend(['timer activation = {:.2f}'.format(timer_value)], loc=0)
+plt.ylabel("activation")
+plt.xlabel("Time units")
+plt.title("Timer")
+plt.grid('on')
+plt.show()
 
-print(earlyUpdateRule(.7568782144478108,.93529597,.5454102736653041))
+timer_weight = lateUpdateRule(timer_value, 1, 0.51)
+timer_value = activationAtIntervalEnd(timer_weight, event_at)
+plt.figure()
+activation_plot_xvals = np.arange(0, T, dt)
+plt.plot([event_at], [timer_value], 'ro')
+plt.plot([0,event_at], [0, timer_value])
+#plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
+plt.vlines(event_at, 0,1)
+plt.ylim([0,1])
+plt.xlim([0,T])
+#plt.plot(v2_v1_diff, dashes = [5,5])
+plt.legend(['timer activation = {:.2f}'.format(timer_value)], loc=0)
+plt.ylabel("activation")
+plt.xlabel("Time units")
+plt.title("Timer")
+plt.grid('on')
+plt.show()
 
 """ Unfortunately I dont think this code is relevant anymore, but I'm including
 it down here in case it becomes relevant again 

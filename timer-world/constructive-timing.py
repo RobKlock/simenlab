@@ -14,7 +14,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import sys
+import random
 from timer_module import TimerModule as TM
+from labellines import labelLine, labelLines
 
 #print(TM.getSamples())
 
@@ -89,15 +91,13 @@ def activationAtIntervalEnd(weight, interval_length):
 # def main(s0, T=1000, dt = 1, num_events=2):
     
 # Establish two probability distributions for P(A|B) and P(B|A)
-P_AB = [np.random.randint(20,30), np.random.randint(10,15), 0]
+P_AB = [np.random.randint(39,40), np.random.randint(1,20), 0]
 P_BA = [np.random.randint(20,30), np.random.randint(10,15), 0]
 
 s0 = 0
-T = 50
+T = 100
 dt = .1 
-num_events = 2
-event_at = np.random.normal(P_AB[0], P_AB[1], 1)
-
+num_events = 100
 
 # print(getSampleFromParameters(P_AB))
 timer_module_1 = TM(timer_weight=.534)
@@ -141,63 +141,76 @@ F_m = 0
 # main(0, 1000)
 # Idea: have three timers that keep track of the upper and lower deviation of the 
 # event
-
-timer_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_at)
-t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_at+1)                                  
 plt.figure()
-plt.subplot(121)
-activation_plot_xvals = np.arange(0, T, dt)
-plt.plot([event_at], [timer_value], 'ro')
-plt.plot([0,event_at], [0, timer_value])
-plt.plot([event_at], [t2v], 'go')
-plt.plot([0,event_at], [0, t2v], '--g')
-#plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
-plt.vlines(event_at, 0,1)
-plt.ylim([0,1])
-plt.xlim([0,T])
-#plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(['timer activation = {:.2f}'.format(timer_value), "timer activation",
-           "early timer act.", "early timer act"], loc=0)
-plt.ylabel("activation")
-plt.xlabel("Time units")
-plt.title("Timer")
-plt.grid('on')
-#plt.show()
-
-if timer_value > 1:
-    timer_weight = earlyUpdateRule(timer_value, timer_module_1.timerWeight())
-    timer_module_1.setTimerWeight(timer_weight)
+A = np.zeros(num_events)
+for i in range (0,num_events):
+    event_at = np.random.normal(P_AB[0], P_AB[1], 1)
+    A[i] = event_at
+    r = random.random()
+    b = random.random()
+    g = random.random()
+    color = (r, g, b)
+    marker = random.randint(0,11)
+    timer_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_at)
+    t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_at+1)                                  
     
-    t2 = earlyUpdateRule(t2v, timer_module_2.timerWeight())
-    timer_module_2.setTimerWeight(t2)
-else:
-    timer_weight = lateUpdateRule(timer_value, timer_module_1.timerWeight())
-    timer_module_1.setTimerWeight(timer_weight)
+    plt.subplot(121)
+    plt.plot([event_at], [timer_value], marker='o',c=color)
+    plt.plot([0,event_at], [0, timer_value],  c=color, alpha=0.8)
+    "Early Timer Plots Below"
+    #plt.plot([event_at], [t2v], 'go')
+    #plt.plot([0,event_at], [0, t2v], '--g')
+    #plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
+    plt.vlines(event_at, 0,1, label="v")
+    plt.ylim([0,1])
+    plt.xlim([0,T])
+    #plt.plot(v2_v1_diff, dashes = [5,5])
+    #plt.legend(['timer activation = {:.2f}'.format(timer_value), "timer activation",
+               #"early timer act.", "early timer act"], loc=0)
+    # plt.legend(['timer activation = {:.2f}'.format(timer_value), "timer activation"],loc=0)
+    plt.ylabel("activation")
+    plt.xlabel("Time units")
+    plt.title("Timer")
+    plt.grid('on')
+    #labelLines(plt.gca().get_lines(), align=False, fontsize=14)
+    #plt.show()
     
-    t2 = lateUpdateRule(t2v, timer_module_2.timerWeight())
-    timer_module_2.setTimerWeight(t2)
-
-timer_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_at)
-t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_at-1)                                  
-
-plt.subplot(122)
-activation_plot_xvals = np.arange(0, T, dt)
-plt.plot([event_at], [timer_value], 'ro')
-plt.plot([0,event_at], [0, timer_value])
-plt.plot([event_at], [t2v], 'go')
-plt.plot([0,event_at], [0, t2v], '--g')
-#plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
-plt.vlines(event_at, 0,1)
-plt.ylim([0,1])
-plt.xlim([0,T])
-#plt.plot(v2_v1_diff, dashes = [5,5])
-plt.legend(['timer activation = {:.2f}'.format(timer_value), "timer activation",
-           "early timer act.", "early timer act"], loc=0)
-plt.ylabel("activation")
-plt.xlabel("Time units")
-plt.title("Timer")
-plt.grid('on')
-plt.show()
+    if timer_value > 1:
+        timer_weight = earlyUpdateRule(timer_value, timer_module_1.timerWeight())
+        timer_module_1.setTimerWeight(timer_weight)
+        
+        t2 = earlyUpdateRule(t2v, timer_module_2.timerWeight())
+        timer_module_2.setTimerWeight(t2)
+    else:
+        timer_weight = lateUpdateRule(timer_value, timer_module_1.timerWeight())
+        timer_module_1.setTimerWeight(timer_weight)
+        
+        t2 = lateUpdateRule(t2v, timer_module_2.timerWeight())
+        timer_module_2.setTimerWeight(t2)
+    
+    timer_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_at)
+    t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_at-1)                                  
+    
+    plt.subplot(122)
+    plt.plot([event_at], [timer_value], marker='o', c=color)
+    plt.plot([0,event_at], [0, timer_value], c=color, alpha=0.8)
+    "Early Timer Plots Below"
+    #plt.plot([event_at], [t2v], 'go')
+    #plt.plot([0,event_at], [0, t2v], '--g')
+    #plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
+    plt.vlines(event_at, 0,1)
+    plt.ylim([0,1])
+    plt.xlim([0,T])
+    #plt.plot(v2_v1_diff, dashes = [5,5])
+    #plt.legend(['timer activation = {:.2f}'.format(timer_value), "timer activation",
+               #"early timer act.", "early timer act"], loc=0)
+    # plt.legend(['timer activation = {:.2f}'.format(timer_value), "timer activation"],loc=0)
+    #plt.legend()
+    plt.ylabel("activation")
+    plt.xlabel("Time units")
+    plt.title("Timer")
+    plt.grid('on')
+    
 
 """ Unfortunately I dont think this code is relevant anymore, but I'm including
 it down here in case it becomes relevant again 

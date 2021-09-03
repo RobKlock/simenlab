@@ -91,13 +91,15 @@ def activationAtIntervalEnd(weight, interval_length):
 # def main(s0, T=1000, dt = 1, num_events=2):
     
 # Establish two probability distributions for P(A|B) and P(B|A)
-P_AB = [np.random.randint(39,40), np.random.randint(1,20), 0]
-P_BA = [np.random.randint(20,30), np.random.randint(10,15), 0]
+P_AB = [np.random.randint(30,40), np.random.randint(1,20), 0]
+P_BA = [np.random.randint(80,90), np.random.randint(3,10), 0]
 
 s0 = 0
-T = 100
+T = 200
 dt = .1 
-num_events = 100
+y_lim=2
+num_events = 2
+noise = 0.5
 
 # print(getSampleFromParameters(P_AB))
 timer_module_1 = TM(timer_weight=.534)
@@ -124,6 +126,18 @@ timer_weight_2 = timer_module_2.block
 # for i in range (0, T):
     
     
+""" 
+To add noise, take the event, calculate the 
+timer activation at the event, and add noise based on a Gaussian that has a variance 
+based on the amount of time thats gone by
+Va  = kT
+k = the noise parameter, squared
+
+Once the noise is applied, you apply the learning update rule to that 
+
+Try out a two timer sequence
+"""
+
 S_m = s0
 F_m = 0
 # for i in range (1, T):
@@ -142,27 +156,34 @@ F_m = 0
 # Idea: have three timers that keep track of the upper and lower deviation of the 
 # event
 plt.figure()
+plt.suptitle(f'Center = {P_AB[0]}, Spread = {P_AB[1]}')
 A = np.zeros(num_events)
 for i in range (0,num_events):
+    # Wire up two timers for two distinct events 
     event_at = np.random.normal(P_AB[0], P_AB[1], 1)
+    event_2 = event_at + np.random.normal(P_BA[0], P_BA[1], 1)
     A[i] = event_at
     r = random.random()
     b = random.random()
     g = random.random()
     color = (r, g, b)
     marker = random.randint(0,11)
-    timer_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_at)
-    t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_at+1)                                  
+    timer_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_at) + np.random.normal(0.01, .01 * (noise*noise)*event_at, 1)
+    
+    t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_2)                                  
     
     plt.subplot(121)
     plt.plot([event_at], [timer_value], marker='o',c=color)
     plt.plot([0,event_at], [0, timer_value],  c=color, alpha=0.8)
     "Early Timer Plots Below"
-    #plt.plot([event_at], [t2v], 'go')
-    #plt.plot([0,event_at], [0, t2v], '--g')
-    #plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
-    plt.vlines(event_at, 0,1, label="v")
-    plt.ylim([0,1])
+    plt.plot([event_2], [t2v], c=color, marker='o')
+    plt.plot([event_at, event_2], [0, t2v], c=color, linestyle='dashed')
+    
+    if y_lim>1:
+        plt.hlines(1, 0, T, alpha=0.5, linestyle="dashed", color='black')
+    plt.vlines(event_at, 0,y_lim, label="v")
+    plt.vlines(event_2, 0,y_lim, label="v", linestyle="dashed", color='r')
+    plt.ylim([0,y_lim])
     plt.xlim([0,T])
     #plt.plot(v2_v1_diff, dashes = [5,5])
     #plt.legend(['timer activation = {:.2f}'.format(timer_value), "timer activation",
@@ -179,27 +200,36 @@ for i in range (0,num_events):
         timer_weight = earlyUpdateRule(timer_value, timer_module_1.timerWeight())
         timer_module_1.setTimerWeight(timer_weight)
         
-        t2 = earlyUpdateRule(t2v, timer_module_2.timerWeight())
-        timer_module_2.setTimerWeight(t2)
     else:
         timer_weight = lateUpdateRule(timer_value, timer_module_1.timerWeight())
         timer_module_1.setTimerWeight(timer_weight)
         
-        t2 = lateUpdateRule(t2v, timer_module_2.timerWeight())
-        timer_module_2.setTimerWeight(t2)
+        
+    if t2v > 1:
+        timer_weight = earlyUpdateRule(t2v, timer_module_2.timerWeight())
+        timer_module_2.setTimerWeight(timer_weight)
+        
+    else:
+        timer_weight = lateUpdateRule(t2v, timer_module_2.timerWeight())
+        timer_module_2.setTimerWeight(timer_weight)
+        
     
     timer_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_at)
-    t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_at-1)                                  
+    t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_2)                                  
     
     plt.subplot(122)
     plt.plot([event_at], [timer_value], marker='o', c=color)
     plt.plot([0,event_at], [0, timer_value], c=color, alpha=0.8)
+    
+    plt.plot([event_2], [t2v], c=color, marker='o')
+    plt.plot([event_at, event_2], [0, t2v], c=color, linestyle='dashed')
+    
+    if y_lim>1:
+        plt.hlines(1, 0, T, alpha=0.5, linestyle="dashed", color='black')
     "Early Timer Plots Below"
-    #plt.plot([event_at], [t2v], 'go')
-    #plt.plot([0,event_at], [0, t2v], '--g')
-    #plt.plot(activation_plot_xvals, v_hist[0,0:-1], dashes = [2,2]) 
-    plt.vlines(event_at, 0,1)
-    plt.ylim([0,1])
+    plt.vlines(event_at, 0,y_lim)
+    plt.vlines(event_2, 0,y_lim, label="v", linestyle="dashed", color='r')
+    plt.ylim([0,y_lim])
     plt.xlim([0,T])
     #plt.plot(v2_v1_diff, dashes = [5,5])
     #plt.legend(['timer activation = {:.2f}'.format(timer_value), "timer activation",

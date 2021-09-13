@@ -91,15 +91,15 @@ def activationAtIntervalEnd(weight, interval_length):
 # def main(s0, T=1000, dt = 1, num_events=2):
     
 # Establish two probability distributions for P(A|B) and P(B|A)
-P_AB = [np.random.randint(30,40), np.random.randint(1,20), 0]
-P_BA = [np.random.randint(80,90), np.random.randint(3,10), 0]
+P_A = [np.random.randint(10,20), np.random.randint(1,10), 0]
+P_AB = [np.random.randint(10,40), np.random.randint(1,20), 0]
+P_BA = [np.random.randint(90,100), np.random.randint(3,10), 0]
 
 s0 = 0
-T = 200
 dt = .1 
 y_lim=2
-num_events = 2
-noise = 0.5
+num_events = 4
+noise = 0.1
 
 # print(getSampleFromParameters(P_AB))
 timer_module_1 = TM(timer_weight=.534)
@@ -108,6 +108,17 @@ timer_module_2 = TM(timer_weight=.534)
 timer_weight_1 = timer_module_1.block
 timer_weight_2 = timer_module_2.block
 
+events = np.zeros(num_events)
+# Establish first event
+events[0] = np.random.normal(P_A[0],P_A[1], 1)
+for i in range (1,num_events):
+    if i % 2 == 0:
+        events[i] = events[i-1] + np.random.normal(P_AB[0],P_AB[1], 1)
+    else:
+        events[i] = events[i-1] + np.random.normal(P_BA[0],P_BA[1], 1)
+        
+print(events)
+T = events[-1] + 100
 # Loop through A, B, and C 
 # Each is relative to the other 
 # Once the event is pulled, calculate the early or late update rule 
@@ -156,7 +167,7 @@ F_m = 0
 # Idea: have three timers that keep track of the upper and lower deviation of the 
 # event
 plt.figure()
-plt.suptitle(f'Center = {P_AB[0]}, Spread = {P_AB[1]}')
+plt.suptitle(f'Centers = {P_AB[0]}, {P_BA[0]} Spreads = {P_AB[1]}, {P_BA[1]}')
 A = np.zeros(num_events)
 for i in range (0,num_events):
     # Wire up two timers for two distinct events 
@@ -170,7 +181,7 @@ for i in range (0,num_events):
     marker = random.randint(0,11)
     timer_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_at) + np.random.normal(0.01, .01 * (noise*noise)*event_at, 1)
     
-    t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_2)                                  
+    t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_2) + np.random.normal(0.01, .01 * (noise*noise)*event_at, 1)                                
     
     plt.subplot(121)
     plt.plot([event_at], [timer_value], marker='o',c=color)
@@ -214,8 +225,8 @@ for i in range (0,num_events):
         timer_module_2.setTimerWeight(timer_weight)
         
     
-    timer_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_at)
-    t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_2)                                  
+    timer_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_at) + np.random.normal(0.01, .01 * (noise*noise)*event_2, 1)
+    t2v = activationAtIntervalEnd(timer_module_2.timerWeight(), event_2) + np.random.normal(0.01, .01 * (noise*noise)*event_2, 1)                               
     
     plt.subplot(122)
     plt.plot([event_at], [timer_value], marker='o', c=color)

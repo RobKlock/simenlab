@@ -37,7 +37,7 @@ def getSampleFromParameters(params):
     else:
         return np.exponential(params[1], 1)
 
-def lateUpdateRule(vt, timer_weight, learning_rate, v0=1, z = .99, bias = 1):
+def lateUpdateRule(vt, timer_weight, learning_rate, v0=1.0, z = 1, bias = 1):
     """
     Parameters
     ----------
@@ -53,12 +53,13 @@ def lateUpdateRule(vt, timer_weight, learning_rate, v0=1, z = .99, bias = 1):
 
     """
     
-    drift = ((timer_weight * v0) - bias + .5)
-    d_A = drift * ((z-vt)/vt)
-    ret_weight = timer_weight + (learning_rate * d_A)
+    #drift = ((timer_weight * v0) - bias + .5)
+    drift = (timer_weight * v0)
+    d_A = drift * ((1-vt)/vt)
+    ret_weight = timer_weight + d_A
     return ret_weight
     
-def earlyUpdateRule(vt, timer_weight, learning_rate, v0=1, z = .99, bias = 1):
+def earlyUpdateRule(vt, timer_weight, learning_rate, v0=1.0, z = 1, bias = 1):
     """
     Parameters
     ----------
@@ -75,15 +76,17 @@ def earlyUpdateRule(vt, timer_weight, learning_rate, v0=1, z = .99, bias = 1):
     """
     
     """=== LOOK HERE! Timer Update Rules ==="""
-    drift = ((timer_weight * v0) - bias + .5)
+    #drift = ((timer_weight * v0) - bias + .5)
+    drift = (timer_weight * v0)
     d_A = drift * ((vt-z)/vt)
     ret_weight = timer_weight - (learning_rate * d_A)
     return ret_weight
 
-def activationAtIntervalEnd(weight, interval_length):
-    drift = ((weight * 1) - 1 + .5)
-    height = drift * interval_length
-    return float(height)
+def activationAtIntervalEnd(weight, interval_length, c):
+    # drift = ((weight * 1) - 1 + .5)
+    act = weight * interval_length + (c * math.sqrt(weight) * np.random.normal(0, 1) * math.sqrt(interval_length))
+    # height = drift * interval_length
+    return float(act)
     
 
 # def main(s0, T=1000, dt = 1, num_events=2):
@@ -91,18 +94,24 @@ def activationAtIntervalEnd(weight, interval_length):
 # Establish two probability distributions for P(A|B) and P(B|A)
 P_A = [np.random.randint(20,50), np.random.randint(5,20), 0]
 P_AB = [np.random.randint(20,50), np.random.randint(5,20), 0]
+
 P_BA = [np.random.randint(30,50), np.random.randint(5,20), 0]
 
 s0 = 0
 dt = .1 
 y_lim=2
-num_events = 200
-noise = 0.0
+num_events = 50
+noise = 0.001
 learning_rate = 1
+STANDARD_INTERVAL = 100
+
+# Alternatively, use >1 distributions for a compound dist func. Pull all samples at once 
+P_AB2 = TM.getSamples(num_events, num_normal = 2, num_exp = 1, num_dists = 3, ret_params = False)
+#plt.hist(P_AB2, bins=40, color='black')
 
 # print(getSampleFromParameters(P_AB))
-timer_module_1 = TM(timer_weight=.534)
-timer_module_2 = TM(timer_weight=.534)
+timer_module_1 = TM(timer_weight=.05)
+timer_module_2 = TM(timer_weight=.175)
 
 timer_weight_1 = timer_module_1.block
 timer_weight_2 = timer_module_2.block
@@ -111,33 +120,20 @@ timer_1_running_act = 0
 
 events = np.zeros(num_events)
 # Establish first event
-events[0] = np.random.normal(P_A[0],P_A[1], 1)
+#events[0] = np.random.normal(P_A[0],P_A[1], 1)
+events[0] = np.random.normal(STANDARD_INTERVAL,0.01, 1)
 for i in range (1,num_events):
     if i % 2 == 0:
-        events[i] = events[i-1] + np.random.normal(P_AB[0],P_AB[1], 1)
+        # events[i] = events[i-1] + P_AB2[i] 
+        #events[i] = events[i-1] + np.random.normal(P_AB[0],P_AB[1], 1)
+        events[i] = events[i-1] + np.random.normal(STANDARD_INTERVAL,1, 1)
     else:
-        events[i] = events[i-1] + np.random.normal(P_BA[0],P_BA[1], 1)
+        #events[i] = events[i-1] + np.random.normal(P_BA[0],P_BA[1], 1)
+        events[i] = events[i-1] + np.random.normal(STANDARD_INTERVAL,1, 1)
         
-# (events)
 T = events[-1] + 100
-# Loop through A, B, and C 
-# Each is relative to the other 
-# Once the event is pulled, calculate the early or late update rule 
-# based on what the timer would have activated at (its current weight) and update
-# accordingly 
 
-
-# Learn to predict the sequences 
-# Focus on getting te timers to record the correct event 
-# Then the fun stuff comes with what do with the collected data
-# print(t)
-# Time is zeros with 1's at events 
-# time = np.zeros(round(T / dt))
-# time[round(event_time) : round(event_time + (1 / dt))] = 1
-# Begin time 
-# for i in range (0, T):
-    
-    
+  
 """ 
 To add noise, take the event, calculate the 
 timer activation at the event, and add noise based on a Gaussian that has a variance 
@@ -152,21 +148,8 @@ Try out a two timer sequence
 
 S_m = s0
 F_m = 0
-# for i in range (1, T):
-    # Observe tau_t, s_t
-    # if (s_t-1, s_t) is in Fm then
-    #   Update F(tau_t | s_t-1, s_t)
-    # else
-    #    F(tau_i | s_t-1, st) = IG(tau_t, ??)
-    #    F_m = F_m union F(tau_t | s_t-1)
 
-# def Update(s, tau, s_prime):
-   # let mu, lambda, be the parameters of F(tau_t | s_t-1, s_t)
-   # mu = (1-alpha) * mu + alpha(tau)
-   # lambda = 
-# main(0, 1000)
-# Idea: have three timers that keep track of the upper and lower deviation of the 
-# event
+
 plt.figure()
 plt.suptitle(f'Centers = {P_AB[0]}, {P_BA[0]} Spreads = {P_AB[1]}, {P_BA[1]}')
 A = np.zeros(num_events)
@@ -174,38 +157,43 @@ colors = ['blue', 'magenta', 'lawngreen', 'orange']
 for i in range (0,num_events): 
     """ Plotting """ 
     event = events[i]
-    learning_rate = learning_rate
    
     # plt.subplot(121)
     if i % 2 == 0:
         # Event is type A
-        timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event) + np.random.normal(0.01, .01 * (noise*noise)*event, 1)
-        plt.plot([event], [timer_1_value], marker='o',c=colors[0])
-        timer_1_running_act = timer_1_running_act + timer_1_value
-        if i >= 1:
-            plt.plot([events[i-1],event], [0, timer_1_value], linestyle = "dashed",  c=colors[0], alpha=0.8)
-        else:
-            plt.plot([0,event], [0, timer_1_value], linestyle = "dashed", c=colors[0], alpha=0.8)
+        print("event A")
         
+        #timer_1_running_act = timer_1_running_act + timer_1_value
+        if i >= 1:
+            timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event-events[i-1], noise)
+            plt.plot([events[i-1],event], [0, timer_1_value], linestyle = "dashed",  c=colors[0], alpha=0.8)
+            plt.plot([event], [timer_1_value], marker='o',c=colors[0])
+        else:
+            timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event, noise)
+            plt.plot([0,event], [0, timer_1_value], linestyle = "dashed", c=colors[0], alpha=0.8)
+            plt.plot([event], [timer_1_value], marker='o',c=colors[0])
         
         # Update Rules
         if timer_1_value > 1:
+            print("early update rule")
             timer_weight = earlyUpdateRule(timer_1_value, timer_module_1.timerWeight(), learning_rate)
             timer_module_1.setTimerWeight(timer_weight)
         else:
+            print("late update rule")
             timer_weight = lateUpdateRule(timer_1_value, timer_module_1.timerWeight(), learning_rate)
             timer_module_1.setTimerWeight(timer_weight)
         
         plt.vlines(event, 0,y_lim, label="v", color=colors[0])
     
     else:
+        print("event B")
         # Event is type B
-        timer_2_value = activationAtIntervalEnd(timer_module_2.timerWeight(), event) + np.random.normal(0.01, .01 * (noise*noise)*event, 1)         
-        plt.plot([event], [timer_2_value], c=colors[1], marker='o')
         
         if i >= 1:
+            timer_2_value = activationAtIntervalEnd(timer_module_2.timerWeight(), event - events[i-1], noise)
             plt.plot([events[i-1],event], [0, timer_2_value], linestyle="dashed",  c=colors[1], alpha=0.8)
         else:
+            timer_2_value = activationAtIntervalEnd(timer_module_2.timerWeight(), event, noise)
             plt.plot([0,event], [0, timer_2_value],  c=colors[1], alpha=0.8)
         
         # Update Rules
@@ -216,6 +204,7 @@ for i in range (0,num_events):
         else:
             timer_weight = lateUpdateRule(timer_2_value, timer_module_2.timerWeight(), learning_rate)
             timer_module_2.setTimerWeight(timer_weight)
+        plt.plot([event], [timer_2_value], c=colors[1], marker='o')
         plt.vlines(event, 0,y_lim, label="v", color=colors[1])
             
     if y_lim>1:

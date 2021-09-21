@@ -101,10 +101,11 @@ P_BA = [30, 1] #[np.random.randint(30,50), np.random.randint(5,20), 0]
 s0 = 0
 dt = .1 
 y_lim=2
-num_events = 50
-noise = 0.000
-learning_rate = .7
-STANDARD_INTERVAL = 10
+num_events = 500
+# Internal noise - timer activation
+noise = 0.05
+learning_rate = 1
+STANDARD_INTERVAL = 200
 
 # Alternatively, use >1 distributions for a compound dist func. Pull all samples at once 
 P_AB2 = TM.getSamples(num_events, num_normal = 2, num_exp = 1, num_dists = 3, ret_params = False)
@@ -118,7 +119,9 @@ timer_weight_1 = timer_module_1.block
 timer_weight_2 = timer_module_2.block
 
 timer_1_running_act = 0
-
+timer_1_ramping_weights = []
+timer_2_ramping_weights = []
+timer_2_events = []
 events = np.zeros(num_events)
 
 timer_1_mu = 10
@@ -134,27 +137,38 @@ for i in range (1,num_events):
         #events[i] = events[i-1] + np.random.normal(P_AB[0],P_AB[1], 1)
         #events[i] = events[i-1] + np.random.normal(np.random.randint(20,50),10, 1)
         #events[i] = events[i-1] + np.random.exponential(STANDARD_INTERVAL,1)
-        events[i] = events[i-1] +  np.random.normal(STANDARD_INTERVAL,1, 1)
-        #events[i] = events[i-1] + invgauss.rvs(1, 10, size=1)
+        #events[i] = events[i-1] +  np.random.normal(STANDARD_INTERVAL,1, 1)
+        events[i] = events[i-1] + invgauss.rvs(1, 200, size=1)
     else:
         #events[i] = events[i-1] + np.random.normal(P_BA[0],P_BA[1], 1)
         events[i] = events[i-1] + np.random.normal(STANDARD_INTERVAL,1, 1)
+        timer_2_events.append(np.random.normal(STANDARD_INTERVAL,1, 1)[0])
         
 T = events[-1] + 100
 
 S_m = s0
 F_m = 0
+""" 
+Record the ramp activations of every event that occurs
+Store the correct ramp slopes in an array
+This just helps the framing of getting everything stored
 
+
+Start to calculate reward based on a reward(gain) function
+A function that defines reward, determined by the event duration (a rectangle -- all or nothing, gaussian, etc. Can also
+                                                                  favor different outcomes)
+
+Then explore different approaches--what if you acted on the weighted outcome of the previous 5 interactions? 
+"""
 
 plt.figure()
-plt.suptitle(f'Centers = {P_AB[0]}, {P_BA[0]} Spreads = {P_AB[1]}, {P_BA[1]}')
+plt.suptitle(f'Internal Noise = {noise}')
 A = np.zeros(num_events)
 colors = ['blue', 'magenta', 'lawngreen', 'orange']
 for i in range (0,num_events): 
     """ Plotting """ 
     event = events[i]
    
-    # plt.subplot(121)
     if i % 2 == 0:
         # Event is type A
         #print("event A")
@@ -176,11 +190,13 @@ for i in range (0,num_events):
             #print("early update rule")
             timer_1_mu = ((1-learning_rate) * 1) + learning_rate*(event-events[i-1])
             timer_weight = earlyUpdateRule(timer_1_value, timer_module_1.timerWeight(), learning_rate)
+            timer_1_ramping_weights.append(timer_weight)
             timer_module_1.setTimerWeight(timer_weight)
         else:
             #print("late update rule")
             timer_1_mu = ((1-learning_rate) * 1) + learning_rate*(event-events[i-1])
             timer_weight = lateUpdateRule(timer_1_value, timer_module_1.timerWeight(), learning_rate)
+            timer_1_ramping_weights.append(timer_weight)
             timer_module_1.setTimerWeight(timer_weight)
         
         plt.vlines(event, 0,y_lim, label="v", color=colors[0])
@@ -199,10 +215,12 @@ for i in range (0,num_events):
         # Update Rules
         if timer_2_value > 1:
             timer_weight = earlyUpdateRule(timer_2_value, timer_module_2.timerWeight(), learning_rate)
+            timer_2_ramping_weights.append(1/timer_weight)
             timer_module_2.setTimerWeight(timer_weight)
         
         else:
             timer_weight = lateUpdateRule(timer_2_value, timer_module_2.timerWeight(), learning_rate)
+            timer_2_ramping_weights.append(1/timer_weight)
             timer_module_2.setTimerWeight(timer_weight)
         plt.plot([event], [timer_2_value], c=colors[1], marker='o')
         plt.vlines(event, 0,y_lim, label="v", color=colors[1])
@@ -219,6 +237,14 @@ for i in range (0,num_events):
     plt.xlabel("Time units")
     plt.title("Timer")
     plt.grid('on')
+
+plt.figure()
+f, (ax1, ax2) = plt.subplots(2, 1)
+plt.subplot(211)
+ax1 = plt.hist(timer_2_ramping_weights, bins=20, range=(160,240))
+plt.subplot(212)
+ax2 = plt.hist(timer_2_events, bins=80, range=(160,240))
+    
 """        
     # Wire up two timers for two distinct events 
     event_a = np.random.normal(P_AB[0], P_AB[1], 1)

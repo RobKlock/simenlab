@@ -17,6 +17,7 @@ import sys
 import random
 from timer_module import TimerModule as TM
 from labellines import labelLine, labelLines
+from scipy.stats import invgauss   
 
 #print(TM.getSamples())
 
@@ -92,25 +93,25 @@ def activationAtIntervalEnd(weight, interval_length, c):
 # def main(s0, T=1000, dt = 1, num_events=2):
     
 # Establish two probability distributions for P(A|B) and P(B|A)
-P_A = [np.random.randint(20,50), np.random.randint(5,20), 0]
-P_AB = [np.random.randint(20,50), np.random.randint(5,20), 0]
+P_A = [30, 1] #[np.random.randint(20,50), np.random.randint(5,20), 0]
+P_AB = [30, 1] #[np.random.randint(20,50), np.random.randint(5,20), 0]
 
-P_BA = [np.random.randint(30,50), np.random.randint(5,20), 0]
+P_BA = [30, 1] #[np.random.randint(30,50), np.random.randint(5,20), 0]
 
 s0 = 0
 dt = .1 
 y_lim=2
 num_events = 50
-noise = 0.001
-learning_rate = 1
-STANDARD_INTERVAL = 100
+noise = 0.000
+learning_rate = .7
+STANDARD_INTERVAL = 10
 
 # Alternatively, use >1 distributions for a compound dist func. Pull all samples at once 
 P_AB2 = TM.getSamples(num_events, num_normal = 2, num_exp = 1, num_dists = 3, ret_params = False)
 #plt.hist(P_AB2, bins=40, color='black')
 
 # print(getSampleFromParameters(P_AB))
-timer_module_1 = TM(timer_weight=.05)
+timer_module_1 = TM(timer_weight=.5)
 timer_module_2 = TM(timer_weight=.175)
 
 timer_weight_1 = timer_module_1.block
@@ -119,32 +120,27 @@ timer_weight_2 = timer_module_2.block
 timer_1_running_act = 0
 
 events = np.zeros(num_events)
+
+timer_1_mu = 10
+timer_1_loc = 1
+alpha = 0.8
+
 # Establish first event
 #events[0] = np.random.normal(P_A[0],P_A[1], 1)
-events[0] = np.random.normal(STANDARD_INTERVAL,0.01, 1)
+events[0] = np.random.normal(STANDARD_INTERVAL,1, 1)
 for i in range (1,num_events):
     if i % 2 == 0:
         # events[i] = events[i-1] + P_AB2[i] 
         #events[i] = events[i-1] + np.random.normal(P_AB[0],P_AB[1], 1)
-        events[i] = events[i-1] + np.random.normal(STANDARD_INTERVAL,1, 1)
+        #events[i] = events[i-1] + np.random.normal(np.random.randint(20,50),10, 1)
+        #events[i] = events[i-1] + np.random.exponential(STANDARD_INTERVAL,1)
+        events[i] = events[i-1] +  np.random.normal(STANDARD_INTERVAL,1, 1)
+        #events[i] = events[i-1] + invgauss.rvs(1, 10, size=1)
     else:
         #events[i] = events[i-1] + np.random.normal(P_BA[0],P_BA[1], 1)
         events[i] = events[i-1] + np.random.normal(STANDARD_INTERVAL,1, 1)
         
 T = events[-1] + 100
-
-  
-""" 
-To add noise, take the event, calculate the 
-timer activation at the event, and add noise based on a Gaussian that has a variance 
-based on the amount of time thats gone by
-Va  = kT
-k = the noise parameter, squared
-
-Once the noise is applied, you apply the learning update rule to that 
-
-Try out a two timer sequence
-"""
 
 S_m = s0
 F_m = 0
@@ -161,10 +157,11 @@ for i in range (0,num_events):
     # plt.subplot(121)
     if i % 2 == 0:
         # Event is type A
-        print("event A")
+        #print("event A")
         
         #timer_1_running_act = timer_1_running_act + timer_1_value
         if i >= 1:
+            #timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), np.random.normal(timer_1_mu, 1, 1), noise)
             timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event-events[i-1], noise)
             plt.plot([events[i-1],event], [0, timer_1_value], linestyle = "dashed",  c=colors[0], alpha=0.8)
             plt.plot([event], [timer_1_value], marker='o',c=colors[0])
@@ -173,20 +170,23 @@ for i in range (0,num_events):
             plt.plot([0,event], [0, timer_1_value], linestyle = "dashed", c=colors[0], alpha=0.8)
             plt.plot([event], [timer_1_value], marker='o',c=colors[0])
         
+        
         # Update Rules
         if timer_1_value > 1:
-            print("early update rule")
+            #print("early update rule")
+            timer_1_mu = ((1-learning_rate) * 1) + learning_rate*(event-events[i-1])
             timer_weight = earlyUpdateRule(timer_1_value, timer_module_1.timerWeight(), learning_rate)
             timer_module_1.setTimerWeight(timer_weight)
         else:
-            print("late update rule")
+            #print("late update rule")
+            timer_1_mu = ((1-learning_rate) * 1) + learning_rate*(event-events[i-1])
             timer_weight = lateUpdateRule(timer_1_value, timer_module_1.timerWeight(), learning_rate)
             timer_module_1.setTimerWeight(timer_weight)
         
         plt.vlines(event, 0,y_lim, label="v", color=colors[0])
     
     else:
-        print("event B")
+        #print("event B")
         # Event is type B
         
         if i >= 1:

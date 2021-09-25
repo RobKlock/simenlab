@@ -88,6 +88,9 @@ def activationAtIntervalEnd(weight, interval_length, c):
     act = weight * interval_length + (c * math.sqrt(weight) * np.random.normal(0, 1) * math.sqrt(interval_length))
     # height = drift * interval_length
     return float(act)
+
+#def reward(target, timer_output):
+    
     
 
 # def main(s0, T=1000, dt = 1, num_events=2):

@@ -89,8 +89,14 @@ def activationAtIntervalEnd(weight, interval_length, c):
     # height = drift * interval_length
     return float(act)
 
-#def reward(target, timer_output):
+def reward(activation, margin=.025):
+    if 1 - activation <= margin:
+        return 1
+    else:
+        return 0
     
+    # Could also do something linear here
+        
     
 
 # def main(s0, T=1000, dt = 1, num_events=2):
@@ -106,8 +112,8 @@ dt = .1
 y_lim=2
 num_events = 500
 # Internal noise - timer activation
-noise = 0.05
-learning_rate = 1
+noise = 0.01
+learning_rate = .8
 STANDARD_INTERVAL = 200
 
 # Alternatively, use >1 distributions for a compound dist func. Pull all samples at once 
@@ -162,6 +168,8 @@ A function that defines reward, determined by the event duration (a rectangle --
                                                                   favor different outcomes)
 
 Then explore different approaches--what if you acted on the weighted outcome of the previous 5 interactions? 
+
+Would method of moments be relevant here?
 """
 
 plt.figure()
@@ -180,6 +188,7 @@ for i in range (0,num_events):
         if i >= 1:
             #timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), np.random.normal(timer_1_mu, 1, 1), noise)
             timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event-events[i-1], noise)
+            print(f'reward: {reward(timer_1_value)}')
             plt.plot([events[i-1],event], [0, timer_1_value], linestyle = "dashed",  c=colors[0], alpha=0.8)
             plt.plot([event], [timer_1_value], marker='o',c=colors[0])
         else:

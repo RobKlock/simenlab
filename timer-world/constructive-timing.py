@@ -90,6 +90,7 @@ def activationAtIntervalEnd(weight, interval_length, c):
     return float(act)
 
 def reward(activation, margin=.025):
+    # Squared duration of error from event
     if 1 - activation <= margin:
         return 1
     else:
@@ -97,7 +98,30 @@ def reward(activation, margin=.025):
     
     # Could also do something linear here
         
-    
+"""
+Do next:
+Generalize this out to have more complex worlds
+Mixture Distributions
+Examine a few cases where distributions are spread out, or unpredictable
+vs very predictable
+Look at the rewards the models earn and get a feel for it 
+
+Reward function: Decay exponentially backwards from the actual event time
+You get rewarded based on how close you are to that 
+
+Goal: Hit the timing threshold at the time of the event
+Either correct completely or some proportion less than 1
+
+Fixed/Peak Interval: You just get rewarded for the first press
+Every time you press before the event, you lose a little bit of points. But the
+first time after you get a lot of rewards
+
+2nd: You get rewarded based on how correctly you respond
+Two thresholds for beat the clock and DRL (differential reinforcement of low rates of responding)
+
+Look at how accuracy drops as the standard deviation drops or increases
+
+"""
 
 # def main(s0, T=1000, dt = 1, num_events=2):
     

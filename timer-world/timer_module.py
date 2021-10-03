@@ -94,6 +94,13 @@ class TimerModule:
                           [0, .55, 2, 0],
                           [0, 0, .9, 2]])
         self.block = block
+        self.score = 0.0
+    
+    def setScore(self, score):
+        self.score= float (score)
+    
+    def getScore(self):
+        return self.score
     
     def timerWeight(self):
         return self.timer_weight
@@ -174,17 +181,18 @@ class TimerModule:
         
         return 1
     
-    def getSamples(num_samples = 1, num_normal = 2, num_exp = 0, num_dists = 2, ret_params = False):
+    def getSamples(num_samples = 1, num_normal = 2, num_exp = 0, ret_params = False):
         """
         A function that generates random times from a probability 
         distribution that is the weighted sum of exponentials and Gaussians. Returns the parameters 
         of the distribution in a seperate array if ret_params is True
         """
+        num_dists = num_normal + num_exp
         # print("num samples on line 176", num_samples)
         # Gotta add better error handling
-        if num_normal + num_exp != num_dists:
-            suggested_method = f'getSamples({num_samples}, {num_normal}, {num_exp}, {num_normal + num_exp})'
-            raise ValueError(f"num_normal and num_exp must sum to num_dists! Did you mean {suggested_method}?")
+        # if num_normal + num_exp != num_dists:
+        #     suggested_method = f'getSamples({num_samples}, {num_normal}, {num_exp}, {num_normal + num_exp})'
+        #     raise ValueError(f"num_normal and num_exp must sum to num_dists! Did you mean {suggested_method}?")
         
         # To get N random weights that sum to 1, add N-1 random numbers to an array
         weights_probs = np.random.rand(num_dists - 1) 

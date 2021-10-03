@@ -96,7 +96,13 @@ def reward(activation, margin=.025):
     else:
         return 0
     
-    # Could also do something linear here
+def score_decay(activation):
+    if (activation > 0) & (activation <= 1):
+        return 0.02**(1.0-activation)
+    elif (activation > 1) & (activation < 1.12925) :
+        return 12 * 4**(-activation)-2
+    else:
+        return 0
         
 """
 Do next:
@@ -128,7 +134,6 @@ Look at how accuracy drops as the standard deviation drops or increases
 # Establish two probability distributions for P(A|B) and P(B|A)
 P_A = [30, 1] #[np.random.randint(20,50), np.random.randint(5,20), 0]
 P_AB = [30, 1] #[np.random.randint(20,50), np.random.randint(5,20), 0]
-
 P_BA = [30, 1] #[np.random.randint(30,50), np.random.randint(5,20), 0]
 
 s0 = 0
@@ -136,20 +141,20 @@ dt = .1
 y_lim=2
 num_events = 500
 # Internal noise - timer activation
-noise = 0.01
-learning_rate = .8
+noise = 0.0
+learning_rate = 1
 STANDARD_INTERVAL = 200
 
 # Alternatively, use >1 distributions for a compound dist func. Pull all samples at once 
-P_AB2 = TM.getSamples(num_events, num_normal = 2, num_exp = 1, num_dists = 3, ret_params = False)
+P_AB2 = TM.getSamples(num_events, num_normal = 2, num_exp = 0)
 #plt.hist(P_AB2, bins=40, color='black')
 
 # print(getSampleFromParameters(P_AB))
-timer_module_1 = TM(timer_weight=.5)
-timer_module_2 = TM(timer_weight=.175)
+timer_1 = TM(timer_weight=.5)
+timer_2 = TM(timer_weight=.175)
 
-timer_weight_1 = timer_module_1.block
-timer_weight_2 = timer_module_2.block
+timer_weight_1 = timer_1.block
+timer_weight_2 = timer_2.block
 
 timer_1_running_act = 0
 timer_1_ramping_weights = []
@@ -169,12 +174,12 @@ for i in range (1,num_events):
         # events[i] = events[i-1] + P_AB2[i] 
         #events[i] = events[i-1] + np.random.normal(P_AB[0],P_AB[1], 1)
         #events[i] = events[i-1] + np.random.normal(np.random.randint(20,50),10, 1)
-        #events[i] = events[i-1] + np.random.exponential(STANDARD_INTERVAL,1)
-        #events[i] = events[i-1] +  np.random.normal(STANDARD_INTERVAL,1, 1)
-        events[i] = events[i-1] + invgauss.rvs(1, 200, size=1)
+        events[i] = events[i-1] + np.random.exponential(STANDARD_INTERVAL,1)
+        #events[i] = events[i-1] +  np.random.normal(STANDARD_INTERVAL,10, 1)
+        #events[i] = events[i-1] + invgauss.rvs(1, 200, size=1)
     else:
         #events[i] = events[i-1] + np.random.normal(P_BA[0],P_BA[1], 1)
-        events[i] = events[i-1] + np.random.normal(STANDARD_INTERVAL,1, 1)
+        events[i] = events[i-1] + np.random.normal(STANDARD_INTERVAL,.1, 1)
         timer_2_events.append(np.random.normal(STANDARD_INTERVAL,1, 1)[0])
         
 T = events[-1] + 100
@@ -205,18 +210,18 @@ for i in range (0,num_events):
     event = events[i]
    
     if i % 2 == 0:
-        # Event is type A
-        #print("event A")
         
         #timer_1_running_act = timer_1_running_act + timer_1_value
         if i >= 1:
-            #timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), np.random.normal(timer_1_mu, 1, 1), noise)
-            timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event-events[i-1], noise)
-            print(f'reward: {reward(timer_1_value)}')
+            #timer_1_value = activationAtIntervalEnd(timer_1.timerWeight(), np.random.normal(timer_1_mu, 1, 1), noise)
+            timer_1_value = activationAtIntervalEnd(timer_1.timerWeight(), event-events[i-1], noise)
+            #print(f'reward: {score_decay(timer_1_value)}')
+            timer_1.setScore(timer_1.getScore() + score_decay(timer_1_value))
             plt.plot([events[i-1],event], [0, timer_1_value], linestyle = "dashed",  c=colors[0], alpha=0.8)
             plt.plot([event], [timer_1_value], marker='o',c=colors[0])
         else:
-            timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event, noise)
+            timer_1_value = activationAtIntervalEnd(timer_1.timerWeight(), event, noise)
+            timer_1.setScore(timer_1.getScore() + score_decay(timer_1_value))
             plt.plot([0,event], [0, timer_1_value], linestyle = "dashed", c=colors[0], alpha=0.8)
             plt.plot([event], [timer_1_value], marker='o',c=colors[0])
         
@@ -225,47 +230,46 @@ for i in range (0,num_events):
         if timer_1_value > 1:
             #print("early update rule")
             timer_1_mu = ((1-learning_rate) * 1) + learning_rate*(event-events[i-1])
-            timer_weight = earlyUpdateRule(timer_1_value, timer_module_1.timerWeight(), learning_rate)
+            timer_weight = earlyUpdateRule(timer_1_value, timer_1.timerWeight(), learning_rate)
             timer_1_ramping_weights.append(timer_weight)
-            timer_module_1.setTimerWeight(timer_weight)
+            timer_1.setTimerWeight(timer_weight)
         else:
-            #print("late update rule")
             timer_1_mu = ((1-learning_rate) * 1) + learning_rate*(event-events[i-1])
-            timer_weight = lateUpdateRule(timer_1_value, timer_module_1.timerWeight(), learning_rate)
+            timer_weight = lateUpdateRule(timer_1_value, timer_1.timerWeight(), learning_rate)
             timer_1_ramping_weights.append(timer_weight)
-            timer_module_1.setTimerWeight(timer_weight)
+            timer_1.setTimerWeight(timer_weight)
         
         plt.vlines(event, 0,y_lim, label="v", color=colors[0])
     
     else:
-        #print("event B")
-        # Event is type B
         
         if i >= 1:
-            timer_2_value = activationAtIntervalEnd(timer_module_2.timerWeight(), event - events[i-1], noise)
+            timer_2_value = activationAtIntervalEnd(timer_2.timerWeight(), event - events[i-1], noise)
+            timer_2.setScore(timer_2.getScore() + score_decay(timer_2_value))
             plt.plot([events[i-1],event], [0, timer_2_value], linestyle="dashed",  c=colors[1], alpha=0.8)
         else:
-            timer_2_value = activationAtIntervalEnd(timer_module_2.timerWeight(), event, noise)
+            timer_2_value = activationAtIntervalEnd(timer_2.timerWeight(), event, noise)
+            timer_2.setScore(timer_2.getScore() + score_decay(timer_2_value))
             plt.plot([0,event], [0, timer_2_value],  c=colors[1], alpha=0.8)
         
         # Update Rules
         if timer_2_value > 1:
-            timer_weight = earlyUpdateRule(timer_2_value, timer_module_2.timerWeight(), learning_rate)
+            timer_weight = earlyUpdateRule(timer_2_value, timer_2.timerWeight(), learning_rate)
             timer_2_ramping_weights.append(1/timer_weight)
-            timer_module_2.setTimerWeight(timer_weight)
+            timer_2.setTimerWeight(timer_weight)
         
         else:
-            timer_weight = lateUpdateRule(timer_2_value, timer_module_2.timerWeight(), learning_rate)
+            timer_weight = lateUpdateRule(timer_2_value, timer_2.timerWeight(), learning_rate)
             timer_2_ramping_weights.append(1/timer_weight)
-            timer_module_2.setTimerWeight(timer_weight)
+            timer_2.setTimerWeight(timer_weight)
         plt.plot([event], [timer_2_value], c=colors[1], marker='o')
         plt.vlines(event, 0,y_lim, label="v", color=colors[1])
             
     if y_lim>1:
             plt.hlines(1, 0, T, alpha=0.2, color='black')
             
-    if i == num_events-1:
-        print(f"timer 1 average activation: {timer_1_running_act/(num_events/2)} ")
+    # if i == num_events-1:
+    #     print(f"timer 1 average activation: {timer_1_running_act/(num_events/2)} ")
     
     plt.ylim([0,y_lim])
     plt.xlim([0,T])
@@ -274,97 +278,18 @@ for i in range (0,num_events):
     plt.title("Timer")
     plt.grid('on')
 
-plt.figure()
-f, (ax1, ax2) = plt.subplots(2, 1)
-plt.subplot(211)
-ax1 = plt.hist(timer_2_ramping_weights, bins=20, range=(160,240))
-plt.subplot(212)
-ax2 = plt.hist(timer_2_events, bins=80, range=(160,240))
+# plt.figure()
+# f, (ax1, ax2) = plt.subplots(2, 1)
+# plt.subplot(211)
+# ax1 = plt.hist(timer_2_ramping_weights, bins=20, range=(160,240))
+# plt.subplot(212)
+# ax2 = plt.hist(timer_2_events, bins=80, range=(160,240))
+print (f'noise: {noise}')
+print(f'learning rate: {learning_rate}')
+print (f'Num Events: {num_events}')
+print (f'Timer 1 - Exponenetial (scale: 200): {timer_1.getScore()}')
+print (f'Timer 2 - Normal (mean: 200, std: 0.1): {timer_2.getScore()}')
     
-"""        
-    # Wire up two timers for two distinct events 
-    event_a = np.random.normal(P_AB[0], P_AB[1], 1)
-    event_b = event_a + np.random.normal(P_BA[0], P_BA[1], 1)
-    A[i] = event_a
-    
-    r = random.random()
-    b = random.random()
-    g = random.random()
-    color = (r, g, b)
-    marker = random.randint(0,11)
-    
-    timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_a) + np.random.normal(0.01, .01 * (noise*noise)*event_a, 1)
-    timer_2_value = activationAtIntervalEnd(timer_module_2.timerWeight(), event_b) + np.random.normal(0.01, .01 * (noise*noise)*event_b, 1)                                
-    
-    plt.subplot(121)
-    plt.plot([event_a], [timer_1_value], marker='o',c=color)
-    plt.plot([0,event_a], [0, timer_1_value],  c=color, alpha=0.8)
-    plt.plot([event_b], [timer_2_value], c=color, marker='o')
-    plt.plot([event_a, event_b], [0, timer_2_value], c=color, linestyle='dashed')
-    
-    if y_lim>1:
-        plt.hlines(1, 0, T, alpha=0.5, linestyle="dashed", color='black')
-    
-    plt.vlines(event_a, 0,y_lim, label="v")
-    plt.vlines(event_b, 0,y_lim, label="v", linestyle="dashed", color='r')
-    plt.ylim([0,y_lim])
-    plt.xlim([0,T])
-    #plt.plot(v2_v1_diff, dashes = [5,5])
-    #plt.legend(['timer activation = {:.2f}'.format(timer_1_value), "timer activation",
-               #"early timer act.", "early timer act"], loc=0)
-    # plt.legend(['timer activation = {:.2f}'.format(timer_1_value), "timer activation"],loc=0)
-    plt.ylabel("activation")
-    plt.xlabel("Time units")
-    plt.title("Timer")
-    plt.grid('on')
-    #labelLines(plt.gca().get_lines(), align=False, fontsize=14)
-    #plt.show()
- 
-    if timer_1_value > 1:
-        timer_weight = earlyUpdateRule(timer_1_value, timer_module_1.timerWeight())
-        timer_module_1.setTimerWeight(timer_weight)
-        
-    else:
-        timer_weight = lateUpdateRule(timer_1_value, timer_module_1.timerWeight())
-        timer_module_1.setTimerWeight(timer_weight)
-        
-        
-    if timer_2_value > 1:
-        timer_weight = earlyUpdateRule(timer_2_value, timer_module_2.timerWeight())
-        timer_module_2.setTimerWeight(timer_weight)
-        
-    else:
-        timer_weight = lateUpdateRule(timer_2_value, timer_module_2.timerWeight())
-        timer_module_2.setTimerWeight(timer_weight)
-    
-    
-    timer_1_value = activationAtIntervalEnd(timer_module_1.timerWeight(), event_a) + np.random.normal(0.01, .01 * (noise*noise)*event_a, 1)
-    timer_2_value = activationAtIntervalEnd(timer_module_2.timerWeight(), event_b) + np.random.normal(0.01, .01 * (noise*noise)*event_b, 1)                               
-    
-    plt.subplot(122)
-    plt.plot([event_a], [timer_1_value], marker='o', c=color)
-    plt.plot([0,event_a], [0, timer_1_value], c=color, alpha=0.8)
-    
-    plt.plot([event_b], [timer_2_value], c=color, marker='o')
-    plt.plot([event_a, event_b], [0, timer_2_value], c=color, linestyle='dashed')
-    
-    if y_lim>1:
-        plt.hlines(1, 0, T, alpha=0.5, linestyle="dashed", color='black')
-    "Early Timer Plots Below"
-    plt.vlines(event_a, 0,y_lim)
-    plt.vlines(event_b, 0,y_lim, label="v", linestyle="dashed", color='r')
-    plt.ylim([0,y_lim])
-    plt.xlim([0,T])
-    #plt.plot(v2_v1_diff, dashes = [5,5])
-    #plt.legend(['timer activation = {:.2f}'.format(timer_1_value), "timer activation",
-               #"early timer act.", "early timer act"], loc=0)
-    # plt.legend(['timer activation = {:.2f}'.format(timer_1_value), "timer activation"],loc=0)
-    #plt.legend()
-    plt.ylabel("activation")
-    plt.xlabel("Time units")
-    plt.title("Timer")
-    plt.grid('on')
-    """
 
 """ Unfortunately I dont think this code is relevant anymore, but I'm including
 it down here in case it becomes relevant again 

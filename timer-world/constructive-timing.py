@@ -99,6 +99,7 @@ def reward(activation, margin=.025):
 def score_decay(activation):
     if (activation > 0) & (activation <= 1):
         return 0.02**(1.0-activation)
+    # This isnt exactly like beat the clock, but it can be commented out
     elif (activation > 1) & (activation < 1.12925) :
         return 12 * 4**(-activation)-2
     else:
@@ -139,7 +140,7 @@ P_BA = [30, 1] #[np.random.randint(30,50), np.random.randint(5,20), 0]
 s0 = 0
 dt = .1 
 y_lim=2
-num_events = 500
+num_events = 50
 # Internal noise - timer activation
 noise = 0.0
 learning_rate = 1
@@ -150,7 +151,10 @@ P_AB2 = TM.getSamples(num_events, num_normal = 2, num_exp = 0)
 #plt.hist(P_AB2, bins=40, color='black')
 
 # print(getSampleFromParameters(P_AB))
-timer_1 = TM(timer_weight=.5)
+#timer_1 = TM(timer_weight=.5)
+timer_1 = TM(.5, 3)
+timer_1.setTimerWeight(.55,1)
+timer_1.setTimerWeight(.45,2)
 timer_2 = TM(timer_weight=.175)
 
 timer_weight_1 = timer_1.block
@@ -174,8 +178,8 @@ for i in range (1,num_events):
         # events[i] = events[i-1] + P_AB2[i] 
         #events[i] = events[i-1] + np.random.normal(P_AB[0],P_AB[1], 1)
         #events[i] = events[i-1] + np.random.normal(np.random.randint(20,50),10, 1)
-        events[i] = events[i-1] + np.random.exponential(STANDARD_INTERVAL,1)
-        #events[i] = events[i-1] +  np.random.normal(STANDARD_INTERVAL,10, 1)
+        #events[i] = events[i-1] + np.random.exponential(STANDARD_INTERVAL,1)
+        events[i] = events[i-1] +  np.random.normal(STANDARD_INTERVAL,10, 1)
         #events[i] = events[i-1] + invgauss.rvs(1, 200, size=1)
     else:
         #events[i] = events[i-1] + np.random.normal(P_BA[0],P_BA[1], 1)
@@ -204,7 +208,7 @@ Would method of moments be relevant here?
 plt.figure()
 plt.suptitle(f'Internal Noise = {noise}')
 A = np.zeros(num_events)
-colors = ['blue', 'magenta', 'lawngreen', 'orange']
+colors = ['blue', 'magenta', 'red', 'lawngreen']
 for i in range (0,num_events): 
     """ Plotting """ 
     event = events[i]
@@ -215,12 +219,23 @@ for i in range (0,num_events):
         if i >= 1:
             #timer_1_value = activationAtIntervalEnd(timer_1.timerWeight(), np.random.normal(timer_1_mu, 1, 1), noise)
             timer_1_value = activationAtIntervalEnd(timer_1.timerWeight(), event-events[i-1], noise)
+            timer_1_value_2 = activationAtIntervalEnd(timer_1.timerWeight(1), event-events[i-1], noise)
+            timer_1_value_3 = activationAtIntervalEnd(timer_1.timerWeight(2), event-events[i-1], noise)
             #print(f'reward: {score_decay(timer_1_value)}')
             timer_1.setScore(timer_1.getScore() + score_decay(timer_1_value))
             plt.plot([events[i-1],event], [0, timer_1_value], linestyle = "dashed",  c=colors[0], alpha=0.8)
             plt.plot([event], [timer_1_value], marker='o',c=colors[0])
+            
+            plt.plot([events[i-1],event], [0, timer_1_value_2], linestyle = "dashed",  c=colors[2], alpha=0.8)
+            plt.plot([event], [timer_1_value_2], marker='o',c=colors[2], alpha=0.5)
+            
+            plt.plot([events[i-1],event], [0, timer_1_value_3], linestyle = "dashed",  c=colors[3], alpha=0.8)
+            plt.plot([event], [timer_1_value_3], marker='o',c=colors[3], alpha=0.5)
         else:
             timer_1_value = activationAtIntervalEnd(timer_1.timerWeight(), event, noise)
+            timer_1_value_2 = activationAtIntervalEnd(timer_1.timerWeight(1), event, noise)
+            timer_1_value_3 = activationAtIntervalEnd(timer_1.timerWeight(2), event, noise)
+            
             timer_1.setScore(timer_1.getScore() + score_decay(timer_1_value))
             plt.plot([0,event], [0, timer_1_value], linestyle = "dashed", c=colors[0], alpha=0.8)
             plt.plot([event], [timer_1_value], marker='o',c=colors[0])
@@ -230,16 +245,34 @@ for i in range (0,num_events):
         if timer_1_value > 1:
             #print("early update rule")
             timer_1_mu = ((1-learning_rate) * 1) + learning_rate*(event-events[i-1])
+            
             timer_weight = earlyUpdateRule(timer_1_value, timer_1.timerWeight(), learning_rate)
-            timer_1_ramping_weights.append(timer_weight)
             timer_1.setTimerWeight(timer_weight)
+            
+            timer_weight2 = earlyUpdateRule(timer_1_value_2 + .05, timer_1.timerWeight(1), learning_rate)
+            timer_1.setTimerWeight(timer_weight2, 1)
+            
+            timer_weight3 = earlyUpdateRule(timer_1_value_3 - .05, timer_1.timerWeight(2), learning_rate)
+            timer_1.setTimerWeight(timer_weight3, 2)
+            
+            
+            timer_1_ramping_weights.append(timer_weight)
+            
         else:
             timer_1_mu = ((1-learning_rate) * 1) + learning_rate*(event-events[i-1])
             timer_weight = lateUpdateRule(timer_1_value, timer_1.timerWeight(), learning_rate)
-            timer_1_ramping_weights.append(timer_weight)
             timer_1.setTimerWeight(timer_weight)
+            
+            timer_weight2 = lateUpdateRule(timer_1_value_2  + .05, timer_1.timerWeight(1), learning_rate)
+            timer_1.setTimerWeight(timer_weight2, 1)
+            
+            timer_weight3 = lateUpdateRule(timer_1_value_3 - .05 , timer_1.timerWeight(2), learning_rate)
+            timer_1.setTimerWeight(timer_weight3, 2)
+            
+            timer_1_ramping_weights.append(timer_weight)
+            
         
-        plt.vlines(event, 0,y_lim, label="v", color=colors[0])
+        plt.vlines(event, 0,y_lim, label="v", color=colors[0], alpha=0.5)
     
     else:
         
@@ -263,7 +296,7 @@ for i in range (0,num_events):
             timer_2_ramping_weights.append(1/timer_weight)
             timer_2.setTimerWeight(timer_weight)
         plt.plot([event], [timer_2_value], c=colors[1], marker='o')
-        plt.vlines(event, 0,y_lim, label="v", color=colors[1])
+        plt.vlines(event, 0,y_lim, label="v", color=colors[1], alpha=0.5)
             
     if y_lim>1:
             plt.hlines(1, 0, T, alpha=0.2, color='black')
@@ -287,8 +320,8 @@ for i in range (0,num_events):
 print (f'noise: {noise}')
 print(f'learning rate: {learning_rate}')
 print (f'Num Events: {num_events}')
-print (f'Timer 1 - Exponenetial (scale: 200): {timer_1.getScore()}')
-print (f'Timer 2 - Normal (mean: 200, std: 0.1): {timer_2.getScore()}')
+print (f'Timer 1 - {timer_1.getScore()}')
+print (f'Timer 2 - {timer_2.getScore()}')
     
 
 """ Unfortunately I dont think this code is relevant anymore, but I'm including

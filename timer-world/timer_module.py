@@ -87,8 +87,10 @@ class TimerModule:
     
     ZEROS_BLOCK = np.zeros((4,4))
     BIAS_BLOCK = np.array([1.2, 1, 1.2, 1.25])
-    def __init__(self,timer_weight = 1):
+    def __init__(self,timer_weight = 1,n_timers=1):
+        self.timers=np.zeros(n_timers)
         self.timer_weight=timer_weight
+        self.timers[0] = timer_weight
         block = np.array([[2, 0, 0, -.4],
                           [self.timer_weight, 1, 0, -.4],
                           [0, .55, 2, 0],
@@ -102,11 +104,12 @@ class TimerModule:
     def getScore(self):
         return self.score
     
-    def timerWeight(self):
-        return self.timer_weight
+    def timerWeight(self, index=0):
+        return self.timers[index]
     
-    def setTimerWeight(self, weight):
+    def setTimerWeight(self, weight, index=0):
         self.timer_weight = weight
+        self.timers[index] = weight
     
     def timerBlock(self):
         return self.block

@@ -146,6 +146,7 @@ s0 = 0
 dt = .1 
 y_lim=2
 num_events = 100
+n_event_types=3
 # Internal noise - timer activation
 noise = 0.0
 learning_rate = 1
@@ -158,6 +159,7 @@ P_AB2 = TM.getSamples(num_events, num_normal = 2, num_exp = 0)
 
 # print(getSampleFromParameters(P_AB))
 #timer_1 = TM(timer_weight=.5)
+timers=[TM(.5, 3)]
 timer_1 = TM(.5, 3)
 timer_1.setTimerWeight(.55,1)
 timer_1.setTimerWeight(.45,2)
@@ -176,6 +178,10 @@ timer_1_mu = 10
 timer_1_loc = 1
 alpha = 0.8
 
+events_all = []
+for e_type in range(0,n_event_types):
+    events_type_n = TM.getSamples(num_samples = num_events//n_event_types, num_normal = 4, num_exp = 0)
+    events_all.append(events_type_n)
 # Establish first event
 #events[0] = np.random.normal(P_A[0],P_A[1], 1)
 events[0] = np.random.normal(STANDARD_INTERVAL,1, 1)
@@ -192,6 +198,7 @@ for i in range (1,num_events):
         events[i] = events[i-1] + np.random.normal(STANDARD_INTERVAL,.1, 1)
         timer_2_events.append(np.random.normal(STANDARD_INTERVAL,1, 1)[0])
         
+# Time axis for plotting        
 T = events[-1] + 100
 
 S_m = s0

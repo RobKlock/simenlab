@@ -229,8 +229,8 @@ class TimerModule:
             
         # Establish our distributions and weights in the same loop
         for i in range (0, num_dists):
-            locs.append(np.random.randint(10,30))
-            scales.append(math.sqrt(np.random.randint(5, 10)))
+            locs.append(np.random.randint(20,50))
+            scales.append(math.sqrt(np.random.randint(25, 50)))
        
         # Roll a dice N times
         samples = np.zeros(num_samples)

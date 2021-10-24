@@ -133,6 +133,11 @@ Two thresholds for beat the clock and DRL (differential reinforcement of low rat
 
 Look at how accuracy drops as the standard deviation drops or increases
 
+
+Notes 10/23
+Make each event a tuple of type (event time, Event Type)
+Start the world, and have timers automatically allocated for each event type
+
 """
 
 # def main(s0, T=1000, dt = 1, num_events=2):
@@ -159,6 +164,8 @@ P_AB2 = TM.getSamples(num_events, num_normal = 2, num_exp = 0)
 
 # print(getSampleFromParameters(P_AB))
 #timer_1 = TM(timer_weight=.5)
+
+# This is the array of timers for the siulation
 timers=[TM(.5, 3)]
 timer_1 = TM(.5, 3)
 timer_1.setTimerWeight(.55,1)
@@ -178,12 +185,17 @@ timer_1_mu = 10
 timer_1_loc = 1
 alpha = 0.8
 
+# Add event tuples to an array
 events_all = []
 for e_type in range(0,n_event_types):
     events_type_n = TM.getSamples(num_samples = num_events//n_event_types, num_normal = 4, num_exp = 0)
     events_all.append(events_type_n)
+    
+    
 # Establish first event
 #events[0] = np.random.normal(P_A[0],P_A[1], 1)
+
+# For each event in the array, analyze it and have the timers respond accordingly
 events[0] = np.random.normal(STANDARD_INTERVAL,1, 1)
 for i in range (1,num_events):
     if i % 2 == 0:

@@ -249,7 +249,7 @@ for i in range (0,num_events):
             response_time= events[i-1]+responseTime(timer_1.timerWeight(), response_threshold)
             #print(f'reward: {score_decay(timer_1_value)}')
             timer_1.setScore(timer_1.getScore() + score_decay(response_time, event))
-            plt.subplot(211)
+            # plt.subplot(211)
             plt.plot([events[i-1],event], [0, timer_1_value], linestyle = "dashed",  c=colors[0], alpha=0.8)
             plt.plot([event], [timer_1_value], marker='o',c=colors[0])
             
@@ -261,9 +261,9 @@ for i in range (0,num_events):
             plt.vlines(event, 0,y_lim, label="v", color=colors[0], alpha=0.5)
             
             
-            plt.subplot(212)
-            plt.hlines(response_threshold, 0, T, alpha=0.2, color='pink')
-            plt.plot([response_time], [response_threshold], marker='+',c='green')
+            # plt.subplot(212)
+            # plt.hlines(response_threshold, 0, T, alpha=0.2, color='pink')
+            # plt.plot([response_time], [response_threshold], marker='+',c='green')
         else:
             timer_1_value = activationAtIntervalEnd(timer_1.timerWeight(), event, noise)
             timer_1_value_2 = activationAtIntervalEnd(timer_1.timerWeight(1), event, noise)
@@ -315,13 +315,13 @@ for i in range (0,num_events):
             response_time= events[i-1]+responseTime(timer_2.timerWeight(), response_threshold)
             timer_2_value = activationAtIntervalEnd(timer_2.timerWeight(), event - events[i-1], noise)
             timer_2.setScore(timer_2.getScore() + score_decay(response_time, event))
-            plt.subplot(211)
+            # plt.subplot(211)
             plt.plot([events[i-1],event], [0, timer_2_value], linestyle="dashed",  c=colors[1], alpha=0.8)
         else:
             response_time= responseTime(timer_2.timerWeight(), response_threshold)
             timer_2.setScore(timer_2.getScore() + score_decay(response_time, event))
             timer_2_value = activationAtIntervalEnd(timer_2.timerWeight(), event, noise)
-            plt.subplot(211)
+            # plt.subplot(211)
             plt.plot([0,event], [0, timer_2_value],  c=colors[1], alpha=0.8)
         
         # Update Rules
@@ -348,10 +348,10 @@ for i in range (0,num_events):
     plt.ylabel("activation")
     plt.xlabel("Time")
     
-    ax = plt.subplot(211)
-    ax.set_title("Timer Ramping Activity")
-    ax = plt.subplot(212)
-    ax.set_title("Timer 1 Responses")
+    # ax = plt.subplot(211)
+    # ax.set_title("Timer Ramping Activity")
+    # # ax = plt.subplot(212)
+    # ax.set_title("Timer 1 Responses")
     plt.grid('on')
 
 # plt.figure()

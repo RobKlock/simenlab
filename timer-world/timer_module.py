@@ -191,12 +191,6 @@ class TimerModule:
         of the distribution in a seperate array if ret_params is True
         """
         num_dists = num_normal + num_exp
-        # print("num samples on line 176", num_samples)
-        # Gotta add better error handling
-        # if num_normal + num_exp != num_dists:
-        #     suggested_method = f'getSamples({num_samples}, {num_normal}, {num_exp}, {num_normal + num_exp})'
-        #     raise ValueError(f"num_normal and num_exp must sum to num_dists! Did you mean {suggested_method}?")
-        
         # To get N random weights that sum to 1, add N-1 random numbers to an array
         weights_probs = np.random.rand(num_dists - 1) 
         # Add 0 and 1 to that array
@@ -204,9 +198,7 @@ class TimerModule:
         weights_probs = np.append(weights_probs, 1)
         # Sort them
         weights_probs = np.sort(weights_probs)
-        # print("weights probs: ", weights_probs)
         weights = np.zeros(num_dists)
-        # print("weights ", weights)
         # After establishing the weight array, iterate through the probabilities 
         # and declare the Nth weight to be the difference between the entries at the N+1 and N-1
         # indices of the probability array
@@ -214,7 +206,6 @@ class TimerModule:
             weights[i]=(weights_probs[i + 1] - weights_probs[i])
         
         weights = np.sort(weights)
-        # print("weights ", weights)
         # Declare distribution types (1 is exp, 0 is normal)
         if num_normal == 0:
             dist_types = np.ones(num_dists)
@@ -222,18 +213,18 @@ class TimerModule:
             dist_types = np.zeros(num_dists)
         else:
             dist_types = np.concatenate((np.ones(num_exp), np.zeros(num_normal)), axis=None)
-        # print("dt: ", dist_types)
-        # Declare num_dists centers and std deviations 
+        
+        # Declare means and std deviations 
         locs = []
         scales = []
             
-        # Establish our distributions and weights in the same loop
+        # Establish our distributions
         for i in range (0, num_dists):
             locs.append(np.random.randint(20,50))
             scales.append(math.sqrt(np.random.randint(25, 50)))
        
         # Roll a dice N times
-        samples = np.zeros(num_samples)
+        samples = [] #np.zeros(num_samples)
                 # Roll our dice N times
         # I hate that this is O(N * D)
         for i in range(0, num_samples):
@@ -244,12 +235,12 @@ class TimerModule:
                 if (dice_roll < weights_probs[dist_index + 1]):
                     # The roll falls into this weight, draw our sample
                     if dist_types[dist_index] == 1:
-                        sample = np.random.exponential(scales[dist_index], 1)
-                        samples[i] = sample
+                        sample = np.random.exponential(scales[dist_index], 1)[0]
+                        samples.append([sample, dist_index])
                     
                     else:
-                        sample = np.random.normal(locs[dist_index], scales[dist_index], 1)
-                        samples[i] = sample
+                        sample = np.random.normal(locs[dist_index], scales[dist_index], 1)[0]
+                        samples.append([sample,dist_index])
                     break
                 
         return np.asarray(samples)

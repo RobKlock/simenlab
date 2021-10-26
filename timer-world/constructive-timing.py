@@ -148,13 +148,22 @@ STANDARD_INTERVAL = 200
 response_threshold = 0.95
 alpha = 0.8
 
+
 # TODO: Establish probability distributions for all combinations of event types
 
 # Alternatively, use >1 distributions for a compound dist func. Pull all samples at once 
 events_with_type = TM.getSamples(4000, num_normal = 2, num_exp = 0)
-events = (list(zip(*events_with_type))[0])
-plt.hist(events, bins=40, color='black')
+event_occurances = (list(zip(*events_with_type))[0])
+plt.hist(event_occurances, bins=40, color='black')
+events = np.zeros(num_events)
+events_with_type[0][0] = event_occurances[0]
 
+# Something breaking here
+for i in range (1,num_events):
+     events_with_type[i][0] = events_with_type[i-1][0] + events_with_type[i][0]
+
+# Time axis for plotting        
+T = events[-1] + 100
 
 # Array of timers for the simulation, new timers get allocated when new events appear
 timers=[TM(.5, 3), TM(timer_weight=.175)]
@@ -167,60 +176,65 @@ timer_1.setTimerWeight(.45,2)
 
 timer_2 = TM(timer_weight=.175)
 
-timer_2_events = []
 
-events = np.zeros(num_events)
 
 # Add event tuples to an array
-events_all = []
-for e_type in range(0,n_event_types):
-    events_type_n = TM.getSamples(num_samples = num_events//n_event_types, num_normal = 4, num_exp = 0)
-    events_all.append(events_type_n)
+# events_all = []
+# for e_type in range(0,n_event_types):
+#     events_type_n = TM.getSamples(num_samples = num_events//n_event_types, num_normal = 4, num_exp = 0)
+#     events_all.append(events_type_n)
     
-    
-# Establish first event
-#events[0] = np.random.normal(P_A[0],P_A[1], 1)
 
 # For each event in the array, analyze it and have the timers respond accordingly
-events[0] = np.random.normal(STANDARD_INTERVAL,1, 1)
-for i in range (1,num_events):
-    if i % 2 == 0:
-        # events[i] = events[i-1] + P_AB2[i] 
-        #events[i] = events[i-1] + np.random.normal(P_AB[0],P_AB[1], 1)
-        #events[i] = events[i-1] + np.random.normal(np.random.randint(20,50),10, 1)
-        #events[i] = events[i-1] + np.random.exponential(STANDARD_INTERVAL,1)
-        events[i] = events[i-1] +  np.random.normal(STANDARD_INTERVAL,10, 1)
-        #events[i] = events[i-1] + invgauss.rvs(1, 200, size=1)
-    else:
-        #events[i] = events[i-1] + np.random.normal(P_BA[0],P_BA[1], 1)
-        events[i] = events[i-1] + np.random.normal(STANDARD_INTERVAL,.1, 1)
-        timer_2_events.append(np.random.normal(STANDARD_INTERVAL,1, 1)[0])
-        
-# Time axis for plotting        
-T = events[-1] + 100
-
-F_m = 0
-""" 
-Record the ramp activations of every event that occurs
-Store the correct ramp slopes in an array
-This just helps the framing of getting everything stored
-
-
-Start to calculate reward based on a reward(gain) function
-A function that defines reward, determined by the event duration (a rectangle -- all or nothing, gaussian, etc. Can also
-                                                                  favor different outcomes)
-
-Then explore different approaches--what if you acted on the weighted outcome of the previous 5 interactions? 
-
-Would method of moments be relevant here?
-"""
+# events[0] = np.random.normal(STANDARD_INTERVAL,1, 1)
+# for i in range (1,num_events):
+#     if i % 2 == 0:
+#         # events[i] = events[i-1] + P_AB2[i] 
+#         #events[i] = events[i-1] + np.random.normal(P_AB[0],P_AB[1], 1)
+#         #events[i] = events[i-1] + np.random.normal(np.random.randint(20,50),10, 1)
+#         #events[i] = events[i-1] + np.random.exponential(STANDARD_INTERVAL,1)
+#         events[i] = events[i-1] +  np.random.normal(STANDARD_INTERVAL,10, 1)
+#         #events[i] = events[i-1] + invgauss.rvs(1, 200, size=1)
+#     else:
+#         #events[i] = events[i-1] + np.random.normal(P_BA[0],P_BA[1], 1)
+#         events[i] = events[i-1] + np.random.normal(STANDARD_INTERVAL,.1, 1)
+#         timer_2_events.append(np.random.normal(STANDARD_INTERVAL,1, 1)[0])
 
 plt.figure()
 # plt.suptitle(f'Internal Noise = {noise}')
-A = np.zeros(num_events)
-colors = ['blue', 'magenta', 'red', 'lawngreen']
+colors = ['b', 'g', 'r', 'c', 'm', 'y']
+first_event = True
+for idx, event  in enumerate(events_with_type):
+    print(event)
+    event_time = event[0]
+    event_type = int(event[1])
+    timer = timers[event_type]
+    # new_event = False
+    if event_type > len(timers):
+        # Allocate a new timer for this event type 
+        # TODO: Run this by prof. simen to see if its fine
+        timers.append(TM(.5))
+    if first_event:
+        first_event= False                   
+        print(timers[event_type].timerWeight())
+        timer_value = activationAtIntervalEnd(timer.timerWeight(), event_time, noise)
+        response_time= responseTime(timer.timerWeight(), response_threshold)
+        timer_1.setScore(timer.getScore() + score_decay(response_time, event_time))
+        
+        plt.plot([0,event_time], [0, timer_value], linestyle = "dashed", c=colors[0], alpha=0.8)
+        plt.plot([event_time], [timer_value], marker='o',c=colors[0]) 
+
+    else:
+        timer_value = activationAtIntervalEnd(timer.timerWeight(), event_time, noise)
+        response_time= responseTime(timer.timerWeight(), response_threshold)
+        timer_1.setScore(timer.getScore() + score_decay(response_time, event_time))
+        
+        plt.plot([events[idx-1],event_time], [0, timer_value], linestyle = "dashed", c=colors[0], alpha=0.8)
+        plt.plot([event_time], [timer_value], marker='o',c=colors[0]) 
+        
+
+
 for i in range (0,num_events): 
-    """ Plotting """ 
     event = events[i]
    
     if i % 2 == 0:

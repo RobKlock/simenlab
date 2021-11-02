@@ -88,21 +88,30 @@ class TimerModule:
     ZEROS_BLOCK = np.zeros((4,4))
     BIAS_BLOCK = np.array([1.2, 1, 1.2, 1.25])
     def __init__(self,timer_weight = 1,n_timers=1):
-        self.timers=np.zeros(n_timers)
+        self.timers=np.empty(n_timers)
+        self.timers.fill(timer_weight)
         self.timer_weight=timer_weight
-        self.timers[0] = timer_weight
+        self.scores=np.zeros(n_timers)
+        self.learning_rates=np.empty(n_timers)
         block = np.array([[2, 0, 0, -.4],
                           [self.timer_weight, 1, 0, -.4],
                           [0, .55, 2, 0],
                           [0, 0, .9, 2]])
         self.block = block
         self.score = 0.0
+        self.learning_rate = 1
     
-    def setScore(self, score):
-        self.score= float (score)
+    def setScore(self, ramp_index, score):
+        self.scores[ramp_index]= float (score)
     
-    def getScore(self):
-        return self.score
+    def getScore(self, ramp_index):
+        return self.scores[ramp_index]
+    
+    def learningRate(self, ramp_index):
+        return self.learning_rates[ramp_index]
+    
+    def setLearningRate(self, ramp_index, rate):
+        self.learning_rates[ramp_index] = rate
     
     def timerWeight(self, index=0):
         return self.timers[index]
@@ -184,7 +193,7 @@ class TimerModule:
         
         return 1
     
-    def getSamples(num_samples = 1, num_normal = 2, num_exp = 0, ret_params = False):
+    def getSamples(num_samples = 1, num_normal = 2, num_exp = 0, ret_params = False, standard_interval = -1):
         """
         A function that generates random times from a probability 
         distribution that is the weighted sum of exponentials and Gaussians. Returns the parameters 
@@ -221,7 +230,7 @@ class TimerModule:
         # Establish our distributions
         for i in range (0, num_dists):
             locs.append(np.random.randint(20,50))
-            scales.append(math.sqrt(np.random.randint(25, 50)))
+            scales.append(math.sqrt(np.random.randint(1, 10)))
        
         # Roll a dice N times
         samples = [] #np.zeros(num_samples)
@@ -240,6 +249,8 @@ class TimerModule:
                     
                     else:
                         sample = np.random.normal(locs[dist_index], scales[dist_index], 1)[0]
+                        if standard_interval > 0:
+                            sample = np.random.normal(standard_interval,1, 1)[0]
                         samples.append([sample,dist_index])
                     break
                 

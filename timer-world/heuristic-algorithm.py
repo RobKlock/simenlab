@@ -104,6 +104,16 @@ def score_decay(response_time, event_time):
         #return 0.02**(1.0-diff)
         return 2**(-diff/2)
 
+def update_rule(timer_value, timer_weight, learning_rate, v0=1.0, z = 1, bias = 1):
+    if timer_value > 1:
+        ''' Early Update Rule '''
+        timer_weight = earlyUpdateRule(timer_value, timer.timerWeight(), timer.learningRate(ramp_index))
+        timer.setTimerWeight(timer_weight)
+    else:
+        ''' Late Update Rule '''
+        timer_weight = lateUpdateRule(timer_value, timer.timerWeight(), LEARNING_RATE)
+        timer.setTimerWeight(timer_weight)
+
     
 N_EVENT_TYPES=2 # Number of event types (think, stimulus A, stimulus B, ...)
 NUM_EVENTS=100 # Total amount of events across all types
@@ -174,17 +184,7 @@ for idx, event in enumerate(events_with_type):
         #     for weight in range(1,len(timer.timers)):
         #         timer_value = activationAtIntervalEnd(timer.timerWeight(weight), event_time, noise)
         #         plt.plot([event_time], [timer_value], marker='o',c=colors[event_type]) 
-    
-    # Update Rules
-    if timer_value > 1:
-        ''' Early Update Rule '''
-        timer_weight = earlyUpdateRule(timer_value, timer.timerWeight(), timer.learningRate())
-        timer.setTimerWeight(timer_weight)
-        
-    else:
-        ''' Late Update Rule '''
-        timer_weight = lateUpdateRule(timer_value, timer.timerWeight(), LEARNING_RATE)
-        timer.setTimerWeight(timer_weight)
+    update_rule(timer_value, timer.timerWeight(), timer.learningRate(ramp_index))    
 
     plt.vlines(event, 0,Y_LIM, label="v", color=colors[event_type], alpha=0.5)
     if Y_LIM>1:

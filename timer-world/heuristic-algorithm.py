@@ -78,11 +78,12 @@ def earlyUpdateRule(vt, timer_weight, learning_rate, v0=1.0, z = 1, bias = 1):
     ret_weight = timer_weight - (learning_rate * d_A)
     return ret_weight
 
-def activationAtIntervalEnd(weight, interval_length, c):
-    # drift = ((weight * 1) - 1 + .5)
-    act = weight * interval_length + (c * math.sqrt(weight) * np.random.normal(0, 1) * math.sqrt(interval_length))
-    # height = drift * interval_length
-    return float(act)
+def activationAtIntervalEnd(timer, interval_length, c):
+    act = timer.timers * interval_length
+    for i in range (0, len(act)):
+        act[i] = act[i] + c * np.sqrt(act[i]) * np.random.normal(0, 1) * math.sqrt(interval_length)
+    return act
+    
 
 def responseTime(weight, threshold):
     return threshold/weight
@@ -104,21 +105,22 @@ def score_decay(response_time, event_time):
         #return 0.02**(1.0-diff)
         return 2**(-diff/2)
 
-def update_rule(timer_value, timer_weight, learning_rate, v0=1.0, z = 1, bias = 1):
-    if timer_value > 1:
-        ''' Early Update Rule '''
-        timer_weight = earlyUpdateRule(timer_value, timer.timerWeight(), timer.learningRate(ramp_index))
-        timer.setTimerWeight(timer_weight)
-    else:
-        ''' Late Update Rule '''
-        timer_weight = lateUpdateRule(timer_value, timer.timerWeight(), LEARNING_RATE)
-        timer.setTimerWeight(timer_weight)
+def update_rule(timer_values, timer, v0=1.0, z = 1, bias = 1):
+    for idx, value in enumerate(timer_values):
+        if value > 1:
+            ''' Early Update Rule '''
+            timer_weight = earlyUpdateRule(value, timer.timerWeight(idx), timer.learningRate(idx))
+            timer.setTimerWeight(timer_weight, idx)
+        else:
+            ''' Late Update Rule '''
+            timer_weight = lateUpdateRule(value, timer.timerWeight(idx), timer.learningRate(idx))
+            timer.setTimerWeight(timer_weight, idx)
 
     
 N_EVENT_TYPES=2 # Number of event types (think, stimulus A, stimulus B, ...)
 NUM_EVENTS=100 # Total amount of events across all types
 Y_LIM=2 # Plotting limit
-NOISE=0.0 # Internal noise - timer activation
+NOISE=0.01 # Internal noise - timer activation
 LEARNING_RATE=.8
 STANDARD_INTERVAL=200
 RESPONSE_THRESHOLD=0.95
@@ -126,7 +128,7 @@ ALPHA = 0.8
 colors = ['b', 'g', 'r', 'c', 'm', 'y']
 
 events_with_type = TM.getSamples(NUM_EVENTS, num_normal = 2, num_exp = 0)
-
+events_with_type = TM.getSamples(NUM_EVENTS, num_normal = 2, num_exp = 0, standard_interval = 200)
 event_occurances = (list(zip(*events_with_type))[0])
 plt.hist(event_occurances, bins=80, color='black')
 
@@ -139,8 +141,10 @@ for i in range (1,NUM_EVENTS):
 # Time axis for plotting        
 T = events_with_type[-1][0] + 100
 
-# Timer with 20 ramps
+# Timer with 20 ramps, all initialized to be very highly weighted
 timer=TM(1,20)
+
+# TODO: Make the initial weight update continuous so we can see the process better
 
 plt.figure()
 
@@ -148,14 +152,17 @@ timers_dict = {}
 timers_dict[0] = 0
 timers_dict[1] = 1
 first_event = True
+
 for idx, event in enumerate(events_with_type):
     event_time = event[0]
     event_type = int(event[1])
     
     if event_type not in timers_dict:
         # Allocate a new timer for this event type 
-        # TODO: Run this by prof. simen to see if its fine
-        index = len(timers)
+        
+        # TODO: Figure out the allocation of ramps to events 
+        
+        index = len(timer.timers)
         timers.append(TM(.5))
         timers_dict[event_type] = index
         
@@ -163,28 +170,27 @@ for idx, event in enumerate(events_with_type):
    
     if first_event:
         first_event= False                   
-        timer_value = activationAtIntervalEnd(timer.timerWeight(), event_time, NOISE)
+        timer_value = activationAtIntervalEnd(timer, event_time, NOISE)
         response_time= responseTime(timer.timerWeight(), RESPONSE_THRESHOLD)
         timer.setScore(ramp_index, timer.getScore(ramp_index) + score_decay(response_time, event_time))
         
-        plt.plot([0,event_time], [0, timer_value], linestyle = "dashed", c=colors[event_type], alpha=0.8)
-        plt.plot([event_time], [timer_value], marker='o',c=colors[event_type]) 
+        for i in timer_value:
+            plt.plot([0,event_time], [0, i], linestyle = "dashed", c=colors[event_type], alpha=0.8)
+            plt.plot([event_time], [i], marker='o',c=colors[event_type],  alpha=0.8) 
 
     else:
         prev_event = events_with_type[idx-1][0]
-        timer_value = activationAtIntervalEnd(timer.timerWeight(), event_time - events_with_type[idx-1][0], NOISE)
+        timer_value = activationAtIntervalEnd(timer, event_time - events_with_type[idx-1][0], NOISE)
         response_time = responseTime(timer.timerWeight(), RESPONSE_THRESHOLD)
         timer.setScore(ramp_index, timer.getScore(ramp_index) + score_decay(response_time, event_time))       
         
-        plt.plot([prev_event,event_time], [0, timer_value], linestyle = "dashed",  c=colors[event_type], alpha=0.8)
-        # plt.plot([events[idx-1][0],event_time], [0, timer_value], linestyle = "dashed", c=colors[0], alpha=0.8)
-        plt.plot([event_time], [timer_value], marker='o',c=colors[event_type]) 
+        for i in timer_value:
+            plt.plot([prev_event,event_time], [0, i], linestyle = "dashed",  c=colors[event_type], alpha=0.8)
+            plt.plot([event_time], [i], marker='o',c=colors[event_type]) 
         
-        # if len(timer.timers) > 1:
-        #     for weight in range(1,len(timer.timers)):
-        #         timer_value = activationAtIntervalEnd(timer.timerWeight(weight), event_time, noise)
-        #         plt.plot([event_time], [timer_value], marker='o',c=colors[event_type]) 
-    update_rule(timer_value, timer.timerWeight(), timer.learningRate(ramp_index))    
+    update_rule(timer_value, timer)    
+    
+    # TODO: Rest of the heuristic (scores, reallocation, etc)
 
     plt.vlines(event, 0,Y_LIM, label="v", color=colors[event_type], alpha=0.5)
     if Y_LIM>1:

@@ -92,7 +92,7 @@ class TimerModule:
         self.timers.fill(timer_weight)
         self.timer_weight=timer_weight
         self.scores=np.zeros(n_timers)
-        self.learning_rates=np.empty(n_timers)
+        self.learning_rates=np.ones(n_timers)
         block = np.array([[2, 0, 0, -.4],
                           [self.timer_weight, 1, 0, -.4],
                           [0, .55, 2, 0],

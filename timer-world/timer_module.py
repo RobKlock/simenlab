@@ -100,6 +100,7 @@ class TimerModule:
         self.block = block
         self.score = 0.0
         self.learning_rate = 1
+        self.event_dict = {}
     
     def setScore(self, ramp_index, score):
         self.scores[ramp_index]= float (score)
@@ -112,6 +113,9 @@ class TimerModule:
     
     def setLearningRate(self, ramp_index, rate):
         self.learning_rates[ramp_index] = rate
+        
+    def eventDict(self):
+        return self.event_dict
     
     def timerWeight(self, index=0):
         return self.timers[index]

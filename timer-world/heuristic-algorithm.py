@@ -97,13 +97,16 @@ def reward(activation, margin=.025):
     
 def score_decay(response_time, event_time):
     #print(f'response_time: {response_time}, event_time: {event_time}')
+    print("response time: ", response_time)
+    print("event time: ", event_time)
     diff = event_time - response_time
     #print(f'diff: {diff}')
     if diff <= 0:
         return 0  
     else:
         #return 0.02**(1.0-diff)
-        return 2**(-diff/2)
+        print("diff: ", diff)
+        return 2**(-diff/5)
 
 def update_rule(timer_values, timer, timer_indices, v0=1.0, z = 1, bias = 1):
     for idx, value in zip(timer_indices, timer_values):
@@ -118,17 +121,18 @@ def update_rule(timer_values, timer, timer_indices, v0=1.0, z = 1, bias = 1):
         
 
 N_EVENT_TYPES=2 # Number of event types (think, stimulus A, stimulus B, ...)
-NUM_EVENTS=40 # Total amount of events across all types
+NUM_EVENTS=10 # Total amount of events across all types
 Y_LIM=2 # Plotting limit
-NOISE=0.001 # Internal noise - timer activation
-LEARNING_RATE=.8
+NOISE=0.002 # Internal noise - timer activation
+LEARNING_RATE=.9
 STANDARD_INTERVAL=200
-RESPONSE_THRESHOLD=0.95
+RESPONSE_THRESHOLD=0.99
 ALPHA = 0.8
 colors = ['b', 'g', 'r', 'c', 'm', 'y']
+ANIMATE_FIRST_EARLY_RULE = True
 
-events_with_type = TM.getSamples(NUM_EVENTS, num_normal = 2, num_exp = 0)
-events_with_type = TM.getSamples(NUM_EVENTS, num_normal = 4, num_exp = 0, standard_interval = 200)
+events_with_type = TM.getSamples(NUM_EVENTS, num_normal = 3, num_exp = 1)
+events_with_type = TM.getSamples(NUM_EVENTS, num_normal = 2, num_exp = 0, standard_interval = 200)
 event_occurances = (list(zip(*events_with_type))[0])
 plt.hist(event_occurances, bins=80, color='black')
 
@@ -148,9 +152,10 @@ timer=TM(1,20)
 
 plt.figure()
 
-timer.eventDict()[0] = [0,1,2]
+timer.eventDict()[0] = [0,1,2,3]
 timer.eventDict()[1] = [3,4,5]
 free_indices = np.arange(5,20)
+
 # Timers are allocated to an event type based on the timer's eventDict object
 # eventDict takes in an event type as a key and gives an array of timer indices 
 # for that object as the value
@@ -168,13 +173,21 @@ for idx, event in enumerate(events_with_type):
         free_indices = free_indices[3:]
         
     event_timer_index = timer.eventDict()[event_type]
-   
+    
+    # if ANIMATE_FIRST_EARLY_RULE:
+    #     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
+    #     v = v + dv            
+    #     v_hist = np.concatenate((v_hist,v), axis=1)
+        
     if first_event:
         first_event= False                   
         timer_value = activationAtIntervalEnd(timer, event_timer_index, event_time, NOISE)
-        # TODO: set up response times correctly
-        response_time = responseTime(timer.timerWeight(), RESPONSE_THRESHOLD)
-        #timer.setScore(ramp_index, timer.getScore(ramp_index) + score_decay(response_time, event_time))
+        # TODO: set up response times correctly. for now its the first of the timers
+        response_time = responseTime(timer.timerWeight(event_timer_index[0]), RESPONSE_THRESHOLD)
+
+        # TODO: set up scores
+        # Do we want to score the first event which we know is bad?
+        #timer.setScore(event_timer_index, timer.getScore(event_timer_index[0]) + score_decay(response_time, event_time))
         
         for i in timer_value:
             plt.plot([0,event_time], [0, i], linestyle = "dashed", c=colors[event_type], alpha=0.5)
@@ -183,9 +196,12 @@ for idx, event in enumerate(events_with_type):
     else:
         prev_event = events_with_type[idx-1][0]
         timer_value = activationAtIntervalEnd(timer, event_timer_index, event_time - events_with_type[idx-1][0], NOISE)
-        response_time = responseTime(timer.timerWeight(), RESPONSE_THRESHOLD)
-        #timer.setScore(ramp_index, timer.getScore(ramp_index) + score_decay(response_time, event_time))       
-        
+        response_time = prev_event + responseTime(timer.timerWeight(event_timer_index[0]), RESPONSE_THRESHOLD)
+        timer.setScore(event_timer_index, timer.getScore(event_timer_index[0]) + score_decay(response_time, event_time))
+        learning_rate = timer.learningRate(event_timer_index[0])
+        new_learning_rate = 1 - math.exp(-0.1 * timer.getScore(event_timer_index[0]))
+        timer.setLearningRate(event_timer_index[0], new_learning_rate)
+        print("Timer: ", event_timer_index[0], "learning rate: ", timer.learningRate(event_timer_index[0]))
         for i in timer_value:
             plt.plot([prev_event,event_time], [0, i], linestyle = "dashed",  c=colors[event_type], alpha=0.5)
             plt.plot([event_time], [i], marker='o',c=colors[event_type], alpha=0.2) 
@@ -203,4 +219,6 @@ for idx, event in enumerate(events_with_type):
     plt.ylabel("activation")
     plt.xlabel("Time")
     plt.grid('on')
+    plt.pause(0.4)
+plt.show()
    

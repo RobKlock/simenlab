@@ -97,21 +97,42 @@ def reward(activation, margin=.025):
     
 def score_decay(response_time, event_time):
     #print(f'response_time: {response_time}, event_time: {event_time}')
-    print("response time: ", response_time)
-    print("event time: ", event_time)
+    #print("response time: ", response_time)
+    #print("event time: ", event_time)
     diff = event_time - response_time
     #print(f'diff: {diff}')
     if diff <= 0:
         return 0  
     else:
         #return 0.02**(1.0-diff)
-        print("diff: ", diff)
+        #print("diff: ", diff)
         return 2**(-diff/5)
+    
+def frange(start, stop, step):
+     i = start
+     while i < stop:
+         yield i
+         i += step
 
-def update_rule(timer_values, timer, timer_indices, v0=1.0, z = 1, bias = 1):
+def update_rule(timer_values, timer, timer_indices, start_time, end_time, v0=1.0, z = 1, bias = 1):
     for idx, value in zip(timer_indices, timer_values):
         if value > 1:
             ''' Early Update Rule '''
+            # if 1==1:
+            #     v=0
+            #     etr=False
+            #     for i in frange (start_time, end_time, 4):
+            #         dv = (1/1) * ((-v + 1) * 0.1) + (0.002 * np.sqrt(0.1) * np.random.normal(0, 1, 1))  # Add noise using np.random
+            #         v = value + dv 
+            #         if v >= 1:
+            #             etr = True
+            #         if etr:
+            #             d_A = -(v ** 2)
+            #             v = v + d_A
+                    
+            #         plt.plot([i], [v], marker='.',c=colors[event_type], alpha=0.2) 
+            #         plt.pause(0.001)
+        
             timer_weight = earlyUpdateRule(value, timer.timerWeight(idx), timer.learningRate(idx))
             timer.setTimerWeight(timer_weight, idx)
         else:
@@ -119,9 +140,9 @@ def update_rule(timer_values, timer, timer_indices, v0=1.0, z = 1, bias = 1):
             timer_weight = lateUpdateRule(value, timer.timerWeight(idx), timer.learningRate(idx))
             timer.setTimerWeight(timer_weight, idx)
         
-
+dt = 0.1
 N_EVENT_TYPES=2 # Number of event types (think, stimulus A, stimulus B, ...)
-NUM_EVENTS=10 # Total amount of events across all types
+NUM_EVENTS=4 # Total amount of events across all types
 Y_LIM=2 # Plotting limit
 NOISE=0.002 # Internal noise - timer activation
 LEARNING_RATE=.9
@@ -173,16 +194,14 @@ for idx, event in enumerate(events_with_type):
         free_indices = free_indices[3:]
         
     event_timer_index = timer.eventDict()[event_type]
-    
-    # if ANIMATE_FIRST_EARLY_RULE:
-    #     dv = (1/tau) * ((-v + net_in) * dt) + (noise * np.sqrt(dt) * np.random.normal(0, 1, (weights.shape[0],1)))  # Add noise using np.random
-    #     v = v + dv            
-    #     v_hist = np.concatenate((v_hist,v), axis=1)
-        
+    prev_event = 0
+
     if first_event:
         first_event= False                   
         timer_value = activationAtIntervalEnd(timer, event_timer_index, event_time, NOISE)
         # TODO: set up response times correctly. for now its the first of the timers
+        # TODO: set up response time with noise. centered at event time, deviation proportional to noise and interval
+    
         response_time = responseTime(timer.timerWeight(event_timer_index[0]), RESPONSE_THRESHOLD)
 
         # TODO: set up scores
@@ -206,7 +225,7 @@ for idx, event in enumerate(events_with_type):
             plt.plot([prev_event,event_time], [0, i], linestyle = "dashed",  c=colors[event_type], alpha=0.5)
             plt.plot([event_time], [i], marker='o',c=colors[event_type], alpha=0.2) 
     
-    update_rule(timer_value, timer, event_timer_index)    
+    update_rule(timer_value, timer, event_timer_index, prev_event, event_time)    
     
     # TODO: Rest of the heuristic (scores, reallocation, etc)
 

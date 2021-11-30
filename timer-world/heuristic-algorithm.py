@@ -122,7 +122,7 @@ def piecewise_linear(v, bias):
     else:
         return 1
 
-def plot_early_update_rule(start_time, end_time, timer_weight, T, v0=1, z=.99, bias=1, tau=1, noise=0.002, dt=.2):
+def plot_early_update_rule(start_time, end_time, timer_weight, T, event_type, v0=1, z=.99, bias=1, tau=1, noise=0.002, dt=.2):
     v = 0
     v_hist = [0]    
     activation_plot_xvals = np.arange(start_time, end_time, dt) 
@@ -141,18 +141,19 @@ def plot_early_update_rule(start_time, end_time, timer_weight, T, v0=1, z=.99, b
              timer_weight = timer_weight + d_A  
         
         v_hist.append(v[0])
-        plt.plot(i, v,  marker='.', c='r', alpha=0.2) 
+        plt.plot(i, v,  marker='.', c = colors[event_type], alpha=0.2) 
         plt.ylim([0,1.5])
         plt.xlim([start_time,end_time])
-        plt.pause(0.0001)
+        plt.pause(0.000001)
      
     #plt.plot(activation_plot_xvals, v_hist[0:-1], color=colors[event_type], dashes = [2,2]) 
 
-def update_rule(timer_values, timer, timer_indices, start_time, end_time, v0=1.0, z = 1, bias = 1):
+def update_rule(timer_values, timer, timer_indices, start_time, end_time, event_type, v0=1.0, z = 1, bias = 1):
     for idx, value in zip(timer_indices, timer_values):
         if value > 1:
             ''' Early Update Rule '''
-        
+            plot_early_update_rule(start_time, end_time, timer.timerWeight(), T, event_type)
+
             timer_weight = earlyUpdateRule(value, timer.timerWeight(idx), timer.learningRate(idx))
             timer.setTimerWeight(timer_weight, idx)
         else:
@@ -162,7 +163,7 @@ def update_rule(timer_values, timer, timer_indices, start_time, end_time, v0=1.0
         
 dt = 0.1
 N_EVENT_TYPES=2 # Number of event types (think, stimulus A, stimulus B, ...)
-NUM_EVENTS=2 # Total amount of events across all types
+NUM_EVENTS=4 # Total amount of events across all types
 Y_LIM=2 # Plotting limit
 NOISE=0.002 # Internal noise - timer activation
 LEARNING_RATE=.9
@@ -173,7 +174,7 @@ colors = ['b', 'g', 'r', 'c', 'm', 'y']
 ANIMATE_FIRST_EARLY_RULE = True
 
 events_with_type = TM.getSamples(NUM_EVENTS, num_normal = 3, num_exp = 1)
-events_with_type = TM.getSamples(NUM_EVENTS, num_normal = 2, num_exp = 0, standard_interval = 20)
+events_with_type = TM.getSamples(NUM_EVENTS, num_normal = 2, num_exp = 0, standard_interval = 15)
 event_occurances = (list(zip(*events_with_type))[0])
 plt.hist(event_occurances, bins=80, color='black')
 
@@ -193,7 +194,7 @@ timer=TM(1,20)
 
 plt.figure()
 
-timer.eventDict()[0] = [0,1,2,3]
+timer.eventDict()[0] = [0,1,2]
 timer.eventDict()[1] = [3,4,5]
 free_indices = np.arange(5,20)
 
@@ -245,8 +246,8 @@ for idx, event in enumerate(events_with_type):
             plt.plot([prev_event,event_time], [0, i], linestyle = "dashed",  c=colors[event_type], alpha=0.5)
             plt.plot([event_time], [i], marker='o',c=colors[event_type], alpha=0.2) 
     
-    plot_early_update_rule(prev_event, event_time, timer.timerWeight(), T)
-    update_rule(timer_value, timer, event_timer_index, prev_event, event_time)    
+    # plot_early_update_rule(prev_event, event_time, timer.timerWeight(), T)
+    update_rule(timer_value, timer, event_timer_index, prev_event, event_time, event_type)    
     # TODO: Rest of the heuristic (scores, reallocation, etc)
 
     plt.vlines(event, 0,Y_LIM, label="v", color=colors[event_type], alpha=0.5)
